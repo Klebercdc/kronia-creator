@@ -2,6 +2,7 @@ import { callStructured } from "../../lib/llm";
 import { ComplianceResultSchema, RULE_GROUPS, type ComplianceResult } from "../../types/compliance";
 import type { ContentRequest, GenerationResult } from "../../types/pipeline";
 import { checkCopyright } from "./copyright-check";
+import { checkFabricatedNumbers } from "./numeric-guard";
 
 const GROQ_RULE_GROUPS = RULE_GROUPS.filter((g) => g !== "propriedade_intelectual");
 
@@ -41,6 +42,8 @@ export async function validateCompliance(
   const prompt = `Modo: ${request.mode}. Projeto: ${request.project}.
 Roteiro para validação:\n${JSON.stringify(generation, null, 2)}`;
 
+  const fabricatedNumberViolations = checkFabricatedNumbers(generation, request.productInfo);
+
   const [general, copyrightViolations] = await Promise.all([
     callStructured({
       schema: InferredSchema,
@@ -51,8 +54,10 @@ Roteiro para validação:\n${JSON.stringify(generation, null, 2)}`;
     checkCopyright(generation),
   ]);
 
-  const violations = [...general.violations, ...copyrightViolations];
-  const checkedGroups = Array.from(new Set([...general.checkedGroups, "propriedade_intelectual" as const]));
+  const violations = [...fabricatedNumberViolations, ...general.violations, ...copyrightViolations];
+  const checkedGroups = Array.from(
+    new Set([...general.checkedGroups, "propriedade_intelectual" as const, "promessas_nao_comprovadas" as const]),
+  );
 
   return {
     approved: violations.length === 0,
