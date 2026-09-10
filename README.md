@@ -33,6 +33,10 @@ src/
     compliance/
       validate.ts (gate) · correct.ts (correção direcionada às violações)
     pipeline.ts            — orquestra os Caminhos A/B ponta a ponta, com teto de correção automática
+  server/
+    pipeline.functions.ts   — server function (RPC) que expõe o núcleo ao app
+  routes/
+    __root.tsx · index.tsx  — as 3 telas (Criar / Resultado / Roteiro) em React
 ```
 
 ## Rodando
@@ -41,7 +45,8 @@ src/
 cp .env.example .env   # preencher GROQ_API_KEY e OPENAI_API_KEY
 npm install
 npm run typecheck
-npm run smoke-test              # Caminho B (produto + objetivo, sem vídeo)
+npm run dev                     # app completo em http://localhost:3000
+npm run smoke-test              # Caminho B via terminal (sem UI)
 npm run smoke-test:ingest -- <url-do-video>   # só a Ingestão
 ```
 
@@ -49,14 +54,22 @@ Precisa de `yt-dlp` e `ffmpeg`/`ffprobe` no PATH para a Ingestão.
 
 ## Status
 
-Núcleo completo implementado e testado de ponta a ponta com chamadas reais:
-Ingestão (yt-dlp + ffmpeg + Whisper/Groq + visão/OpenAI) → Classificação →
-Recomendação → Geração (4 sub-agentes) → Compliance (com correção
-automática e teto de 2 tentativas antes de escalar para edição manual).
+Núcleo completo implementado e app conectado de ponta a ponta, testado com
+chamadas reais: Ingestão (yt-dlp + ffmpeg + Whisper/Groq + visão/OpenAI) →
+Classificação → Recomendação → Geração (4 sub-agentes) → Compliance (com
+correção automática e teto de 2 tentativas antes de escalar para edição
+manual) → as 3 telas em React chamando tudo isso via server function.
 
 Todo o pipeline roda na Groq (grátis) — a única chamada paga é a leitura
 visual dos frames na Ingestão (OpenAI, porque a Groq não tem modelo com
-visão no catálogo atual). `npm run typecheck` passa limpo.
+visão no catálogo atual). `npm run typecheck` passa limpo e o fluxo
+completo (formulário → resultado → roteiro) foi validado num navegador de
+verdade.
+
+**Falta**: upload de foto de produto (a tela já tem o campo, o backend
+ainda não recebe imagem — só texto), geração real do vídeo final (o botão
+"Gerar vídeo" existe mas não chama nenhum provedor ainda), e persistência
+(nada é salvo — cada sessão começa do zero, sem Histórico funcional).
 
 **Risco conhecido**: YouTube bloqueia downloads via yt-dlp de IPs de
 datacenter com 429 (rate limit) — funcionou normalmente com vídeo hospedado
