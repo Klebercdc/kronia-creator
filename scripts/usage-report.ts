@@ -14,7 +14,7 @@ interface UsageEntry {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
-  estimatedCostUsd: number;
+  estimatedCostUsd: number | null;
 }
 
 if (!existsSync(LOG_FILE)) {
@@ -29,7 +29,10 @@ const today = new Date().toISOString().slice(0, 10);
 const todayEntries = entries.filter((e) => e.timestamp.startsWith(today));
 
 function summarize(label: string, list: UsageEntry[]) {
-  const byProvider = { groq: { tokens: 0, calls: 0 }, openai: { tokens: 0, calls: 0, costUsd: 0 } };
+  const byProvider = {
+    groq: { tokens: 0, calls: 0 },
+    openai: { tokens: 0, calls: 0, costUsd: 0, unpricedCalls: 0, unpricedTokens: 0 },
+  };
   for (const e of list) {
     if (e.provider === "groq") {
       byProvider.groq.tokens += e.totalTokens;
@@ -37,13 +40,21 @@ function summarize(label: string, list: UsageEntry[]) {
     } else {
       byProvider.openai.tokens += e.totalTokens;
       byProvider.openai.calls += 1;
-      byProvider.openai.costUsd += e.estimatedCostUsd;
+      if (e.estimatedCostUsd === null) {
+        byProvider.openai.unpricedCalls += 1;
+        byProvider.openai.unpricedTokens += e.totalTokens;
+      } else {
+        byProvider.openai.costUsd += e.estimatedCostUsd;
+      }
     }
   }
   console.log(`\n${label}`);
   console.log(`  Groq:   ${byProvider.groq.calls} chamadas, ${byProvider.groq.tokens} tokens (grátis)`);
   console.log(
-    `  OpenAI: ${byProvider.openai.calls} chamadas, ${byProvider.openai.tokens} tokens, ~US$ ${byProvider.openai.costUsd.toFixed(4)}`,
+    `  OpenAI: ${byProvider.openai.calls} chamadas, ${byProvider.openai.tokens} tokens, ~US$ ${byProvider.openai.costUsd.toFixed(4)}` +
+      (byProvider.openai.unpricedCalls > 0
+        ? ` (+ ${byProvider.openai.unpricedCalls} chamadas de busca web, ${byProvider.openai.unpricedTokens} tokens, preço não estimado)`
+        : ""),
   );
 }
 

@@ -19,6 +19,12 @@ const LOG_FILE = join(LOG_DIR, "usage.jsonl");
 const OPENAI_PRICE_PER_1M = { input: 0.15, output: 0.6 };
 const GROQ_DAILY_TOKEN_BUDGET = Number(process.env.GROQ_DAILY_TOKEN_BUDGET ?? 200_000);
 
+/** Ferramentas cujo preço real não é o de token normal (ex: "web_search" usa
+ * um modelo de busca com contexto pesado e cobrança que não confirmamos) —
+ * pra essas, loga tokens mas marca o custo como null em vez de estimar
+ * errado com o preço do gpt-4o-mini. */
+const UNPRICED_TOOLS = new Set(["web_search"]);
+
 type Provider = "groq" | "openai";
 
 interface UsageEntry {
@@ -28,7 +34,7 @@ interface UsageEntry {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
-  estimatedCostUsd: number;
+  estimatedCostUsd: number | null;
 }
 
 let todayGroqTokens = 0;
@@ -42,8 +48,9 @@ function resetIfNewDay() {
   }
 }
 
-function estimateCostUsd(provider: Provider, promptTokens: number, completionTokens: number): number {
+function estimateCostUsd(provider: Provider, tool: string, promptTokens: number, completionTokens: number): number | null {
   if (provider !== "openai") return 0;
+  if (UNPRICED_TOOLS.has(tool)) return null;
   return (promptTokens / 1_000_000) * OPENAI_PRICE_PER_1M.input + (completionTokens / 1_000_000) * OPENAI_PRICE_PER_1M.output;
 }
 
@@ -66,7 +73,7 @@ export function recordUsage(params: {
     promptTokens,
     completionTokens,
     totalTokens,
-    estimatedCostUsd: estimateCostUsd(provider, promptTokens, completionTokens),
+    estimatedCostUsd: estimateCostUsd(provider, tool, promptTokens, completionTokens),
   };
 
   try {
