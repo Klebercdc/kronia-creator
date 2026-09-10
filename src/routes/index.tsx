@@ -214,14 +214,25 @@ function CriadorApp() {
         </div>
 
         <div>
-          <div className="section-label">Informações do produto</div>
+          <div className="section-label">{project === "jeova_fala" ? "Tema" : "Informações do produto"}</div>
           <textarea
             className="field-textarea"
-            placeholder="Nome, material, benefícios conhecidos..."
+            placeholder={
+              project === "jeova_fala"
+                ? "Ex: mensagem de deus pra você hoje forte, salmo 27, medo e confiança..."
+                : "Nome, material, benefícios conhecidos..."
+            }
             value={productInfoText}
             onChange={(e) => setProductInfoText(e.target.value)}
           />
-          <div className="hint">Usado apenas o que você informar aqui — nada é inventado sobre o produto.</div>
+          {project === "jeova_fala" ? (
+            <div className="hint">
+              Dica: no app do TikTok, em "Informações de pesquisas para criadores", tem assuntos reais
+              em alta (com % de crescimento de verdade) — cole um aqui em vez de inventar um tema do zero.
+            </div>
+          ) : (
+            <div className="hint">Usado apenas o que você informar aqui — nada é inventado sobre o produto.</div>
+          )}
         </div>
 
         <div>
