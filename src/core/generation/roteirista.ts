@@ -17,7 +17,10 @@ por várias horas", escreva exatamente isso, nunca invente "até 4 horas" ou "te
 independentes mostraram". Precisão inventada não é mais persuasivo, é violação de compliance.
 
 Cada cena tem "onScreenText" (legenda/selo na tela, separado da narração falada) — use null
-quando não houver texto na tela para aquela cena.`;
+quando não houver texto na tela para aquela cena.
+
+Cada cena também tem "videoPrompt" — nesta etapa deixe um rascunho simples (1 frase) descrevendo
+a cena; o agente Cinematográfico depois reescreve com direção profissional completa.`;
 
 /** Sub-agente 1 de 4 da Geração. */
 export async function roteirista(

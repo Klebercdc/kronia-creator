@@ -305,7 +305,7 @@ function RoteiroView({
       </div>
 
       <div>
-        <div className="section-label">Cenas</div>
+        <div className="section-label">Cenas — prompts prontos pro Flow</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {generation.scenes.map((scene) => (
             <div key={scene.index} className="card">
@@ -314,21 +314,33 @@ function RoteiroView({
               </div>
               <div className="scene-meta">Câmera: {scene.camera}</div>
               <div className="scene-meta">Ação: {scene.action}</div>
-              <div style={{ fontSize: 12.5 }}>{scene.narration}</div>
+              <div style={{ fontSize: 12.5, marginBottom: 8 }}>{scene.narration}</div>
               {scene.onScreenText && (
-                <div style={{ fontSize: 11, color: "oklch(0.7 0.02 285)", marginTop: 4 }}>
+                <div style={{ fontSize: 11, color: "oklch(0.7 0.02 285)", marginBottom: 8 }}>
                   Texto na tela: {scene.onScreenText}
                 </div>
               )}
+              <div
+                style={{
+                  fontSize: 11.5,
+                  background: "oklch(0.13 0.012 285)",
+                  border: "1px solid oklch(0.24 0.018 285)",
+                  borderRadius: 10,
+                  padding: 10,
+                  marginBottom: 8,
+                }}
+              >
+                {scene.videoPrompt}
+              </div>
+              <button
+                className="btn-secondary"
+                style={{ padding: "8px 12px", fontSize: 11.5 }}
+                onClick={() => navigator.clipboard?.writeText(scene.videoPrompt)}
+              >
+                Copiar prompt desta cena
+              </button>
             </div>
           ))}
-        </div>
-      </div>
-
-      <div>
-        <div className="section-label">Prompt de vídeo</div>
-        <div className="card" style={{ fontSize: 12 }}>
-          {generation.videoPrompt}
         </div>
       </div>
 
@@ -360,9 +372,13 @@ function RoteiroView({
         <button
           className="btn-primary"
           style={{ flex: 1.4 }}
-          onClick={() => navigator.clipboard?.writeText(generation.videoPrompt)}
+          onClick={() =>
+            navigator.clipboard?.writeText(
+              generation.scenes.map((s) => `Cena ${s.index + 1}:\n${s.videoPrompt}`).join("\n\n"),
+            )
+          }
         >
-          Copiar prompt p/ Flow
+          Copiar todos os prompts
         </button>
       </div>
       <button className="btn-secondary" onClick={onReset}>

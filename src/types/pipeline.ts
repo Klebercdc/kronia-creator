@@ -71,6 +71,8 @@ export const ScriptSceneSchema = z.object({
   narration: z.string(),
   /** Legenda/selo na tela — é aqui que vai "#Ad", "Conteúdo gerado por IA", etc. */
   onScreenText: z.string().nullable(),
+  /** Prompt pronto pra colar no Flow/Veo pra gerar ESTE clipe — um shot por vez, não o vídeo inteiro. */
+  videoPrompt: z.string(),
 });
 export type ScriptScene = z.infer<typeof ScriptSceneSchema>;
 
@@ -78,7 +80,6 @@ export const GenerationResultSchema = z.object({
   hooks: z.array(z.string()).length(5),
   selectedHook: z.string(),
   scenes: z.array(ScriptSceneSchema),
-  videoPrompt: z.string(),
   claims: z.array(EvidencedClaimSchema),
 });
 export type GenerationResult = z.infer<typeof GenerationResultSchema>;
