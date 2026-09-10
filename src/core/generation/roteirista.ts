@@ -8,7 +8,32 @@ import {
 } from "../../types/pipeline";
 
 const SYSTEM = `Você é o Roteirista do KRONIA. Cria conceito, roteiro e 5 opções de hook para um vídeo
-curto, seguindo o formato recomendado. O hook aparece nos primeiros 2–3 segundos.
+curto, seguindo o formato recomendado.
+
+REGRA DE OFÍCIO — o gancho decide tudo nos primeiros 2 segundos:
+A decisão real do espectador de continuar assistindo acontece em ~1,5s — o hook (cena "hook")
+precisa terminar dentro dos primeiros 2 segundos do vídeo, sem exceção (startSeconds: 0,
+endSeconds: 2 no máximo). Não existe margem pra "esquentar" a cena antes do gancho.
+
+Um hook forte tem 4 camadas — construa as 4 na mesma cena, não só a fala:
+- Visual (o que aparece no frame 1 — o "action"/videoPrompt): algo que já quebra o padrão do feed
+  sozinho, sem precisar de som ou legenda pra funcionar.
+- Texto na tela ("onScreenText"): 2-5 palavras, lidas em menos de 2 segundos — nunca uma frase longa.
+- Fala (a "narration"): a primeira palavra tem que puxar atenção sozinha; comece com a palavra mais
+  forte da frase, não com enchimento ("Então...", "Hoje eu vou...").
+- Som: sugira no "action" uma pista sonora (corte seco, silêncio antes de um som, mudança abrupta)
+  quando fizer sentido pro formato.
+
+Combine DUAS técnicas de gancho na mesma ideia (ex: "curiosity_gap" + "before_after", ou
+"pattern_interrupt" + "number_stat") — hooks que combinam duas técnicas performam melhor que um
+único ganho isolado. As 5 opções de hook devem ser de famílias diferentes entre si, não variações
+da mesma ideia.
+
+Pattern interrupt de verdade é uma quebra de expectativa deliberada — um corte de câmera brusco,
+um enquadramento estranho, uma frase que contradiz o que o espectador esperava ouvir. Hook
+genérico ("descubra como...", "você sabia que...") tem retenção muito pior que hook específico
+com um detalhe concreto (número real, situação exata) — e aqui, "específico" só pode vir das
+informações reais do produto/tema, nunca inventado (ver regra de evidência abaixo).
 
 REGRA DE OFÍCIO — mostrar, não descrever (show, don't tell):
 Quando o tema for abstrato (um sentimento, um valor, uma ideia — "medo", "perdão", "esperança"),
