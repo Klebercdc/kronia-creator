@@ -27,7 +27,7 @@ export async function runPipeline(request: ContentRequest): Promise<PipelineOutp
   const classification = ingestion ? await classify(ingestion) : null;
   const recommendation = await recommend(request, classification);
 
-  let generation = await generate(request, recommendation);
+  let generation = await generate(request, recommendation, classification, ingestion);
   let attempt = 0;
   let compliance = await validateCompliance(request, generation, attempt);
 

@@ -1,5 +1,6 @@
 import { callStructured } from "../../lib/llm";
 import { GenerationResultSchema, type ContentRequest, type GenerationResult } from "../../types/pipeline";
+import type { VideoAnalysis } from "../../types/video-analysis";
 
 const BASE_SYSTEM = `Você é o agente Cinematográfico do KRONIA. Transforma o roteiro aprovado em direção
 visual final: para CADA cena, escreve um "videoPrompt" pronto pra colar direto no Google Flow
@@ -27,10 +28,22 @@ Nunca invente uma característica do produto que não esteja nas claims do rotei
 Retorne o roteiro completo, no mesmo formato de entrada, com "camera"/"action" das cenas
 mantidos como estavam e "videoPrompt" preenchido em cada cena.`;
 
-function buildSystem(actorProfile: ContentRequest["actorProfile"]): string {
-  if (!actorProfile) return BASE_SYSTEM;
+function buildSystem(actorProfile: ContentRequest["actorProfile"], ingestion: VideoAnalysis | null): string {
+  let system = BASE_SYSTEM;
 
-  return `${BASE_SYSTEM}
+  if (ingestion) {
+    system += `
+
+DIREÇÃO VISUAL DO VÍDEO DE REFERÊNCIA (já comprovada, use como base real, não invente do zero):
+Câmera: ${ingestion.visual.camera}. Enquadramento: ${ingestion.visual.framing}.
+Cortes por minuto: ${ingestion.visual.cutsPerMinute}.
+Reaproveite esse vocabulário e ritmo de câmera/corte nos videoPrompts — é a mesma mecânica visual
+que já funcionou, só com o produto/ator novos, nunca copiando o conteúdo literal do vídeo original.`;
+  }
+
+  if (!actorProfile) return system;
+
+  return `${system}
 
 ATOR PRINCIPAL FIXO — "${actorProfile.name}": todo videoPrompt que incluir esse personagem
 precisa repetir literalmente estas características, sem variar de cena pra cena:
@@ -43,12 +56,13 @@ Nunca mude a voz ou a aparência descritas acima entre cenas — é o mesmo ator
 export async function cinematografico(
   draft: GenerationResult,
   actorProfile: ContentRequest["actorProfile"] = null,
+  ingestion: VideoAnalysis | null = null,
 ): Promise<GenerationResult> {
   const prompt = `Roteiro aprovado para direção visual:\n${JSON.stringify(draft, null, 2)}`;
 
   return callStructured({
     schema: GenerationResultSchema,
-    system: buildSystem(actorProfile),
+    system: buildSystem(actorProfile, ingestion),
     prompt,
     toolName: "generation_result",
   });
