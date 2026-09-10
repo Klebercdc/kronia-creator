@@ -14,7 +14,7 @@ interface UsageEntry {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
-  estimatedCostUsd: number | null;
+  estimatedCostUsd: number;
 }
 
 if (!existsSync(LOG_FILE)) {
@@ -31,30 +31,30 @@ const todayEntries = entries.filter((e) => e.timestamp.startsWith(today));
 function summarize(label: string, list: UsageEntry[]) {
   const byProvider = {
     groq: { tokens: 0, calls: 0 },
-    openai: { tokens: 0, calls: 0, costUsd: 0, unpricedCalls: 0, unpricedTokens: 0 },
+    openai: { tokens: 0, calls: 0, costUsd: 0 },
+    webSearch: { calls: 0, tokens: 0, costUsd: 0 },
   };
   for (const e of list) {
     if (e.provider === "groq") {
       byProvider.groq.tokens += e.totalTokens;
       byProvider.groq.calls += 1;
+    } else if (e.tool === "web_search") {
+      byProvider.webSearch.tokens += e.totalTokens;
+      byProvider.webSearch.calls += 1;
+      byProvider.webSearch.costUsd += e.estimatedCostUsd;
     } else {
       byProvider.openai.tokens += e.totalTokens;
       byProvider.openai.calls += 1;
-      if (e.estimatedCostUsd === null) {
-        byProvider.openai.unpricedCalls += 1;
-        byProvider.openai.unpricedTokens += e.totalTokens;
-      } else {
-        byProvider.openai.costUsd += e.estimatedCostUsd;
-      }
+      byProvider.openai.costUsd += e.estimatedCostUsd;
     }
   }
   console.log(`\n${label}`);
-  console.log(`  Groq:   ${byProvider.groq.calls} chamadas, ${byProvider.groq.tokens} tokens (grátis)`);
+  console.log(`  Groq:       ${byProvider.groq.calls} chamadas, ${byProvider.groq.tokens} tokens (grátis)`);
   console.log(
-    `  OpenAI: ${byProvider.openai.calls} chamadas, ${byProvider.openai.tokens} tokens, ~US$ ${byProvider.openai.costUsd.toFixed(4)}` +
-      (byProvider.openai.unpricedCalls > 0
-        ? ` (+ ${byProvider.openai.unpricedCalls} chamadas de busca web, ${byProvider.openai.unpricedTokens} tokens, preço não estimado)`
-        : ""),
+    `  OpenAI:     ${byProvider.openai.calls} chamadas, ${byProvider.openai.tokens} tokens, ~US$ ${byProvider.openai.costUsd.toFixed(4)}`,
+  );
+  console.log(
+    `  Busca web:  ${byProvider.webSearch.calls} chamadas, ${byProvider.webSearch.tokens} tokens, ~US$ ${byProvider.webSearch.costUsd.toFixed(4)}`,
   );
 }
 
