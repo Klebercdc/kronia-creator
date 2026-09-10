@@ -289,7 +289,7 @@ function RoteiroView({
   approved: boolean;
   onReset: () => void;
 }) {
-  const { generation, compliance, estimatedCreditsForVideo } = output;
+  const { generation, compliance } = output;
   return (
     <div className="app">
       <BrandRow />
@@ -350,17 +350,19 @@ function RoteiroView({
         </div>
       )}
 
-      <div className="cost-row">Custo estimado: {estimatedCreditsForVideo} créditos para gerar o vídeo</div>
-
       <div className="btn-row">
         <button
           className="btn-secondary"
           onClick={() => navigator.clipboard?.writeText(JSON.stringify(generation, null, 2))}
         >
-          Copiar
+          Copiar roteiro
         </button>
-        <button className="btn-primary" disabled={!approved} style={{ flex: 1.4 }}>
-          Gerar vídeo
+        <button
+          className="btn-primary"
+          style={{ flex: 1.4 }}
+          onClick={() => navigator.clipboard?.writeText(generation.videoPrompt)}
+        >
+          Copiar prompt p/ Flow
         </button>
       </div>
       <button className="btn-secondary" onClick={onReset}>

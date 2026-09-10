@@ -92,5 +92,4 @@ export interface PipelineOutput {
   recommendation: FormatRecommendation;
   generation: GenerationResult;
   compliance: z.infer<typeof ComplianceResultSchema>;
-  estimatedCreditsForVideo: number;
 }

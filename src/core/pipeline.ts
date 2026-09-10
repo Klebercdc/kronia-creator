@@ -1,4 +1,4 @@
-import type { ContentRequest, GenerationResult, PipelineOutput } from "../types/pipeline";
+import type { ContentRequest, PipelineOutput } from "../types/pipeline";
 import { MAX_AUTO_COMPLIANCE_ATTEMPTS } from "../types/compliance";
 import { ingest } from "./ingestion/ingest";
 import { classify } from "./classification/classify";
@@ -44,7 +44,6 @@ export async function runPipeline(request: ContentRequest): Promise<PipelineOutp
     recommendation,
     generation,
     compliance,
-    estimatedCreditsForVideo: estimateCredits(generation),
   };
 
   if (!compliance.approved) {
@@ -52,9 +51,4 @@ export async function runPipeline(request: ContentRequest): Promise<PipelineOutp
   }
 
   return output;
-}
-
-/** Placeholder até integrar com o custo real do provedor de geração de vídeo escolhido. */
-function estimateCredits(generation: GenerationResult): number {
-  return Math.max(8, generation.scenes.length * 3);
 }

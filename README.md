@@ -66,10 +66,12 @@ visão no catálogo atual). `npm run typecheck` passa limpo e o fluxo
 completo (formulário → resultado → roteiro) foi validado num navegador de
 verdade.
 
+O app não gera o vídeo final — entrega roteiro + prompt de vídeo pronto pra
+colar no Flow (ou outro gerador externo), que é o fluxo real do usuário.
+
 **Falta**: upload de foto de produto (a tela já tem o campo, o backend
-ainda não recebe imagem — só texto), geração real do vídeo final (o botão
-"Gerar vídeo" existe mas não chama nenhum provedor ainda), e persistência
-(nada é salvo — cada sessão começa do zero, sem Histórico funcional).
+ainda não recebe imagem — só texto) e persistência (nada é salvo — cada
+sessão começa do zero, sem Histórico funcional).
 
 **Risco conhecido**: YouTube bloqueia downloads via yt-dlp de IPs de
 datacenter com 429 (rate limit) — funcionou normalmente com vídeo hospedado
