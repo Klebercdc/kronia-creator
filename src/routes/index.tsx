@@ -1,9 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState, type FormEvent } from "react";
-import { runContentPipeline, analyzeActorPhoto, type RunPipelineResult } from "../server/pipeline.functions";
+import {
+  runContentPipeline,
+  analyzeActorPhoto,
+  refineScene,
+  generateSeoPackage,
+  type RunPipelineResult,
+} from "../server/pipeline.functions";
 import { ACTOR_PRESETS } from "../core/generation/actor-presets";
-import type { ContentRequest, PipelineOutput } from "../types/pipeline";
+import type { ContentRequest, GenerationResult, PipelineOutput } from "../types/pipeline";
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -118,6 +124,18 @@ function CriadorApp() {
     setErrorMessage(null);
   }
 
+  function updateSceneVideoPrompt(sceneIndex: number, videoPrompt: string) {
+    setResult((prev) => {
+      if (!prev) return prev;
+      const scenes = prev.output.generation.scenes.map((s) => (s.index === sceneIndex ? { ...s, videoPrompt } : s));
+      return { ...prev, output: { ...prev.output, generation: { ...prev.output.generation, scenes } } };
+    });
+  }
+
+  function updateGeneration(generation: PipelineOutput["generation"]) {
+    setResult((prev) => (prev ? { ...prev, output: { ...prev.output, generation } } : prev));
+  }
+
   if (step === "loading") {
     return (
       <div className="app">
@@ -149,7 +167,15 @@ function CriadorApp() {
   }
 
   if (step === "roteiro" && result) {
-    return <RoteiroView output={result.output} approved={result.status === "aprovado"} onReset={reset} />;
+    return (
+      <RoteiroView
+        output={result.output}
+        approved={result.status === "aprovado"}
+        onReset={reset}
+        onSceneVideoPromptChange={updateSceneVideoPrompt}
+        onGenerationUpdate={updateGeneration}
+      />
+    );
   }
 
   if (step === "manual" && result) {
@@ -378,16 +404,179 @@ function ResultadoView({
   );
 }
 
+function SceneCard({
+  scene,
+  actorProfile,
+  onVideoPromptChange,
+}: {
+  scene: PipelineOutput["generation"]["scenes"][number];
+  actorProfile: ContentRequest["actorProfile"];
+  onVideoPromptChange: (sceneIndex: number, videoPrompt: string) => void;
+}) {
+  const refineSceneFn = useServerFn(refineScene);
+  const [feedback, setFeedback] = useState("");
+  const [refining, setRefining] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+
+  async function handleRefine() {
+    if (!feedback.trim()) return;
+    setRefining(true);
+    try {
+      const { videoPrompt } = await refineSceneFn({ data: { scene, actorProfile, feedback: feedback.trim() } });
+      onVideoPromptChange(scene.index, videoPrompt);
+      setFeedback("");
+      setShowFeedback(false);
+    } catch {
+      // best-effort — o usuário vê o prompt antigo ainda lá, pode tentar de novo
+    } finally {
+      setRefining(false);
+    }
+  }
+
+  return (
+    <div className="card">
+      <div className="scene-tag">
+        CENA {scene.index + 1} — {scene.role.toUpperCase()} · {scene.startSeconds}–{scene.endSeconds}s
+      </div>
+      <div className="scene-meta">Câmera: {scene.camera}</div>
+      <div className="scene-meta">Ação: {scene.action}</div>
+      <div style={{ fontSize: 12.5, marginBottom: 8 }}>{scene.narration}</div>
+      {scene.onScreenText && (
+        <div style={{ fontSize: 11, color: "oklch(0.7 0.02 285)", marginBottom: 8 }}>
+          Texto na tela: {scene.onScreenText}
+        </div>
+      )}
+      <div
+        style={{
+          fontSize: 11.5,
+          background: "oklch(0.13 0.012 285)",
+          border: "1px solid oklch(0.24 0.018 285)",
+          borderRadius: 10,
+          padding: 10,
+          marginBottom: 8,
+        }}
+      >
+        {scene.videoPrompt}
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          className="btn-secondary"
+          style={{ padding: "8px 12px", fontSize: 11.5 }}
+          onClick={() => navigator.clipboard?.writeText(scene.videoPrompt)}
+        >
+          Copiar prompt desta cena
+        </button>
+        <button
+          className="btn-secondary"
+          style={{ padding: "8px 12px", fontSize: 11.5 }}
+          onClick={() => setShowFeedback((v) => !v)}
+        >
+          Não ficou bom no Flow?
+        </button>
+      </div>
+      {showFeedback && (
+        <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+          <textarea
+            className="input"
+            rows={2}
+            placeholder='Ex: "a boca não sincronizou", "troca a palavra X", "câmera muito parada"'
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+          />
+          <button className="btn-primary" style={{ fontSize: 11.5, padding: "8px 12px" }} onClick={handleRefine} disabled={refining}>
+            {refining ? "Ajustando..." : "Ajustar só essa cena"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SeoSection({ output, onSeoResult }: { output: PipelineOutput; onSeoResult: (generation: GenerationResult) => void }) {
+  const generateSeoPackageFn = useServerFn(generateSeoPackage);
+  const [loading, setLoading] = useState(false);
+  const [warnings, setWarnings] = useState<PipelineOutput["compliance"]["violations"]>([]);
+  const { generation } = output;
+
+  async function handleGenerate() {
+    setLoading(true);
+    try {
+      const result = await generateSeoPackageFn({ data: { generation, request: output.request } });
+      onSeoResult(result.generation);
+      setWarnings(result.warnings);
+    } catch {
+      // best-effort — usuário pode tentar de novo
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!generation.caption) {
+    return (
+      <div>
+        <div className="section-label">Legenda + hashtags</div>
+        <div className="card">
+          <div style={{ fontSize: 12, color: "oklch(0.7 0.02 285)", marginBottom: 10 }}>
+            Gerada só quando você pedir — usa busca real de hashtag (tem custo pequeno), por isso não roda automático.
+          </div>
+          <button className="btn-primary" onClick={handleGenerate} disabled={loading}>
+            {loading ? "Gerando..." : "Gerar legenda + hashtags"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="section-label">Legenda + hashtags</div>
+      <div className="card">
+        <div style={{ fontSize: 12.5, marginBottom: 8 }}>{generation.caption}</div>
+        <div style={{ fontSize: 11.5, color: "oklch(0.7 0.02 285)", marginBottom: 8 }}>
+          {generation.hashtags.map((h) => `#${h}`).join(" ")}
+        </div>
+        {warnings.length > 0 && (
+          <div className="reject-card" style={{ marginBottom: 8 }}>
+            <div style={{ fontWeight: 700, fontSize: 12 }}>Checagem automática encontrou possível problema:</div>
+            {warnings.map((w, i) => (
+              <div key={i} className="violation-item">
+                <div>"{w.flaggedText}"</div>
+                <div style={{ color: "oklch(0.65 0.02 285)" }}>{w.reason}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        <button
+          className="btn-secondary"
+          style={{ padding: "8px 12px", fontSize: 11.5 }}
+          onClick={() =>
+            navigator.clipboard?.writeText(
+              `${generation.caption}\n\n${generation.hashtags.map((h) => `#${h}`).join(" ")}`,
+            )
+          }
+        >
+          Copiar legenda + hashtags
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function RoteiroView({
   output,
   approved,
   onReset,
+  onSceneVideoPromptChange,
+  onGenerationUpdate,
 }: {
   output: PipelineOutput;
   approved: boolean;
   onReset: () => void;
+  onSceneVideoPromptChange: (sceneIndex: number, videoPrompt: string) => void;
+  onGenerationUpdate: (generation: GenerationResult) => void;
 }) {
   const { generation, compliance } = output;
+
   return (
     <div className="app">
       <BrandRow />
@@ -406,64 +595,17 @@ function RoteiroView({
         <div className="section-label">Cenas — prompts prontos pro Flow</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {generation.scenes.map((scene) => (
-            <div key={scene.index} className="card">
-              <div className="scene-tag">
-                CENA {scene.index + 1} — {scene.role.toUpperCase()} · {scene.startSeconds}–{scene.endSeconds}s
-              </div>
-              <div className="scene-meta">Câmera: {scene.camera}</div>
-              <div className="scene-meta">Ação: {scene.action}</div>
-              <div style={{ fontSize: 12.5, marginBottom: 8 }}>{scene.narration}</div>
-              {scene.onScreenText && (
-                <div style={{ fontSize: 11, color: "oklch(0.7 0.02 285)", marginBottom: 8 }}>
-                  Texto na tela: {scene.onScreenText}
-                </div>
-              )}
-              <div
-                style={{
-                  fontSize: 11.5,
-                  background: "oklch(0.13 0.012 285)",
-                  border: "1px solid oklch(0.24 0.018 285)",
-                  borderRadius: 10,
-                  padding: 10,
-                  marginBottom: 8,
-                }}
-              >
-                {scene.videoPrompt}
-              </div>
-              <button
-                className="btn-secondary"
-                style={{ padding: "8px 12px", fontSize: 11.5 }}
-                onClick={() => navigator.clipboard?.writeText(scene.videoPrompt)}
-              >
-                Copiar prompt desta cena
-              </button>
-            </div>
+            <SceneCard
+              key={scene.index}
+              scene={scene}
+              actorProfile={output.request.actorProfile}
+              onVideoPromptChange={onSceneVideoPromptChange}
+            />
           ))}
         </div>
       </div>
 
-      {generation.caption && (
-        <div>
-          <div className="section-label">Legenda + hashtags</div>
-          <div className="card">
-            <div style={{ fontSize: 12.5, marginBottom: 8 }}>{generation.caption}</div>
-            <div style={{ fontSize: 11.5, color: "oklch(0.7 0.02 285)", marginBottom: 8 }}>
-              {generation.hashtags.map((h) => `#${h}`).join(" ")}
-            </div>
-            <button
-              className="btn-secondary"
-              style={{ padding: "8px 12px", fontSize: 11.5 }}
-              onClick={() =>
-                navigator.clipboard?.writeText(
-                  `${generation.caption}\n\n${generation.hashtags.map((h) => `#${h}`).join(" ")}`,
-                )
-              }
-            >
-              Copiar legenda + hashtags
-            </button>
-          </div>
-        </div>
-      )}
+      <SeoSection output={output} onSeoResult={onGenerationUpdate} />
 
       {approved ? (
         <div className="approve-card">

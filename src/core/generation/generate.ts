@@ -11,12 +11,16 @@ import { teologo } from "./teologo";
 import { psicologiaDeCompra } from "./psicologia-compra";
 import { persuasao } from "./persuasao";
 import { cinematografico } from "./cinematografico";
-import { seo } from "./seo";
 
 /**
  * Etapa 4 — Geração. Cadeia fixa de sub-agentes:
  * Roteirista → Marketing → Teólogo (só se project === "jeova_fala") →
- * Psicologia de Compra → Persuasão → Cinematográfico → SEO.
+ * Psicologia de Compra → Persuasão → Cinematográfico.
+ *
+ * SEO (legenda + hashtags) NÃO roda aqui — é sob demanda, via server fn
+ * separada (`generateSeoPackage`), porque o usuário normalmente só quer
+ * isso depois de já ter aprovado as cenas, e a busca de hashtag tem custo
+ * (não vale gastar em toda tentativa de regenerar o roteiro).
  *
  * `classification` e `ingestion` só existem no Caminho A (vídeo de
  * referência) — quando presentes, carregam a estrutura e a direção visual
@@ -39,7 +43,6 @@ export async function generate(
   draft = await psicologiaDeCompra(draft);
   draft = await persuasao(draft);
   draft = await cinematografico(draft, request.actorProfile, ingestion);
-  draft = await seo(draft, request);
 
   return draft;
 }
