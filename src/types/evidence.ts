@@ -1,13 +1,17 @@
+import { z } from "zod";
+
 /**
  * Princípio de evidência: nenhuma característica desconhecida pode ser
  * apresentada como fato. Toda afirmação sobre o produto carrega sua origem.
  */
 
-export type EvidenceKind = "fato" | "inferencia" | "sugestao_ia" | "desconhecido";
+export const EvidenceKindSchema = z.enum(["fato", "inferencia", "sugestao_ia", "desconhecido"]);
+export type EvidenceKind = z.infer<typeof EvidenceKindSchema>;
 
-export interface EvidencedClaim {
-  text: string;
-  kind: EvidenceKind;
+export const EvidencedClaimSchema = z.object({
+  text: z.string(),
+  kind: EvidenceKindSchema,
   /** De onde veio: "foto do produto", "campo de informações", "vídeo de referência", "modelo" */
-  source: string;
-}
+  source: z.string(),
+});
+export type EvidencedClaim = z.infer<typeof EvidencedClaimSchema>;

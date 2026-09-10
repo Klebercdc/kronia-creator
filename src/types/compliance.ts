@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 /**
  * Compliance é um GATE de validação, não um prompt final. Regras agrupadas,
  * versionadas e editáveis — nunca hardcoded num único prompt.
@@ -17,20 +19,24 @@ export const RULE_GROUPS = [
   /** Vídeo de referência: mecânica pode ser adaptada, conteúdo literal não */
   "originalidade_anti_copia",
 ] as const;
-export type RuleGroup = (typeof RULE_GROUPS)[number];
+export const RuleGroupSchema = z.enum(RULE_GROUPS);
+export type RuleGroup = z.infer<typeof RuleGroupSchema>;
 
-export interface ComplianceViolation {
-  group: RuleGroup;
-  flaggedText: string;
-  reason: string;
-  suggestion: string;
-}
+export const ComplianceViolationSchema = z.object({
+  group: RuleGroupSchema,
+  flaggedText: z.string(),
+  reason: z.string(),
+  suggestion: z.string(),
+});
+export type ComplianceViolation = z.infer<typeof ComplianceViolationSchema>;
 
-export interface ComplianceResult {
-  approved: boolean;
-  checkedGroups: RuleGroup[];
-  violations: ComplianceViolation[];
-  /** Zero na primeira passagem; usado para o teto de correção automática (2 tentativas → escalar) */
-  attempt: number;
-  maxAutoAttempts: 2;
-}
+/** Teto de correção automática — depois disso escala para edição manual, nunca loop infinito. */
+export const MAX_AUTO_COMPLIANCE_ATTEMPTS = 2;
+
+export const ComplianceResultSchema = z.object({
+  approved: z.boolean(),
+  checkedGroups: z.array(RuleGroupSchema),
+  violations: z.array(ComplianceViolationSchema),
+  attempt: z.number().int().nonnegative(),
+});
+export type ComplianceResult = z.infer<typeof ComplianceResultSchema>;
