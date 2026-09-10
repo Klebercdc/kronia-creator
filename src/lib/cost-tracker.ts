@@ -17,13 +17,6 @@ const LOG_DIR = join(process.cwd(), "logs");
 const LOG_FILE = join(LOG_DIR, "usage.jsonl");
 
 const OPENAI_PRICE_PER_1M = { input: 0.15, output: 0.6 };
-/** gpt-5-search-api (usado só em webSearchSummary) — preço confirmado via
- * busca em 2026-09-10, bem mais caro que o gpt-4o-mini por causa do
- * contexto de busca injetado no prompt (~16k tokens por chamada). */
-const SEARCH_PRICE_PER_1M = { input: 1.25, output: 10.0 };
-const TOOL_PRICE: Record<string, { input: number; output: number }> = {
-  web_search: SEARCH_PRICE_PER_1M,
-};
 const GROQ_DAILY_TOKEN_BUDGET = Number(process.env.GROQ_DAILY_TOKEN_BUDGET ?? 200_000);
 
 type Provider = "groq" | "openai";
@@ -49,10 +42,9 @@ function resetIfNewDay() {
   }
 }
 
-function estimateCostUsd(provider: Provider, tool: string, promptTokens: number, completionTokens: number): number {
+function estimateCostUsd(provider: Provider, promptTokens: number, completionTokens: number): number {
   if (provider !== "openai") return 0;
-  const price = TOOL_PRICE[tool] ?? OPENAI_PRICE_PER_1M;
-  return (promptTokens / 1_000_000) * price.input + (completionTokens / 1_000_000) * price.output;
+  return (promptTokens / 1_000_000) * OPENAI_PRICE_PER_1M.input + (completionTokens / 1_000_000) * OPENAI_PRICE_PER_1M.output;
 }
 
 /** Chamado depois de toda resposta da Groq/OpenAI — nunca lança erro (uso
@@ -74,7 +66,7 @@ export function recordUsage(params: {
     promptTokens,
     completionTokens,
     totalTokens,
-    estimatedCostUsd: estimateCostUsd(provider, tool, promptTokens, completionTokens),
+    estimatedCostUsd: estimateCostUsd(provider, promptTokens, completionTokens),
   };
 
   try {

@@ -514,13 +514,13 @@ function SeoSection({ output, onSeoResult }: { output: PipelineOutput; onSeoResu
   if (!generation.caption) {
     return (
       <div>
-        <div className="section-label">Legenda + hashtags</div>
+        <div className="section-label">Legenda</div>
         <div className="card">
           <div style={{ fontSize: 12, color: "oklch(0.7 0.02 285)", marginBottom: 10 }}>
-            Gerada só quando você pedir — usa busca real de hashtag (tem custo pequeno), por isso não roda automático.
+            Gerada só quando você pedir — sem hashtag (sem dado real de TikTok por trás pra confiar).
           </div>
           <button className="btn-primary" onClick={handleGenerate} disabled={loading}>
-            {loading ? "Gerando..." : "Gerar legenda + hashtags"}
+            {loading ? "Gerando..." : "Gerar legenda"}
           </button>
         </div>
       </div>
@@ -529,12 +529,9 @@ function SeoSection({ output, onSeoResult }: { output: PipelineOutput; onSeoResu
 
   return (
     <div>
-      <div className="section-label">Legenda + hashtags</div>
+      <div className="section-label">Legenda</div>
       <div className="card">
         <div style={{ fontSize: 12.5, marginBottom: 8 }}>{generation.caption}</div>
-        <div style={{ fontSize: 11.5, color: "oklch(0.7 0.02 285)", marginBottom: 8 }}>
-          {generation.hashtags.map((h) => `#${h}`).join(" ")}
-        </div>
         {warnings.length > 0 && (
           <div className="reject-card" style={{ marginBottom: 8 }}>
             <div style={{ fontWeight: 700, fontSize: 12 }}>Checagem automática encontrou possível problema:</div>
@@ -549,13 +546,9 @@ function SeoSection({ output, onSeoResult }: { output: PipelineOutput; onSeoResu
         <button
           className="btn-secondary"
           style={{ padding: "8px 12px", fontSize: 11.5 }}
-          onClick={() =>
-            navigator.clipboard?.writeText(
-              `${generation.caption}\n\n${generation.hashtags.map((h) => `#${h}`).join(" ")}`,
-            )
-          }
+          onClick={() => navigator.clipboard?.writeText(generation.caption)}
         >
-          Copiar legenda + hashtags
+          Copiar legenda
         </button>
       </div>
     </div>

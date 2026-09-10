@@ -177,51 +177,6 @@ export async function callStructuredVisionFromDataUrls<T>(params: {
   });
 }
 
-/** Modelo com busca web nativa da OpenAI (mesma chave/conta, sem vendor novo) —
- * usado só pra grounding pontual (ex: hashtags reais), nunca pra geração de
- * roteiro (isso continua nos modelos normais, com o schema estrito).
- * `gpt-4o-mini-search-preview` foi descontinuado (confirmado via teste real
- * em 2026-09-10, erro 404 model_not_found) — `gpt-5-search-api` é o atual.
- * Consome ~16k tokens de contexto de busca por chamada — bem mais caro que
- * as chamadas normais de schema, por isso fica isolado nesta função. */
-const SEARCH_MODEL = "gpt-5-search-api";
-
-/**
- * Busca na web via OpenAI e devolve um resumo em texto (com o que o modelo
- * encontrou de fato, não uma resposta gerada da memória). Best-effort: nunca
- * lança — se a busca falhar (modelo indisponível, sem resultado, etc.),
- * devolve null e quem chamou deve seguir sem grounding real, não quebrar.
- */
-export async function webSearchSummary(query: string): Promise<string | null> {
-  try {
-    const response = await getClient().chat.completions.create({
-      model: SEARCH_MODEL,
-      web_search_options: {},
-      messages: [
-        {
-          role: "system",
-          content:
-            "Responda só com o que a busca encontrar de fato, de forma objetiva e curta (até 5 itens). " +
-            "Nunca invente um resultado que a busca não trouxe.",
-        },
-        { role: "user", content: query },
-      ],
-    } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming);
-
-    recordUsage({
-      provider: "openai",
-      tool: "web_search",
-      promptTokens: response.usage?.prompt_tokens ?? 0,
-      completionTokens: response.usage?.completion_tokens ?? 0,
-    });
-
-    return response.choices[0]?.message?.content ?? null;
-  } catch (err) {
-    console.warn(`[openai] busca web falhou pra "${query}" — seguindo sem grounding real:`, err);
-    return null;
-  }
-}
-
 /**
  * Chamada só-texto com saída estruturada validada por Zod — reservada pros
  * agentes onde a nuance de julgamento importa mais que custo: Teólogo,
