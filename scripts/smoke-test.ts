@@ -4,18 +4,19 @@
  */
 import "dotenv/config";
 import { runPipeline, ManualEditRequiredError } from "../src/core/pipeline";
+import { JESUS_KRONIA } from "../src/core/generation/actor-presets";
 import type { ContentRequest } from "../src/types/pipeline";
 
 const request: ContentRequest = {
-  project: "comercial",
-  objective: "vender",
-  mode: "tiktok_shop",
+  project: "jeova_fala",
+  objective: "educar",
+  mode: "organico",
   productPhotoUrl: null,
   productInfo: [
-    { text: "Copo térmico com estampa 'Jesus' e cruz", kind: "fato", source: "campo de informações" },
-    { text: "Mantém temperatura por várias horas", kind: "fato", source: "campo de informações" },
+    { text: "Tema: a parábola do filho pródigo e o perdão", kind: "fato", source: "campo de informações" },
   ],
   referenceVideoUrl: null,
+  actorProfile: JESUS_KRONIA,
 };
 
 async function main() {

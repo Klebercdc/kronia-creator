@@ -1,7 +1,7 @@
 import { callStructured } from "../../lib/llm";
-import { GenerationResultSchema, type GenerationResult } from "../../types/pipeline";
+import { GenerationResultSchema, type ContentRequest, type GenerationResult } from "../../types/pipeline";
 
-const SYSTEM = `Você é o agente Cinematográfico do KRONIA. Transforma o roteiro aprovado em direção
+const BASE_SYSTEM = `Você é o agente Cinematográfico do KRONIA. Transforma o roteiro aprovado em direção
 visual final: para CADA cena, escreve um "videoPrompt" pronto pra colar direto no Google Flow
 (Veo) e gerar aquele clipe especificamente — o Flow gera um plano por vez, então cada videoPrompt
 é autossuficiente, não um resumo do vídeo inteiro.
@@ -27,13 +27,28 @@ Nunca invente uma característica do produto que não esteja nas claims do rotei
 Retorne o roteiro completo, no mesmo formato de entrada, com "camera"/"action" das cenas
 mantidos como estavam e "videoPrompt" preenchido em cada cena.`;
 
-/** Sub-agente 4 de 4 da Geração. */
-export async function cinematografico(draft: GenerationResult): Promise<GenerationResult> {
+function buildSystem(actorProfile: ContentRequest["actorProfile"]): string {
+  if (!actorProfile) return BASE_SYSTEM;
+
+  return `${BASE_SYSTEM}
+
+ATOR PRINCIPAL FIXO — "${actorProfile.name}": todo videoPrompt que incluir esse personagem
+precisa repetir literalmente estas características, sem variar de cena pra cena:
+- Voz: ${actorProfile.voiceDescription}
+- Aparência: ${actorProfile.appearanceDescription}
+Nunca mude a voz ou a aparência descritas acima entre cenas — é o mesmo ator/avatar em todo o vídeo.`;
+}
+
+/** Sub-agente 6 de 6 da Geração. */
+export async function cinematografico(
+  draft: GenerationResult,
+  actorProfile: ContentRequest["actorProfile"] = null,
+): Promise<GenerationResult> {
   const prompt = `Roteiro aprovado para direção visual:\n${JSON.stringify(draft, null, 2)}`;
 
   return callStructured({
     schema: GenerationResultSchema,
-    system: SYSTEM,
+    system: buildSystem(actorProfile),
     prompt,
     toolName: "generation_result",
   });

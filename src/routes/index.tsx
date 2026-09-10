@@ -1,8 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState, type FormEvent } from "react";
-import { runContentPipeline, type RunPipelineResult } from "../server/pipeline.functions";
+import { runContentPipeline, analyzeActorPhoto, type RunPipelineResult } from "../server/pipeline.functions";
+import { ACTOR_PRESETS } from "../core/generation/actor-presets";
 import type { ContentRequest, PipelineOutput } from "../types/pipeline";
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 export const Route = createFileRoute("/")({
   component: CriadorApp,
@@ -36,6 +46,7 @@ function BrandRow() {
 
 function CriadorApp() {
   const runPipelineFn = useServerFn(runContentPipeline);
+  const analyzeActorPhotoFn = useServerFn(analyzeActorPhoto);
 
   const [step, setStep] = useState<Step>("form");
   const [result, setResult] = useState<RunPipelineResult | null>(null);
@@ -46,11 +57,32 @@ function CriadorApp() {
   const [mode, setMode] = useState<ContentRequest["mode"]>("tiktok_shop");
   const [productInfoText, setProductInfoText] = useState("");
   const [referenceVideoUrl, setReferenceVideoUrl] = useState("");
+  const [actorName, setActorName] = useState("");
+  const [actorVoice, setActorVoice] = useState("");
+  const [actorAppearance, setActorAppearance] = useState("");
+  const [analyzingPhoto, setAnalyzingPhoto] = useState(false);
+
+  async function handleActorPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAnalyzingPhoto(true);
+    try {
+      const imageDataUrl = await readFileAsDataUrl(file);
+      const { appearanceDescription } = await analyzeActorPhotoFn({ data: { imageDataUrl } });
+      setActorAppearance(appearanceDescription);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Erro ao analisar a foto");
+    } finally {
+      setAnalyzingPhoto(false);
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setStep("loading");
     setErrorMessage(null);
+
+    const hasActor = actorName.trim() && actorVoice.trim() && actorAppearance.trim();
 
     const request: ContentRequest = {
       project,
@@ -61,6 +93,13 @@ function CriadorApp() {
         ? [{ text: productInfoText.trim(), kind: "fato", source: "campo de informações" }]
         : [],
       referenceVideoUrl: referenceVideoUrl.trim() || null,
+      actorProfile: hasActor
+        ? {
+            name: actorName.trim(),
+            voiceDescription: actorVoice.trim(),
+            appearanceDescription: actorAppearance.trim(),
+          }
+        : null,
     };
 
     try {
@@ -206,6 +245,65 @@ function CriadorApp() {
             value={referenceVideoUrl}
             onChange={(e) => setReferenceVideoUrl(e.target.value)}
           />
+        </div>
+
+        <div>
+          <div className="section-label" style={{ display: "flex", justifyContent: "space-between" }}>
+            <span>Ator principal</span>
+            <span style={{ fontWeight: 500, color: "oklch(0.5 0.02 285)" }}>Opcional</span>
+          </div>
+
+          {ACTOR_PRESETS.length > 0 && (
+            <div className="pill-row" style={{ marginBottom: 8 }}>
+              {ACTOR_PRESETS.map((preset) => (
+                <button
+                  key={preset.name}
+                  type="button"
+                  className="pill"
+                  onClick={() => {
+                    setActorName(preset.name);
+                    setActorVoice(preset.voiceDescription);
+                    setActorAppearance(preset.appearanceDescription);
+                  }}
+                >
+                  Usar preset: {preset.name}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <input
+            className="field-input"
+            placeholder="Nome (ex: Jesus)"
+            value={actorName}
+            onChange={(e) => setActorName(e.target.value)}
+            style={{ marginBottom: 8 }}
+          />
+          <input
+            className="field-input"
+            placeholder="Voz (ex: grave, calma, tom acolhedor)"
+            value={actorVoice}
+            onChange={(e) => setActorVoice(e.target.value)}
+            style={{ marginBottom: 8 }}
+          />
+
+          <label className="btn-secondary" style={{ display: "block", textAlign: "center", marginBottom: 8, cursor: "pointer" }}>
+            {analyzingPhoto ? "Analisando foto..." : "📷 Enviar foto de referência (opcional)"}
+            <input type="file" accept="image/*" onChange={handleActorPhoto} disabled={analyzingPhoto} style={{ display: "none" }} />
+          </label>
+
+          <textarea
+            className="field-textarea"
+            placeholder="Aparência (ex: túnica branca, cabelo castanho, barba) — ou envie uma foto acima que a IA descreve pra você"
+            value={actorAppearance}
+            onChange={(e) => setActorAppearance(e.target.value)}
+            style={{ minHeight: 50 }}
+          />
+          <div className="hint">
+            Enviando foto, a aparência é extraída da imagem real (não inventada) e travada em
+            todas as cenas junto com a voz. Preenchendo os 3 campos, o Cinematográfico mantém
+            essas características sem variar de cena pra cena.
+          </div>
         </div>
 
         <button type="submit" className="btn-primary">

@@ -4,9 +4,13 @@ Núcleo de inteligência de conteúdo do KRONIA: analisa vídeos de referência,
 
 Pipeline: **Ingestão → Classificação → Recomendação → Geração → Compliance**
 
-Atende dois verticais sobre o mesmo núcleo:
-- **Comercial** (TikTok / TikTok Shop) — Roteirista + Persuasão + Cinematográfico
-- **Jeová Fala** (conteúdo teológico) — Roteirista + Teólogo + Persuasão + Cinematográfico
+Cadeia de agentes da Geração (fixa, nessa ordem):
+**Roteirista → Marketing → Teólogo (só Jeová Fala) → Psicologia de Compra → Persuasão → Cinematográfico**,
+seguida do gate de Compliance (que inclui checagem dedicada de Copyright).
+
+Atende dois verticais sobre o mesmo núcleo — a única diferença é o Teólogo:
+- **Comercial** (TikTok / TikTok Shop)
+- **Jeová Fala** (conteúdo teológico)
 
 Este repositório substitui o conteúdo anterior (protótipo de app de treino/fitness) — a partir deste commit começa do zero com o escopo de Content Intelligence.
 
@@ -21,17 +25,17 @@ src/
     compliance.ts        — grupos de regra versionados + resultado do gate
     pipeline.ts          — ContentRequest → ClassificationResult → FormatRecommendation → GenerationResult → PipelineOutput
   lib/
-    llm.ts                 — client Groq (texto) com saída estruturada validada por Zod, retry em falha de schema
-    openai.ts               — client OpenAI (visão) — única peça paga do núcleo, só para ler frames
+    llm.ts                 — client Groq (texto), saída estruturada validada por Zod, retry em falha de schema
+    openai.ts               — client OpenAI (texto + visão) — peça paga, reservada pro que exige julgamento fino
   core/
     ingestion/               — download (yt-dlp) → frames (ffmpeg) → transcript (legendas/Whisper via Groq) → visão (OpenAI)
       download.ts · frames.ts · transcribe.ts · whisper.ts · analyze.ts · ingest.ts (orquestrador)
     classification/classify.ts
     recommendation/recommend.ts
-    generation/
-      roteirista.ts · teologo.ts · persuasao.ts · cinematografico.ts · generate.ts (orquestrador)
+    generation/               — Groq: roteirista, marketing, persuasão, cinematográfico. OpenAI: teólogo, psicologia de compra
+      roteirista.ts · marketing.ts · teologo.ts · psicologia-compra.ts · persuasao.ts · cinematografico.ts · generate.ts (orquestrador)
     compliance/
-      validate.ts (gate) · correct.ts (correção direcionada às violações)
+      validate.ts (gate, Groq) · copyright-check.ts (OpenAI) · correct.ts (correção direcionada às violações)
     pipeline.ts            — orquestra os Caminhos A/B ponta a ponta, com teto de correção automática
   server/
     pipeline.functions.ts   — server function (RPC) que expõe o núcleo ao app
@@ -56,15 +60,18 @@ Precisa de `yt-dlp` e `ffmpeg`/`ffprobe` no PATH para a Ingestão.
 
 Núcleo completo implementado e app conectado de ponta a ponta, testado com
 chamadas reais: Ingestão (yt-dlp + ffmpeg + Whisper/Groq + visão/OpenAI) →
-Classificação → Recomendação → Geração (4 sub-agentes) → Compliance (com
-correção automática e teto de 2 tentativas antes de escalar para edição
-manual) → as 3 telas em React chamando tudo isso via server function.
+Classificação → Recomendação → Geração (6 sub-agentes) → Compliance (gate +
+checagem de copyright, com correção automática e teto de 2 tentativas antes
+de escalar para edição manual) → as 3 telas em React chamando tudo isso via
+server function.
 
-Todo o pipeline roda na Groq (grátis) — a única chamada paga é a leitura
-visual dos frames na Ingestão (OpenAI, porque a Groq não tem modelo com
-visão no catálogo atual). `npm run typecheck` passa limpo e o fluxo
-completo (formulário → resultado → roteiro) foi validado num navegador de
-verdade.
+A maior parte do pipeline roda na Groq (grátis). A OpenAI (paga) fica
+reservada pro que exige julgamento mais fino: leitura visual dos frames na
+Ingestão, Teólogo (doutrina errada tem custo reputacional alto), Psicologia
+de Compra (a linha entre gatilho legítimo e manipulação exige nuance) e
+Copyright (avaliar risco de propriedade intelectual não é checagem
+mecânica). `npm run typecheck` passa limpo e o fluxo completo (formulário →
+resultado → roteiro) foi validado num navegador de verdade.
 
 O app não gera o vídeo final — entrega roteiro + prompt de vídeo pronto pra
 colar no Flow (ou outro gerador externo), que é o fluxo real do usuário.

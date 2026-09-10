@@ -22,6 +22,12 @@ export const CONTENT_FORMATS = [
 ] as const;
 export type ContentFormat = (typeof CONTENT_FORMATS)[number];
 
+/**
+ * Baseado em análise real de 34.635 clipes virais (OpusClip, jan–mar 2026) +
+ * frameworks de 12 estilos de hook cruzados de múltiplas fontes — não é lista
+ * inventada. "result_first" (mostrar produto/resultado nos primeiros 2s) é a
+ * categoria de melhor performance isolada.
+ */
 export const HOOK_TYPES = [
   "curiosity",
   "pattern_interrupt",
@@ -32,6 +38,9 @@ export const HOOK_TYPES = [
   "negative_hook",
   "relatable_pain",
   "story_open",
+  "result_first",
+  "identity_call",
+  "number_stat",
 ] as const;
 export type HookType = (typeof HOOK_TYPES)[number];
 
@@ -48,6 +57,29 @@ export const PERSUASION_MECHANISMS = [
   "cta_claro",
 ] as const;
 export type PersuasionMechanism = (typeof PERSUASION_MECHANISMS)[number];
+
+/**
+ * Gatilhos de psicologia de compra — os 7 princípios de Cialdini (Influence,
+ * 1984 + Pre-Suasion, 2016: reciprocidade, escassez, autoridade, consistência,
+ * afinidade, prova social, pertencimento) + ancoragem/aversão a perda/efeito
+ * de enquadramento (Kahneman). Separado de PERSUASION_MECHANISMS porque é uma
+ * lente mais específica: vieses cognitivos e princípios comportamentais
+ * validados, não técnicas gerais de copy. Todos exigem evidência real por
+ * trás (ver EvidenceKind) — nunca aplicados por invenção.
+ */
+export const BUYING_PSYCHOLOGY_TRIGGERS = [
+  "ancoragem",
+  "aversao_a_perda",
+  "prova_social",
+  "reciprocidade",
+  "compromisso_e_consistencia",
+  "escassez",
+  "efeito_enquadramento",
+  "vies_de_autoridade",
+  "afinidade",
+  "pertencimento",
+] as const;
+export type BuyingPsychologyTrigger = (typeof BUYING_PSYCHOLOGY_TRIGGERS)[number];
 
 export const PACING = ["lento", "medio", "rapido"] as const;
 export type Pacing = (typeof PACING)[number];

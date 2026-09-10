@@ -1,9 +1,14 @@
 import { callStructured } from "../../lib/llm";
 import { ComplianceResultSchema, RULE_GROUPS, type ComplianceResult } from "../../types/compliance";
 import type { ContentRequest, GenerationResult } from "../../types/pipeline";
+import { checkCopyright } from "./copyright-check";
+
+const GROQ_RULE_GROUPS = RULE_GROUPS.filter((g) => g !== "propriedade_intelectual");
 
 const SYSTEM = `Você é o gate de Compliance do KRONIA. Verifica um roteiro gerado contra os grupos de
-regra: ${RULE_GROUPS.join(", ")}.
+regra: ${GROQ_RULE_GROUPS.join(", ")}.
+
+(Propriedade intelectual é checada por um agente dedicado à parte — não avalie esse grupo aqui.)
 
 Regra central: nenhuma claim pode ser afirmação absoluta sem evidência (uma claim com kind
 diferente de "fato" não pode ser apresentada como certeza no texto).
@@ -26,7 +31,8 @@ sugestão de correção concreta (suggestion) — nunca uma reprovação genéri
 
 const InferredSchema = ComplianceResultSchema.omit({ attempt: true });
 
-/** Etapa 5 — Compliance (gate). */
+/** Etapa 5 — Compliance (gate). Combina o check geral (Groq) com a checagem
+ * dedicada de propriedade intelectual (OpenAI) num único resultado. */
 export async function validateCompliance(
   request: ContentRequest,
   generation: GenerationResult,
@@ -35,12 +41,23 @@ export async function validateCompliance(
   const prompt = `Modo: ${request.mode}. Projeto: ${request.project}.
 Roteiro para validação:\n${JSON.stringify(generation, null, 2)}`;
 
-  const result = await callStructured({
-    schema: InferredSchema,
-    system: SYSTEM,
-    prompt,
-    toolName: "compliance_result",
-  });
+  const [general, copyrightViolations] = await Promise.all([
+    callStructured({
+      schema: InferredSchema,
+      system: SYSTEM,
+      prompt,
+      toolName: "compliance_result",
+    }),
+    checkCopyright(generation),
+  ]);
 
-  return { ...result, attempt };
+  const violations = [...general.violations, ...copyrightViolations];
+  const checkedGroups = Array.from(new Set([...general.checkedGroups, "propriedade_intelectual" as const]));
+
+  return {
+    approved: violations.length === 0,
+    checkedGroups,
+    violations,
+    attempt,
+  };
 }

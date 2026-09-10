@@ -4,6 +4,18 @@ import { VideoAnalysisSchema } from "./video-analysis";
 import { EvidencedClaimSchema } from "./evidence";
 import { ComplianceResultSchema } from "./compliance";
 
+/**
+ * Ator/avatar principal recorrente (ex: o "Jesus" usado nos vídeos do Jeová
+ * Fala) — características travadas que todo videoPrompt de cena precisa
+ * preservar, pra não variar voz/aparência de vídeo pra vídeo.
+ */
+export const ActorProfileSchema = z.object({
+  name: z.string(),
+  voiceDescription: z.string(),
+  appearanceDescription: z.string(),
+});
+export type ActorProfile = z.infer<typeof ActorProfileSchema>;
+
 /** Etapa 0 — Entradas. Caminho A (com referência) e B (sem) convergem aqui. */
 export const ContentRequestSchema = z.object({
   project: z.enum(PROJECTS),
@@ -15,6 +27,9 @@ export const ContentRequestSchema = z.object({
   productInfo: z.array(EvidencedClaimSchema),
 
   referenceVideoUrl: z.string().url().nullable(),
+
+  /** Opcional — trava voz/aparência do ator principal em todas as cenas geradas. */
+  actorProfile: ActorProfileSchema.nullable(),
 });
 export type ContentRequest = z.infer<typeof ContentRequestSchema>;
 

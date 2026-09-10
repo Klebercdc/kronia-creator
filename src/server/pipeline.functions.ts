@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { runPipeline, ManualEditRequiredError } from "../core/pipeline";
+import { analyzeActorImage } from "../core/generation/actor-vision";
 import { ContentRequestSchema, type PipelineOutput } from "../types/pipeline";
 
 export type RunPipelineResult =
@@ -23,4 +25,15 @@ export const runContentPipeline = createServerFn({ method: "POST" })
       }
       throw err;
     }
+  });
+
+/**
+ * RPC que lê a foto de referência do ator principal e devolve a descrição
+ * de aparência extraída da imagem — o usuário revisa/ajusta antes de travar.
+ */
+export const analyzeActorPhoto = createServerFn({ method: "POST" })
+  .validator((data: unknown) => z.object({ imageDataUrl: z.string() }).parse(data))
+  .handler(async ({ data }): Promise<{ appearanceDescription: string }> => {
+    const appearanceDescription = await analyzeActorImage(data.imageDataUrl);
+    return { appearanceDescription };
   });

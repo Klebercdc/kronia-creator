@@ -18,6 +18,8 @@ export const RULE_GROUPS = [
   "promessas_nao_comprovadas",
   /** Vídeo de referência: mecânica pode ser adaptada, conteúdo literal não */
   "originalidade_anti_copia",
+  /** Marca de terceiro, personagem, música ou conceito de campanha existente — risco de IP */
+  "propriedade_intelectual",
 ] as const;
 export const RuleGroupSchema = z.enum(RULE_GROUPS);
 export type RuleGroup = z.infer<typeof RuleGroupSchema>;
