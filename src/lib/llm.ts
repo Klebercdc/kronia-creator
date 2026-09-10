@@ -11,9 +11,10 @@ function getClient(): Groq {
   return client;
 }
 
-/** Modelo padrão com bom suporte a tool-calling na camada gratuita da Groq.
- * Confira `console.groq.com/docs/models` de tempos em tempos — o catálogo muda. */
-export const DEFAULT_MODEL = "llama-3.3-70b-versatile";
+/** Modelo padrão com bom suporte a saída JSON na camada gratuita da Groq.
+ * Confira `console.groq.com/docs/models` de tempos em tempos — o catálogo muda
+ * (confirmado via GET /openai/v1/models em 2026-09-10). */
+export const DEFAULT_MODEL = "openai/gpt-oss-120b";
 
 export class LLMValidationError extends Error {
   constructor(
@@ -31,10 +32,11 @@ function toJsonSchema(schema: z.ZodType) {
 }
 
 /**
- * Chama a Groq com uma tool forçada para obter saída estruturada, validada
- * contra `schema` em runtime. Se a validação falhar, devolve o erro pro
- * modelo e tenta mais uma vez antes de desistir — nunca aceita um payload
- * que não bate com o schema esperado.
+ * Chama a Groq em modo JSON (mais confiável que tool-calling forçado nos
+ * modelos abertos hospedados lá) e valida a saída contra `schema` em
+ * runtime. Se a validação falhar (ou o JSON vier quebrado), devolve o erro
+ * pro modelo e tenta mais uma vez antes de desistir — nunca aceita um
+ * payload que não bate com o schema esperado.
  */
 export async function callStructured<T>(params: {
   schema: z.ZodType<T>;
@@ -46,17 +48,15 @@ export async function callStructured<T>(params: {
 }): Promise<T> {
   const { schema, system, prompt, toolName, model = DEFAULT_MODEL, maxAttempts = 2 } = params;
 
-  const tool: Groq.Chat.Completions.ChatCompletionTool = {
-    type: "function",
-    function: {
-      name: toolName,
-      description: `Retorna o resultado de ${toolName} como dado estruturado.`,
-      parameters: toJsonSchema(schema) as Record<string, unknown>,
-    },
-  };
+  const schemaDescription = JSON.stringify(toJsonSchema(schema));
+  const systemWithSchema = `${system}
+
+Responda APENAS com um objeto JSON válido para "${toolName}", sem markdown, sem texto fora do
+JSON, correspondendo exatamente a este schema:
+${schemaDescription}`;
 
   const messages: Groq.Chat.Completions.ChatCompletionMessageParam[] = [
-    { role: "system", content: system },
+    { role: "system", content: systemWithSchema },
     { role: "user", content: prompt },
   ];
 
@@ -65,33 +65,39 @@ export async function callStructured<T>(params: {
     const response = await getClient().chat.completions.create({
       model,
       messages,
-      tools: [tool],
-      tool_choice: { type: "function", function: { name: toolName } },
+      response_format: { type: "json_object" },
     });
 
-    const toolCall = response.choices[0]?.message?.tool_calls?.[0];
-    if (!toolCall) {
-      throw new LLMValidationError(`Modelo não retornou tool_call para ${toolName}`, response);
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      throw new LLMValidationError(`Modelo não retornou conteúdo para ${toolName}`, response);
     }
 
-    let parsedArgs: unknown;
+    let parsedJson: unknown;
     try {
-      parsedArgs = JSON.parse(toolCall.function.arguments);
+      parsedJson = JSON.parse(content);
     } catch {
-      throw new LLMValidationError(`Argumentos de ${toolName} não são JSON válido`, toolCall.function.arguments);
+      lastRaw = content;
+      if (attempt < maxAttempts) {
+        messages.push(
+          { role: "assistant", content },
+          { role: "user", content: `Isso não é JSON válido. Responda de novo, só o objeto JSON de ${toolName}.` },
+        );
+        continue;
+      }
+      throw new LLMValidationError(`JSON inválido para ${toolName} após ${maxAttempts} tentativas`, content);
     }
 
-    lastRaw = parsedArgs;
-    const parsed = schema.safeParse(parsedArgs);
+    lastRaw = parsedJson;
+    const parsed = schema.safeParse(parsedJson);
     if (parsed.success) return parsed.data;
 
     if (attempt < maxAttempts) {
       messages.push(
-        { role: "assistant", content: null, tool_calls: [toolCall] },
+        { role: "assistant", content },
         {
-          role: "tool",
-          tool_call_id: toolCall.id,
-          content: `A saída não bateu com o schema esperado: ${parsed.error.message}. Corrija e retorne novamente via ${toolName}.`,
+          role: "user",
+          content: `A saída não bateu com o schema esperado: ${parsed.error.message}. Corrija e responda de novo, só o objeto JSON de ${toolName}.`,
         },
       );
     }
