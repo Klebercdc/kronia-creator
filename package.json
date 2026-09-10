@@ -2,5 +2,23 @@
   "name": "kronia-criador-inteligente",
   "private": true,
   "version": "0.0.0",
-  "description": "KRONIA - Criador Inteligente. Nucleo de analise, classificacao, recomendacao e geracao de conteudo para TikTok/TikTok Shop e Jeova Fala."
+  "description": "KRONIA - Criador Inteligente. Nucleo de analise, classificacao, recomendacao e geracao de conteudo para TikTok/TikTok Shop e Jeova Fala.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tanstack/react-start": "^1.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.6.0",
+    "vite": "^6.0.0"
+  }
 }
