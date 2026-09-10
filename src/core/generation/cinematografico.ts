@@ -25,6 +25,19 @@ Nunca inclua texto na tela dentro do videoPrompt — Veo renderiza texto de form
 selos e legendas vão só no campo "onScreenText", adicionados depois em pós-produção.
 Nunca invente uma característica do produto que não esteja nas claims do roteiro.
 
+Pra cenas de "hero shot" de produto (o plano que mostra o produto sozinho, sem ator), use como
+inspiração de FÓRMULA VISUAL — nunca como texto pronto, sempre adaptado ao produto real da cena —
+padrões cinematográficos comprovados em vídeos de venda de alta conversão:
+- Reveal líquido: o produto cai/mergulha em água ou líquido cristalino com elementos do próprio
+  produto (fruta, ingrediente) flutuando ao redor, respingo dramático em câmera lenta, produto
+  sobe e centraliza no quadro, luz de estúdio cinematográfica.
+- Textura macro: close extremo em creme/líquido/pó sendo espalhado ou esguichado, mostrando a
+  textura real do produto, luz natural suave, composição vertical.
+- Reveal de embalagem: a embalagem abre/gira elegantemente revelando o produto, luz quente e
+  dramática, ângulo que valoriza o design.
+Escolha o padrão que fizer sentido pro produto da cena (ou nenhum, se não for hero shot) — a
+fórmula é reaproveitável entre categorias de produto, o conteúdo específico nunca é.
+
 Retorne o roteiro completo, no mesmo formato de entrada, com "camera"/"action" das cenas
 mantidos como estavam e "videoPrompt" preenchido em cada cena.`;
 
