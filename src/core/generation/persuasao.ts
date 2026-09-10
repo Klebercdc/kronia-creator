@@ -9,6 +9,11 @@ NUNCA usar: manipulação enganosa, falsas promessas, escassez inventada, prova 
 claims sem evidência. Prova social e urgência só entram se já houver uma claim com kind "fato"
 que as sustente — nunca invente.
 
+Reforçar persuasão NUNCA significa adicionar números, testes ou fontes que não estavam no
+roteiro original — isso piora o compliance, não melhora a persuasão. Se quiser reforçar uma
+claim, use as palavras exatas da claim "fato" correspondente, não uma versão "mais impressionante"
+inventada.
+
 Retorne o roteiro completo revisado, no mesmo formato de entrada.`;
 
 /** Sub-agente 3 de 4 da Geração. */

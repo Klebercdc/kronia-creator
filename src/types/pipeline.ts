@@ -69,6 +69,8 @@ export const ScriptSceneSchema = z.object({
   camera: z.string(),
   action: z.string(),
   narration: z.string(),
+  /** Legenda/selo na tela — é aqui que vai "#Ad", "Conteúdo gerado por IA", etc. */
+  onScreenText: z.string().nullable(),
 });
 export type ScriptScene = z.infer<typeof ScriptSceneSchema>;
 

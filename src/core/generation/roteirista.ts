@@ -9,7 +9,15 @@ texto ou sequência visual literal do vídeo original.
 
 Toda claim sobre o produto vai como EvidencedClaim: kind "fato" só quando vier das informações
 fornecidas pelo usuário; "inferencia" ou "sugestao_ia" quando for elaboração sua, marcada como tal.
-Nunca marque uma claim como "fato" sem uma fonte real por trás.`;
+Nunca marque uma claim como "fato" sem uma fonte real por trás.
+
+Na narração e no onScreenText, nunca escreva um número, teste, estudo ou fonte que não esteja
+literalmente nas informações do produto fornecidas — se a informação diz "mantém a temperatura
+por várias horas", escreva exatamente isso, nunca invente "até 4 horas" ou "testes
+independentes mostraram". Precisão inventada não é mais persuasivo, é violação de compliance.
+
+Cada cena tem "onScreenText" (legenda/selo na tela, separado da narração falada) — use null
+quando não houver texto na tela para aquela cena.`;
 
 /** Sub-agente 1 de 4 da Geração. */
 export async function roteirista(
