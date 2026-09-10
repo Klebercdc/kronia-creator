@@ -9,6 +9,7 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "smoke-test": "tsx scripts/smoke-test.ts",
+    "smoke-test:offline": "tsx scripts/smoke-test-offline.ts",
     "smoke-test:ingest": "tsx scripts/smoke-test-ingest.ts"
   },
   "dependencies": {
