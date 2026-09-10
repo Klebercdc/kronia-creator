@@ -3,6 +3,7 @@ import { ComplianceResultSchema, RULE_GROUPS, type ComplianceResult } from "../.
 import type { ContentRequest, GenerationResult } from "../../types/pipeline";
 import { checkCopyright } from "./copyright-check";
 import { checkFabricatedNumbers } from "./numeric-guard";
+import { checkBannedAbsoluteClaims } from "./absolute-claims-guard";
 
 const GROQ_RULE_GROUPS = RULE_GROUPS.filter((g) => g !== "propriedade_intelectual");
 
@@ -43,6 +44,7 @@ export async function validateCompliance(
 Roteiro para validação:\n${JSON.stringify(generation, null, 2)}`;
 
   const fabricatedNumberViolations = checkFabricatedNumbers(generation, request.productInfo);
+  const bannedPhraseViolations = checkBannedAbsoluteClaims(generation);
 
   const [general, copyrightViolations] = await Promise.all([
     callStructured({
@@ -54,9 +56,14 @@ Roteiro para validação:\n${JSON.stringify(generation, null, 2)}`;
     checkCopyright(generation),
   ]);
 
-  const violations = [...fabricatedNumberViolations, ...general.violations, ...copyrightViolations];
+  const violations = [...fabricatedNumberViolations, ...bannedPhraseViolations, ...general.violations, ...copyrightViolations];
   const checkedGroups = Array.from(
-    new Set([...general.checkedGroups, "propriedade_intelectual" as const, "promessas_nao_comprovadas" as const]),
+    new Set([
+      ...general.checkedGroups,
+      "propriedade_intelectual" as const,
+      "promessas_nao_comprovadas" as const,
+      "afirmacoes_absolutas" as const,
+    ]),
   );
 
   return {

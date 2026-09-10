@@ -1,6 +1,7 @@
 import Groq from "groq-sdk";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import type { z } from "zod";
+import { recordUsage } from "./cost-tracker";
 
 let client: Groq | null = null;
 
@@ -66,6 +67,13 @@ ${schemaDescription}`;
       model,
       messages,
       response_format: { type: "json_object" },
+    });
+
+    recordUsage({
+      provider: "groq",
+      tool: toolName,
+      promptTokens: response.usage?.prompt_tokens ?? 0,
+      completionTokens: response.usage?.completion_tokens ?? 0,
     });
 
     const content = response.choices[0]?.message?.content;

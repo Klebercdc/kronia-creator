@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "smoke-test": "tsx scripts/smoke-test.ts",
     "smoke-test:offline": "tsx scripts/smoke-test-offline.ts",
+    "usage": "tsx scripts/usage-report.ts",
     "smoke-test:ingest": "tsx scripts/smoke-test-ingest.ts"
   },
   "dependencies": {

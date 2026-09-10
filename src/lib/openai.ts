@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { readFile } from "node:fs/promises";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import type { z } from "zod";
+import { recordUsage } from "./cost-tracker";
 
 let client: OpenAI | null = null;
 
@@ -81,6 +82,13 @@ async function runStructuredChat<T>(params: {
         type: "json_schema",
         json_schema: { name: toolName, schema: jsonSchema, strict: true },
       },
+    });
+
+    recordUsage({
+      provider: "openai",
+      tool: toolName,
+      promptTokens: response.usage?.prompt_tokens ?? 0,
+      completionTokens: response.usage?.completion_tokens ?? 0,
     });
 
     const content = response.choices[0]?.message?.content;
