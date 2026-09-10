@@ -5,7 +5,7 @@ Núcleo de inteligência de conteúdo do KRONIA: analisa vídeos de referência,
 Pipeline: **Ingestão → Classificação → Recomendação → Geração → Compliance**
 
 Cadeia de agentes da Geração (fixa, nessa ordem):
-**Roteirista → Marketing → Teólogo (só Jeová Fala) → Psicologia de Compra → Persuasão → Cinematográfico**,
+**Roteirista → Marketing → Teólogo (só Jeová Fala) → Psicologia de Compra → Persuasão → Cinematográfico → SEO**,
 seguida do gate de Compliance (que inclui checagem dedicada de Copyright).
 
 Atende dois verticais sobre o mesmo núcleo — a única diferença é o Teólogo:
@@ -32,7 +32,7 @@ src/
       download.ts · frames.ts · transcribe.ts · whisper.ts · analyze.ts · ingest.ts (orquestrador)
     classification/classify.ts
     recommendation/recommend.ts
-    generation/               — Groq: roteirista, marketing, persuasão, cinematográfico. OpenAI: teólogo, psicologia de compra
+    generation/               — Groq: roteirista, marketing, persuasão, cinematográfico, seo. OpenAI: teólogo, psicologia de compra
       roteirista.ts · marketing.ts · teologo.ts · psicologia-compra.ts · persuasao.ts · cinematografico.ts · generate.ts (orquestrador)
     compliance/
       validate.ts (gate, Groq) · copyright-check.ts (OpenAI) · correct.ts (correção direcionada às violações)

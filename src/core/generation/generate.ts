@@ -11,11 +11,12 @@ import { teologo } from "./teologo";
 import { psicologiaDeCompra } from "./psicologia-compra";
 import { persuasao } from "./persuasao";
 import { cinematografico } from "./cinematografico";
+import { seo } from "./seo";
 
 /**
  * Etapa 4 — Geração. Cadeia fixa de sub-agentes:
  * Roteirista → Marketing → Teólogo (só se project === "jeova_fala") →
- * Psicologia de Compra → Persuasão → Cinematográfico.
+ * Psicologia de Compra → Persuasão → Cinematográfico → SEO.
  *
  * `classification` e `ingestion` só existem no Caminho A (vídeo de
  * referência) — quando presentes, carregam a estrutura e a direção visual
@@ -38,6 +39,7 @@ export async function generate(
   draft = await psicologiaDeCompra(draft);
   draft = await persuasao(draft);
   draft = await cinematografico(draft, request.actorProfile, ingestion);
+  draft = await seo(draft, request);
 
   return draft;
 }

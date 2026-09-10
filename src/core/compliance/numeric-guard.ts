@@ -33,25 +33,24 @@ export function checkFabricatedNumbers(
 
   const violations: ComplianceViolation[] = [];
 
-  for (const scene of generation.scenes) {
-    const fields: Array<[string, string | null]> = [
-      ["narration", scene.narration],
-      ["onScreenText", scene.onScreenText],
-    ];
-
-    for (const [field, text] of fields) {
-      if (!text) continue;
-      for (const number of extractNumbers(text)) {
-        if (evidencedNumbers.has(number)) continue;
-        violations.push({
-          group: "promessas_nao_comprovadas",
-          flaggedText: text,
-          reason: `Número "${number}" no campo "${field}" da cena ${scene.index} não existe em nenhuma claim com kind "fato" — parece inventado (checagem automática, sem IA).`,
-          suggestion: `Remover ou generalizar "${number}" nesse trecho, ou reescrever usando exatamente as palavras de uma claim "fato" existente, sem introduzir um número que não veio do usuário.`,
-        });
-      }
+  function checkField(location: string, text: string | null) {
+    if (!text) return;
+    for (const number of extractNumbers(text)) {
+      if (evidencedNumbers.has(number)) continue;
+      violations.push({
+        group: "promessas_nao_comprovadas",
+        flaggedText: text,
+        reason: `Número "${number}" em ${location} não existe em nenhuma claim com kind "fato" — parece inventado (checagem automática, sem IA).`,
+        suggestion: `Remover ou generalizar "${number}" nesse trecho, ou reescrever usando exatamente as palavras de uma claim "fato" existente, sem introduzir um número que não veio do usuário.`,
+      });
     }
   }
+
+  for (const scene of generation.scenes) {
+    checkField(`"narration" da cena ${scene.index}`, scene.narration);
+    checkField(`"onScreenText" da cena ${scene.index}`, scene.onScreenText);
+  }
+  checkField('"caption"', generation.caption);
 
   return violations;
 }

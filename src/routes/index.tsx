@@ -442,6 +442,29 @@ function RoteiroView({
         </div>
       </div>
 
+      {generation.caption && (
+        <div>
+          <div className="section-label">Legenda + hashtags</div>
+          <div className="card">
+            <div style={{ fontSize: 12.5, marginBottom: 8 }}>{generation.caption}</div>
+            <div style={{ fontSize: 11.5, color: "oklch(0.7 0.02 285)", marginBottom: 8 }}>
+              {generation.hashtags.map((h) => `#${h}`).join(" ")}
+            </div>
+            <button
+              className="btn-secondary"
+              style={{ padding: "8px 12px", fontSize: 11.5 }}
+              onClick={() =>
+                navigator.clipboard?.writeText(
+                  `${generation.caption}\n\n${generation.hashtags.map((h) => `#${h}`).join(" ")}`,
+                )
+              }
+            >
+              Copiar legenda + hashtags
+            </button>
+          </div>
+        </div>
+      )}
+
       {approved ? (
         <div className="approve-card">
           <div style={{ fontWeight: 700, fontSize: 13 }}>Compliance aprovado</div>

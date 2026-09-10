@@ -33,7 +33,10 @@ Cada cena tem "onScreenText" (legenda/selo na tela, separado da narração falad
 quando não houver texto na tela para aquela cena.
 
 Cada cena também tem "videoPrompt" — nesta etapa deixe um rascunho simples (1 frase) descrevendo
-a cena; o agente Cinematográfico depois reescreve com direção profissional completa.`;
+a cena; o agente Cinematográfico depois reescreve com direção profissional completa.
+
+"caption" e "hashtags" são preenchidos só pelo agente de SEO, no fim da cadeia — nesta etapa
+deixe "caption" como string vazia "" e "hashtags" como array vazio [].`;
 
 /** Sub-agente 1 de 4 da Geração. */
 export async function roteirista(

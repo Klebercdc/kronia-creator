@@ -40,28 +40,27 @@ const NORMALIZED_BANNED_PHRASES = BANNED_PHRASES.map((phrase) => ({ original: ph
 export function checkBannedAbsoluteClaims(generation: GenerationResult): ComplianceViolation[] {
   const violations: ComplianceViolation[] = [];
 
-  for (const scene of generation.scenes) {
-    const fields: Array<[string, string | null]> = [
-      ["narration", scene.narration],
-      ["onScreenText", scene.onScreenText],
-    ];
+  function checkField(location: string, text: string | null) {
+    if (!text) return;
+    const normalizedText = normalize(text);
 
-    for (const [field, text] of fields) {
-      if (!text) continue;
-      const normalizedText = normalize(text);
-
-      for (const { original, normalized } of NORMALIZED_BANNED_PHRASES) {
-        if (normalizedText.includes(normalized)) {
-          violations.push({
-            group: "afirmacoes_absolutas",
-            flaggedText: text,
-            reason: `Frase de promessa absoluta ("${original}") no campo "${field}" da cena ${scene.index} — checagem automática, sem IA.`,
-            suggestion: `Remover ou suavizar "${original}" — usar linguagem qualificada ("pode ajudar", "segundo avaliações") em vez de garantia absoluta.`,
-          });
-        }
+    for (const { original, normalized } of NORMALIZED_BANNED_PHRASES) {
+      if (normalizedText.includes(normalized)) {
+        violations.push({
+          group: "afirmacoes_absolutas",
+          flaggedText: text,
+          reason: `Frase de promessa absoluta ("${original}") em ${location} — checagem automática, sem IA.`,
+          suggestion: `Remover ou suavizar "${original}" — usar linguagem qualificada ("pode ajudar", "segundo avaliações") em vez de garantia absoluta.`,
+        });
       }
     }
   }
+
+  for (const scene of generation.scenes) {
+    checkField(`"narration" da cena ${scene.index}`, scene.narration);
+    checkField(`"onScreenText" da cena ${scene.index}`, scene.onScreenText);
+  }
+  checkField('"caption"', generation.caption);
 
   return violations;
 }

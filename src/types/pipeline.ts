@@ -96,6 +96,11 @@ export const GenerationResultSchema = z.object({
   selectedHook: z.string(),
   scenes: z.array(ScriptSceneSchema),
   claims: z.array(EvidencedClaimSchema),
+  /** Preenchido de verdade só pelo agente de SEO, no fim da cadeia — os
+   * agentes anteriores devem deixar "" / [] (mesmo padrão do rascunho de
+   * videoPrompt até o Cinematográfico). */
+  caption: z.string(),
+  hashtags: z.array(z.string()),
 });
 export type GenerationResult = z.infer<typeof GenerationResultSchema>;
 
