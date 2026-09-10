@@ -21,9 +21,11 @@ src/
     compliance.ts        — grupos de regra versionados + resultado do gate
     pipeline.ts          — ContentRequest → ClassificationResult → FormatRecommendation → GenerationResult → PipelineOutput
   lib/
-    llm.ts                — client Groq com saída estruturada validada por Zod (retry automático em falha de schema)
+    llm.ts                 — client Groq (texto) com saída estruturada validada por Zod, retry em falha de schema
+    openai.ts               — client OpenAI (visão) — única peça paga do núcleo, só para ler frames
   core/
-    ingestion/ingest.ts     — AINDA NÃO IMPLEMENTADO (precisa portar o pipeline Python do Video Analyzer)
+    ingestion/               — download (yt-dlp) → frames (ffmpeg) → transcript (legendas/Whisper via Groq) → visão (OpenAI)
+      download.ts · frames.ts · transcribe.ts · whisper.ts · analyze.ts · ingest.ts (orquestrador)
     classification/classify.ts
     recommendation/recommend.ts
     generation/
@@ -36,22 +38,27 @@ src/
 ## Rodando
 
 ```
-cp .env.example .env   # preencher GROQ_API_KEY (console.groq.com/keys)
+cp .env.example .env   # preencher GROQ_API_KEY e OPENAI_API_KEY
 npm install
 npm run typecheck
+npm run smoke-test              # Caminho B (produto + objetivo, sem vídeo)
+npm run smoke-test:ingest -- <url-do-video>   # só a Ingestão
 ```
+
+Precisa de `yt-dlp` e `ffmpeg`/`ffprobe` no PATH para a Ingestão.
 
 ## Status
 
-Schema de dados validado em runtime (Zod) e lógica de Classificação,
-Recomendação, Geração (4 sub-agentes) e Compliance implementadas, chamando
-Groq com saída estruturada. `npm run typecheck` passa limpo.
+Núcleo completo implementado e testado de ponta a ponta com chamadas reais:
+Ingestão (yt-dlp + ffmpeg + Whisper/Groq + visão/OpenAI) → Classificação →
+Recomendação → Geração (4 sub-agentes) → Compliance (com correção
+automática e teto de 2 tentativas antes de escalar para edição manual).
 
-**Não testado com chamada real à API** nesta sessão — sem `GROQ_API_KEY`
-configurada aqui. Falta: rodar de ponta a ponta com uma chave real e ajustar
-os prompts a partir do resultado.
+Todo o pipeline roda na Groq (grátis) — a única chamada paga é a leitura
+visual dos frames na Ingestão (OpenAI, porque a Groq não tem modelo com
+visão no catálogo atual). `npm run typecheck` passa limpo.
 
-**Ingestão de vídeo (`src/core/ingestion/ingest.ts`) ainda não implementada**
-— lança erro explícito. É a adaptação do pipeline Python do Video Analyzer
-(download/frames/transcript), trabalho à parte do resto do núcleo em
-TypeScript.
+**Risco conhecido**: YouTube bloqueia downloads via yt-dlp de IPs de
+datacenter com 429 (rate limit) — funcionou normalmente com vídeo hospedado
+fora do YouTube. Vale monitorar em produção; é o mesmo risco já sinalizado
+na auditoria do Video Analyzer original.
