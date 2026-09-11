@@ -319,21 +319,14 @@ function CriadorApp() {
         <div className="h1-sub">Envie seu produto e defina o objetivo.</div>
       </div>
 
-      <form
-        onSubmit={(e) => e.preventDefault()}
-        style={{ display: "flex", flexDirection: "column", gap: 20, flex: 1 }}
-      >
+      <form onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         <div className="step-progress">
           {FORM_STEPS.map((s, i) => (
             <div key={s} className={`step-dot ${i <= formStep ? "active" : ""}`} />
           ))}
         </div>
 
-        <div
-          key={formStep}
-          className="step-enter"
-          style={{ display: "flex", flexDirection: "column", gap: 20, flex: 1, justifyContent: "center" }}
-        >
+        <div key={formStep} className="step-enter" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           {formStep === 0 && (
             <div>
               <div className="section-label">
