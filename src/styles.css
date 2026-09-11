@@ -23,11 +23,52 @@ a {
 .app {
   max-width: 480px;
   margin: 0 auto;
-  padding: 28px 20px 40px;
+  padding: 28px 20px calc(88px + env(safe-area-inset-bottom));
   min-height: 100%;
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  background: oklch(0.13 0.012 285 / 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid oklch(0.22 0.016 285);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 4px 8px;
+  background: none;
+  border: none;
+  color: oklch(0.5 0.015 285);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bottom-nav-item.active {
+  color: oklch(0.78 0.17 45);
+}
+
+.bottom-nav-icon {
+  font-size: 18px;
+  line-height: 1;
 }
 
 .brand-row {
@@ -316,23 +357,6 @@ a {
   to {
     transform: rotate(360deg);
   }
-}
-
-.step-progress {
-  display: flex;
-  gap: 6px;
-}
-
-.step-dot {
-  flex: 1;
-  height: 4px;
-  border-radius: 999px;
-  background: oklch(0.26 0.02 285);
-  transition: background 0.2s ease;
-}
-
-.step-dot.active {
-  background: oklch(0.68 0.19 45);
 }
 
 .step-enter {

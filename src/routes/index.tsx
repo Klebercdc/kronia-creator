@@ -9,10 +9,13 @@ import {
   listSavedThemesFn,
   addSavedThemeFn,
   removeSavedThemeFn,
+  addHistoryEntryFn,
+  listHistoryFn,
+  removeHistoryEntryFn,
   type RunPipelineResult,
 } from "../server/pipeline.functions";
 import { ACTOR_PRESETS } from "../core/generation/actor-presets";
-import type { SavedTheme } from "../lib/supabase";
+import type { SavedTheme, HistoryEntry } from "../lib/supabase";
 import type { ContentRequest, GenerationResult, PipelineOutput } from "../types/pipeline";
 import logoIcon from "../assets/logo-icon.png";
 
@@ -40,6 +43,89 @@ function BrandRow() {
       <div>
         <div className="brand-word">KRONIA</div>
         <div className="brand-sub">Criador Inteligente</div>
+      </div>
+    </div>
+  );
+}
+
+const STAGES = ["Criar", "Analisar", "Resultado"] as const;
+
+function StageIndicator({ current }: { current: 0 | 1 | 2 }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+      {STAGES.map((label, i) => (
+        <span key={label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              fontSize: 12.5,
+              fontWeight: 700,
+              color: i <= current ? "oklch(0.85 0.15 45)" : "oklch(0.48 0.015 285)",
+            }}
+          >
+            <span
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: 999,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 10,
+                fontWeight: 800,
+                background: i <= current ? "oklch(0.68 0.19 45)" : "oklch(0.24 0.018 285)",
+                color: i <= current ? "#fff" : "oklch(0.55 0.02 285)",
+              }}
+            >
+              {i + 1}
+            </span>
+            {label}
+          </span>
+          {i < STAGES.length - 1 && <span style={{ color: "oklch(0.35 0.015 285)" }}>—</span>}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+type AppTab = "criar" | "historico" | "explorar" | "perfil";
+
+const TAB_ITEMS: { id: AppTab; label: string; icon: string }[] = [
+  { id: "criar", label: "Criar", icon: "＋" },
+  { id: "historico", label: "Histórico", icon: "🕐" },
+  { id: "explorar", label: "Explorar", icon: "⦿" },
+  { id: "perfil", label: "Perfil", icon: "☺" },
+];
+
+function BottomNav({ active, onChange }: { active: AppTab; onChange: (tab: AppTab) => void }) {
+  return (
+    <nav className="bottom-nav">
+      {TAB_ITEMS.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          className={`bottom-nav-item ${active === item.id ? "active" : ""}`}
+          onClick={() => onChange(item.id)}
+        >
+          <span className="bottom-nav-icon">{item.icon}</span>
+          {item.label}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+function PlaceholderTab({ title, hint }: { title: string; hint: string }) {
+  return (
+    <div className="app">
+      <BrandRow />
+      <h1 className="h1" style={{ fontSize: 20 }}>
+        {title}
+      </h1>
+      <div className="card" style={{ color: "oklch(0.6 0.02 285)", fontSize: 14 }}>
+        {hint}
       </div>
     </div>
   );
@@ -126,15 +212,128 @@ function SavedThemesDrawer({
   );
 }
 
+function HistoricoTab() {
+  const listHistoryRpc = useServerFn(listHistoryFn);
+  const removeHistoryRpc = useServerFn(removeHistoryEntryFn);
+  const [entries, setEntries] = useState<HistoryEntry[] | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  useEffect(() => {
+    listHistoryRpc()
+      .then(setEntries)
+      .catch(() => setEntries([]));
+  }, []);
+
+  async function handleRemove(id: string) {
+    setEntries((prev) => (prev ? prev.filter((e) => e.id !== id) : prev));
+    try {
+      await removeHistoryRpc({ data: { id } });
+    } catch {
+      // best-effort
+    }
+  }
+
+  return (
+    <div className="app">
+      <BrandRow />
+      <h1 className="h1" style={{ fontSize: 20 }}>
+        Histórico
+      </h1>
+      <div className="h1-sub">Roteiros gerados antes — reveja o prompt e a legenda sem gerar de novo.</div>
+
+      {entries === null && <div className="hint">Carregando...</div>}
+      {entries?.length === 0 && (
+        <div className="card" style={{ color: "oklch(0.6 0.02 285)", fontSize: 14 }}>
+          Nada gerado ainda. Vá em "Criar" pra começar.
+        </div>
+      )}
+      {entries?.map((entry) => {
+        const output = entry.output as PipelineOutput | null;
+        const open = openId === entry.id;
+        return (
+          <div key={entry.id} className="card">
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+              <div>
+                <div className="scene-tag">{formatLabel(entry.format)}</div>
+                <div style={{ fontSize: 13.5, color: "oklch(0.7 0.02 285)" }}>
+                  {entry.theme || "(sem tema)"} · {new Date(entry.createdAt).toLocaleDateString("pt-BR")}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleRemove(entry.id)}
+                style={{ background: "none", border: "none", color: "oklch(0.6 0.02 285)", cursor: "pointer", fontSize: 16 }}
+                aria-label="Remover"
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ fontSize: 14, fontStyle: "italic", marginTop: 8 }}>"{entry.selectedHook}"</div>
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{ marginTop: 10, padding: "8px 12px", fontSize: 13.5 }}
+              onClick={() => setOpenId(open ? null : entry.id)}
+            >
+              {open ? "Fechar" : "Ver prompts"}
+            </button>
+            {open && output && (
+              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                {output.generation.flowSegments.map((s) => (
+                  <div
+                    key={s.index}
+                    style={{
+                      fontSize: 13,
+                      background: "oklch(0.13 0.012 285)",
+                      border: "1px solid oklch(0.24 0.018 285)",
+                      borderRadius: 10,
+                      padding: 10,
+                    }}
+                  >
+                    <div style={{ fontWeight: 700, marginBottom: 4 }}>
+                      Bloco {s.index + 1} ({s.startSeconds}s-{s.endSeconds}s)
+                    </div>
+                    {s.videoPrompt}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function CriadorApp() {
+  const [tab, setTab] = useState<AppTab>("criar");
+  return (
+    <>
+      {tab === "criar" && <CriarFlow />}
+      {tab === "historico" && <HistoricoTab />}
+      {tab === "explorar" && (
+        <PlaceholderTab
+          title="Explorar"
+          hint="Em breve: temas em alta e exemplos de outros criadores direto no app."
+        />
+      )}
+      {tab === "perfil" && (
+        <PlaceholderTab title="Perfil" hint="Em breve: atores salvos, preferências e configurações da conta." />
+      )}
+      <BottomNav active={tab} onChange={setTab} />
+    </>
+  );
+}
+
+function CriarFlow() {
   const runPipelineFn = useServerFn(runContentPipeline);
   const analyzeActorPhotoFn = useServerFn(analyzeActorPhoto);
   const listSavedThemesRpc = useServerFn(listSavedThemesFn);
   const addSavedThemeRpc = useServerFn(addSavedThemeFn);
   const removeSavedThemeRpc = useServerFn(removeSavedThemeFn);
+  const addHistoryEntryRpc = useServerFn(addHistoryEntryFn);
 
   const [step, setStep] = useState<Step>("form");
-  const [formStep, setFormStep] = useState(0);
   const [result, setResult] = useState<RunPipelineResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -142,6 +341,7 @@ function CriadorApp() {
   const [objective, setObjective] = useState<ContentRequest["objective"]>("vender");
   const [mode, setMode] = useState<ContentRequest["mode"]>("tiktok_shop");
   const [productInfoText, setProductInfoText] = useState("");
+  const [productPhotoDataUrl, setProductPhotoDataUrl] = useState<string | null>(null);
   const [targetDurationSeconds, setTargetDurationSeconds] = useState<number | null>(null);
   const [savedThemes, setSavedThemes] = useState<SavedTheme[]>([]);
   const [referenceVideoUrl, setReferenceVideoUrl] = useState("");
@@ -149,6 +349,7 @@ function CriadorApp() {
   const [actorVoice, setActorVoice] = useState("");
   const [actorAppearance, setActorAppearance] = useState("");
   const [analyzingPhoto, setAnalyzingPhoto] = useState(false);
+  const [showMore, setShowMore] = useState(false);
 
   useEffect(() => {
     listSavedThemesRpc()
@@ -193,6 +394,13 @@ function CriadorApp() {
     }
   }
 
+  async function handleProductPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const dataUrl = await readFileAsDataUrl(file);
+    setProductPhotoDataUrl(dataUrl);
+  }
+
   async function handleSubmit(e?: FormEvent) {
     e?.preventDefault();
     setStep("loading");
@@ -204,7 +412,7 @@ function CriadorApp() {
       project,
       objective,
       mode,
-      productPhotoUrl: null,
+      productPhotoUrl: productPhotoDataUrl,
       productInfo: productInfoText.trim()
         ? [{ text: productInfoText.trim(), kind: "fato", source: "campo de informações" }]
         : [],
@@ -223,6 +431,19 @@ function CriadorApp() {
       const res = await runPipelineFn({ data: request });
       setResult(res);
       setStep(res.status === "aprovado" ? "resultado" : "manual");
+      try {
+        await addHistoryEntryRpc({
+          data: {
+            project: res.output.request.project,
+            format: res.output.recommendation.format,
+            theme: productInfoText.trim(),
+            selectedHook: res.output.generation.selectedHook,
+            output: res.output,
+          },
+        });
+      } catch {
+        // best-effort — não salvar histórico não deve travar o fluxo principal
+      }
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido");
       setStep("error");
@@ -231,24 +452,8 @@ function CriadorApp() {
 
   function reset() {
     setStep("form");
-    setFormStep(0);
     setResult(null);
     setErrorMessage(null);
-  }
-
-  const FORM_STEPS = ["projeto", "tema", "detalhes", "referencia", "ator"] as const;
-  const isLastFormStep = formStep === FORM_STEPS.length - 1;
-
-  function goNextStep() {
-    if (isLastFormStep) {
-      handleSubmit();
-    } else {
-      setFormStep((s) => s + 1);
-    }
-  }
-
-  function goPrevStep() {
-    setFormStep((s) => Math.max(0, s - 1));
   }
 
   function updateSegmentVideoPrompt(segmentIndex: number, videoPrompt: string) {
@@ -269,6 +474,7 @@ function CriadorApp() {
     return (
       <div className="app">
         <BrandRow />
+        <StageIndicator current={1} />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, marginTop: 60 }}>
           <div className="spinner" />
           <div className="h1-sub">Analisando produto, recomendando formato e gerando roteiro...</div>
@@ -314,159 +520,174 @@ function CriadorApp() {
   return (
     <div className="app">
       <BrandRow />
+      <StageIndicator current={0} />
       <div>
         <h1 className="h1">Criar</h1>
         <div className="h1-sub">Envie seu produto e defina o objetivo.</div>
       </div>
 
-      <form onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-        <div className="step-progress">
-          {FORM_STEPS.map((s, i) => (
-            <div key={s} className={`step-dot ${i <= formStep ? "active" : ""}`} />
-          ))}
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div className="pill-row">
+          <button
+            type="button"
+            className={`pill ${project === "comercial" ? "active" : ""}`}
+            onClick={() => setProject("comercial")}
+          >
+            Comercial
+          </button>
+          <button
+            type="button"
+            className={`pill ${project === "jeova_fala" ? "active" : ""}`}
+            onClick={() => setProject("jeova_fala")}
+          >
+            Jeová Fala
+          </button>
         </div>
 
-        <div key={formStep} className="step-enter" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {formStep === 0 && (
+        <div>
+          <div className="section-label">Produto</div>
+          <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+            {productPhotoDataUrl ? (
+              <img
+                src={productPhotoDataUrl}
+                alt="Produto"
+                style={{ width: 84, height: 84, borderRadius: 14, objectFit: "cover", border: "1px solid oklch(0.28 0.02 285)" }}
+              />
+            ) : null}
+            <label
+              className="btn-secondary"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 84,
+                height: 84,
+                borderRadius: 14,
+                borderStyle: "dashed",
+                cursor: "pointer",
+                fontSize: 12,
+                textAlign: "center",
+                gap: 4,
+              }}
+            >
+              <span style={{ fontSize: 20 }}>+</span>
+              {productPhotoDataUrl ? "Trocar foto" : "Adicionar foto"}
+              <input type="file" accept="image/*" onChange={handleProductPhoto} style={{ display: "none" }} />
+            </label>
+          </div>
+          <textarea
+            className="field-textarea"
+            placeholder={
+              project === "jeova_fala"
+                ? "Tema — ex: mensagem de deus pra você hoje forte, salmo 27, medo e confiança..."
+                : "Nome, material, benefícios conhecidos..."
+            }
+            value={productInfoText}
+            onChange={(e) => setProductInfoText(e.target.value)}
+          />
+          {project === "jeova_fala" ? (
+            <div className="hint">
+              Dica: no app do TikTok, em "Informações de pesquisas para criadores", tem assuntos reais em
+              alta (com % de crescimento de verdade) — cole um aqui em vez de inventar um tema do zero.
+            </div>
+          ) : (
+            <div className="hint">Usado apenas o que você informar aqui — nada é inventado sobre o produto.</div>
+          )}
+          <SavedThemesDrawer
+            savedThemes={savedThemes}
+            currentText={productInfoText}
+            onSave={saveCurrentTheme}
+            onPick={setProductInfoText}
+            onRemove={removeSavedTheme}
+          />
+        </div>
+
+        <div>
+          <div className="section-label">Objetivo</div>
+          <div className="pill-row">
+            {(["vender", "engajar", "educar", "outros"] as const).map((o) => (
+              <button
+                key={o}
+                type="button"
+                className={`pill ${objective === o ? "active" : ""}`}
+                onClick={() => setObjective(o)}
+              >
+                {o[0].toUpperCase() + o.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <div className="section-label">Modo</div>
+          <div className="pill-row">
+            <button
+              type="button"
+              className={`pill ${mode === "tiktok_shop" ? "active" : ""}`}
+              onClick={() => setMode("tiktok_shop")}
+            >
+              TikTok Shop
+            </button>
+            <button
+              type="button"
+              className={`pill ${mode === "organico" ? "active" : ""}`}
+              onClick={() => setMode("organico")}
+            >
+              Orgânico
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <div className="section-label" style={{ display: "flex", justifyContent: "space-between" }}>
+            <span>Vídeo de referência</span>
+            <span style={{ fontWeight: 500, color: "oklch(0.5 0.02 285)" }}>Opcional</span>
+          </div>
+          <input
+            className="field-input"
+            placeholder="Link do vídeo (TikTok, YouTube...)"
+            value={referenceVideoUrl}
+            onChange={(e) => setReferenceVideoUrl(e.target.value)}
+          />
+        </div>
+
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={() => setShowMore((v) => !v)}
+        >
+          {showMore ? "▾" : "▸"} Mais opções (duração, ator principal)
+        </button>
+
+        {showMore && (
+          <div className="step-enter" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             <div>
-              <div className="section-label">
-                Projeto{" "}
-                <span style={{ fontWeight: 500, color: "oklch(0.5 0.02 285)" }}>(decide se o Teólogo entra)</span>
-              </div>
+              <div className="section-label">Duração (blocos de 10s no Flow)</div>
               <div className="pill-row">
                 <button
                   type="button"
-                  className={`pill ${project === "comercial" ? "active" : ""}`}
-                  onClick={() => setProject("comercial")}
+                  className={`pill ${targetDurationSeconds === null ? "active" : ""}`}
+                  onClick={() => setTargetDurationSeconds(null)}
                 >
-                  Comercial
+                  Automático
                 </button>
-                <button
-                  type="button"
-                  className={`pill ${project === "jeova_fala" ? "active" : ""}`}
-                  onClick={() => setProject("jeova_fala")}
-                >
-                  Jeová Fala
-                </button>
-              </div>
-            </div>
-          )}
-
-          {formStep === 1 && (
-            <div>
-              <div className="section-label">{project === "jeova_fala" ? "Tema" : "Informações do produto"}</div>
-              <textarea
-                className="field-textarea"
-                placeholder={
-                  project === "jeova_fala"
-                    ? "Ex: mensagem de deus pra você hoje forte, salmo 27, medo e confiança..."
-                    : "Nome, material, benefícios conhecidos..."
-                }
-                value={productInfoText}
-                onChange={(e) => setProductInfoText(e.target.value)}
-                autoFocus
-              />
-              {project === "jeova_fala" ? (
-                <div className="hint">
-                  Dica: no app do TikTok, em "Informações de pesquisas para criadores", tem assuntos reais
-                  em alta (com % de crescimento de verdade) — cole um aqui em vez de inventar um tema do zero.
-                </div>
-              ) : (
-                <div className="hint">Usado apenas o que você informar aqui — nada é inventado sobre o produto.</div>
-              )}
-              <SavedThemesDrawer
-                savedThemes={savedThemes}
-                currentText={productInfoText}
-                onSave={saveCurrentTheme}
-                onPick={setProductInfoText}
-                onRemove={removeSavedTheme}
-              />
-            </div>
-          )}
-
-          {formStep === 2 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <div>
-                <div className="section-label">Objetivo</div>
-                <div className="pill-row">
-                  {(["vender", "engajar", "educar", "outros"] as const).map((o) => (
-                    <button
-                      key={o}
-                      type="button"
-                      className={`pill ${objective === o ? "active" : ""}`}
-                      onClick={() => setObjective(o)}
-                    >
-                      {o[0].toUpperCase() + o.slice(1)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <div className="section-label">Modo</div>
-                <div className="pill-row">
+                {[10, 20, 30, 40, 50, 60].map((seconds) => (
                   <button
+                    key={seconds}
                     type="button"
-                    className={`pill ${mode === "tiktok_shop" ? "active" : ""}`}
-                    onClick={() => setMode("tiktok_shop")}
+                    className={`pill ${targetDurationSeconds === seconds ? "active" : ""}`}
+                    onClick={() => setTargetDurationSeconds(seconds)}
                   >
-                    TikTok Shop
+                    {seconds}s
                   </button>
-                  <button
-                    type="button"
-                    className={`pill ${mode === "organico" ? "active" : ""}`}
-                    onClick={() => setMode("organico")}
-                  >
-                    Orgânico
-                  </button>
-                </div>
+                ))}
               </div>
-
-              <div>
-                <div className="section-label">Duração (blocos de 10s no Flow)</div>
-                <div className="pill-row">
-                  <button
-                    type="button"
-                    className={`pill ${targetDurationSeconds === null ? "active" : ""}`}
-                    onClick={() => setTargetDurationSeconds(null)}
-                  >
-                    Automático
-                  </button>
-                  {[10, 20, 30, 40, 50, 60].map((seconds) => (
-                    <button
-                      key={seconds}
-                      type="button"
-                      className={`pill ${targetDurationSeconds === seconds ? "active" : ""}`}
-                      onClick={() => setTargetDurationSeconds(seconds)}
-                    >
-                      {seconds}s
-                    </button>
-                  ))}
-                </div>
-                <div className="hint">
-                  Cada 10s vira uma submissão separada no Flow — 50s = 5 blocos de prompt pra colar um por vez.
-                </div>
+              <div className="hint">
+                Cada 10s vira uma submissão separada no Flow — 50s = 5 blocos de prompt pra colar um por vez.
               </div>
             </div>
-          )}
 
-          {formStep === 3 && (
-            <div>
-              <div className="section-label" style={{ display: "flex", justifyContent: "space-between" }}>
-                <span>Vídeo de referência</span>
-                <span style={{ fontWeight: 500, color: "oklch(0.5 0.02 285)" }}>Opcional</span>
-              </div>
-              <input
-                className="field-input"
-                placeholder="Link do vídeo (TikTok, YouTube...)"
-                value={referenceVideoUrl}
-                onChange={(e) => setReferenceVideoUrl(e.target.value)}
-                autoFocus
-              />
-            </div>
-          )}
-
-          {formStep === 4 && (
             <div>
               <div className="section-label" style={{ display: "flex", justifyContent: "space-between" }}>
                 <span>Ator principal</span>
@@ -520,24 +741,17 @@ function CriadorApp() {
                 style={{ minHeight: 50 }}
               />
               <div className="hint">
-                Enviando foto, a aparência é extraída da imagem real (não inventada) e travada em
-                todas as cenas junto com a voz. Preenchendo os 3 campos, o Cinematográfico mantém
-                essas características sem variar de cena pra cena.
+                Enviando foto, a aparência é extraída da imagem real (não inventada) e travada em todas as
+                cenas junto com a voz. Preenchendo os 3 campos, o Cinematográfico mantém essas características
+                sem variar de cena pra cena.
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        <div className="btn-row">
-          {formStep > 0 && (
-            <button type="button" className="btn-secondary" onClick={goPrevStep}>
-              ← Voltar
-            </button>
-          )}
-          <button type="button" className="btn-primary" style={{ flex: formStep > 0 ? 1.4 : 1 }} onClick={goNextStep}>
-            {isLastFormStep ? "Analisar →" : "Continuar →"}
-          </button>
-        </div>
+        <button type="submit" className="btn-primary">
+          Analisar →
+        </button>
       </form>
     </div>
   );
@@ -556,6 +770,7 @@ function ResultadoView({
   return (
     <div className="app">
       <BrandRow />
+      <StageIndicator current={2} />
       <h1 className="h1" style={{ fontSize: 20 }}>
         Resultado da análise
       </h1>
@@ -783,6 +998,7 @@ function RoteiroView({
   return (
     <div className="app">
       <BrandRow />
+      <StageIndicator current={2} />
       <h1 className="h1" style={{ fontSize: 20 }}>
         {approved ? "Roteiro aprovado ✓" : "Roteiro (compliance pendente)"}
       </h1>

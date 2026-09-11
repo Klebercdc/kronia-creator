@@ -6,7 +6,16 @@ import { refineScenePrompt } from "../core/generation/refine-scene";
 import { seo } from "../core/generation/seo";
 import { checkFabricatedNumbers } from "../core/compliance/numeric-guard";
 import { checkBannedAbsoluteClaims } from "../core/compliance/absolute-claims-guard";
-import { listSavedThemes, addSavedTheme, removeSavedTheme, type SavedTheme } from "../lib/supabase";
+import {
+  listSavedThemes,
+  addSavedTheme,
+  removeSavedTheme,
+  addHistoryEntry,
+  listHistory,
+  removeHistoryEntry,
+  type SavedTheme,
+  type HistoryEntry,
+} from "../lib/supabase";
 import {
   ActorProfileSchema,
   ContentRequestSchema,
@@ -107,3 +116,26 @@ export const addSavedThemeFn = createServerFn({ method: "POST" })
 export const removeSavedThemeFn = createServerFn({ method: "POST" })
   .validator((data: unknown) => z.object({ id: z.string().min(1) }).parse(data))
   .handler(async ({ data }): Promise<void> => removeSavedTheme(data.id));
+
+/** RPCs de histórico (Supabase) — salva cada roteiro aprovado, lista e remove. */
+export const addHistoryEntryFn = createServerFn({ method: "POST" })
+  .validator((data: unknown) =>
+    z
+      .object({
+        project: z.string().min(1),
+        format: z.string().min(1),
+        theme: z.string(),
+        selectedHook: z.string(),
+        output: z.custom<PipelineOutput>(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data }): Promise<void> => addHistoryEntry(data));
+
+export const listHistoryFn = createServerFn({ method: "GET" }).handler(
+  async (): Promise<HistoryEntry[]> => listHistory(),
+);
+
+export const removeHistoryEntryFn = createServerFn({ method: "POST" })
+  .validator((data: unknown) => z.object({ id: z.string().min(1) }).parse(data))
+  .handler(async ({ data }): Promise<void> => removeHistoryEntry(data.id));
