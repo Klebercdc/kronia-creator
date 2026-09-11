@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { runPipeline, analyzeReference, ManualEditRequiredError } from "../core/pipeline";
+import { runPipeline, ManualEditRequiredError } from "../core/pipeline";
+import { advanceIngestionJob as advanceIngestionJobCore } from "../core/jobs/reference-ingestion";
 import { analyzeActorImage } from "../core/generation/actor-vision";
 import { analyzeProductImage } from "../core/generation/product-vision";
 import { refineScenePrompt } from "../core/generation/refine-scene";
@@ -14,8 +15,10 @@ import {
   addHistoryEntry,
   listHistory,
   removeHistoryEntry,
+  createJob,
   type SavedTheme,
   type HistoryEntry,
+  type JobStatus,
 } from "../lib/supabase";
 import {
   ActorProfileSchema,
@@ -34,17 +37,50 @@ export type RunPipelineResult =
   | { status: "aprovado"; output: PipelineOutput }
   | { status: "manual"; output: PipelineOutput };
 
+export interface JobStatusResult {
+  id: string;
+  status: JobStatus;
+  step: string;
+  error: string | null;
+  result: ReferenceAnalysis | null;
+}
+
 /**
- * RPC que roda só a Ingestão/Classificação/Recomendação (o pedaço lento do
- * Caminho A — download do vídeo via yt-dlp, ffmpeg, Whisper, visão
- * computacional). Separada de `runContentPipeline` porque as duas juntas
- * numa function só estouravam o timeout de 60s do Vercel (confirmado em
- * produção). O cliente chama esta primeiro e manda o resultado de volta em
- * `runContentPipeline` — reaproveita sem baixar o vídeo de novo.
+ * Job Engine — a Ingestão de vídeo por upload (download+frames, transcrição,
+ * visão+classificação+recomendação) é lenta demais pra caber numa function
+ * só (confirmado em produção: 60s estourado mesmo depois de separar do
+ * resto do pipeline). Em vez disso vira um job em 3 steps persistido no
+ * Postgres (Supabase) — o cliente chama `enqueueReferenceIngestion` uma vez
+ * e depois faz polling em `advanceIngestionJob`, que roda UM step por
+ * chamada (cada um cabe nos 60s) até o job chegar em "succeeded"/"failed".
+ * Ver core/jobs/reference-ingestion.ts.
  */
-export const analyzeReferenceVideo = createServerFn({ method: "POST" })
+export const enqueueReferenceIngestion = createServerFn({ method: "POST" })
   .validator((data: unknown) => ContentRequestSchema.parse(data))
-  .handler(async ({ data }): Promise<ReferenceAnalysis> => analyzeReference(data));
+  .handler(async ({ data }): Promise<{ jobId: string }> => {
+    if (!data.referenceVideoStoragePath) {
+      throw new Error("referenceVideoStoragePath é obrigatório pra enfileirar a Ingestão.");
+    }
+    const job = await createJob("ingest_reference_video", "download", {
+      storagePath: data.referenceVideoStoragePath,
+      request: data,
+    });
+    return { jobId: job.id };
+  });
+
+export const advanceIngestionJob = createServerFn({ method: "POST" })
+  .validator((data: unknown) => z.object({ jobId: z.string().min(1) }).parse(data))
+  .handler(async ({ data }): Promise<JobStatusResult | null> => {
+    const job = await advanceIngestionJobCore(data.jobId);
+    if (!job) return null;
+    return {
+      id: job.id,
+      status: job.status,
+      step: job.step,
+      error: job.error,
+      result: job.status === "succeeded" ? (job.result as unknown as ReferenceAnalysis) : null,
+    };
+  });
 
 /**
  * RPC chamável do cliente — roda o núcleo inteiro no servidor (onde ficam

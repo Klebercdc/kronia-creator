@@ -3,7 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState, useEffect, type FormEvent } from "react";
 import {
   runContentPipeline,
-  analyzeReferenceVideo,
+  enqueueReferenceIngestion,
+  advanceIngestionJob,
   analyzeActorPhoto,
   analyzeProductPhoto,
   refineScene,
@@ -457,7 +458,8 @@ function CriadorApp() {
 
 function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
   const runPipelineFn = useServerFn(runContentPipeline);
-  const analyzeReferenceVideoFn = useServerFn(analyzeReferenceVideo);
+  const enqueueReferenceIngestionFn = useServerFn(enqueueReferenceIngestion);
+  const advanceIngestionJobFn = useServerFn(advanceIngestionJob);
   const analyzeActorPhotoFn = useServerFn(analyzeActorPhoto);
   const analyzeProductPhotoFn = useServerFn(analyzeProductPhoto);
   const listSavedThemesRpc = useServerFn(listSavedThemesFn);
@@ -480,6 +482,7 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
   const [savedThemes, setSavedThemes] = useState<SavedTheme[]>([]);
   const [referenceVideoFile, setReferenceVideoFile] = useState<{ name: string; storagePath: string } | null>(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [ingestionStep, setIngestionStep] = useState<string | null>(null);
   const [actorName, setActorName] = useState("");
   const [actorVoice, setActorVoice] = useState("");
   const [actorAppearance, setActorAppearance] = useState("");
@@ -526,6 +529,37 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
       setErrorMessage(err instanceof Error ? err.message : "Erro ao analisar a foto");
     } finally {
       setAnalyzingPhoto(false);
+    }
+  }
+
+  const INGESTION_STEP_LABELS: Record<string, string> = {
+    download: "Baixando e extraindo frames do vídeo...",
+    transcript: "Transcrevendo o áudio...",
+    vision: "Analisando a mecânica do vídeo...",
+  };
+
+  /** Enfileira a Ingestão e faz polling até o job terminar — cada chamada
+   * de advanceIngestionJobFn roda só um step no servidor (cabe nos 60s),
+   * então o "worker" aqui é o próprio loop de poll, sem cron nem fila
+   * gerenciada. */
+  async function runIngestionJob(request: ContentRequest) {
+    const { jobId } = await enqueueReferenceIngestionFn({ data: request });
+    setIngestionStep("download");
+
+    for (;;) {
+      const job = await advanceIngestionJobFn({ data: { jobId } });
+      if (job) {
+        setIngestionStep(job.step);
+        if (job.status === "succeeded") {
+          setIngestionStep(null);
+          return job.result ?? undefined;
+        }
+        if (job.status === "failed") {
+          setIngestionStep(null);
+          throw new Error(job.error ?? "Falha ao analisar o vídeo de referência.");
+        }
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1500));
     }
   }
 
@@ -599,13 +633,17 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
     };
 
     try {
-      // Caminho A (com vídeo de referência): a Ingestão sozinha (download +
-      // ffmpeg + Whisper + visão) já é o pedaço lento — separada numa
-      // chamada própria pra não somar com a cadeia de 6 agentes da Geração
-      // e estourar o timeout de 60s da function no Vercel (aconteceu em
-      // produção). Caminho B não tem nada lento pra separar.
+      // Caminho A (com vídeo de referência): a Ingestão (download + ffmpeg +
+      // Whisper + visão) é lenta demais pra caber numa function só — mesmo
+      // separada do resto do pipeline, um vídeo real ainda estourava os 60s
+      // do Vercel (confirmado em produção). Agora é um job em 3 steps
+      // (download+frames, transcript, visão+classificação+recomendação)
+      // processado pelo próprio polling do cliente: cada chamada de
+      // `advanceIngestionJob` roda só UM step (cabe nos 60s) e devolve o
+      // job atualizado, até "succeeded"/"failed". Caminho B não tem nada
+      // lento pra enfileirar.
       const precomputedAnalysis = request.referenceVideoStoragePath
-        ? await analyzeReferenceVideoFn({ data: request })
+        ? await runIngestionJob(request)
         : undefined;
       const res = await runPipelineFn({ data: { request, precomputedAnalysis } });
       setResult(res);
@@ -663,7 +701,11 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
         <StageIndicator current={1} />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, marginTop: 60 }}>
           <div className="spinner" />
-          <div className="h1-sub">Analisando produto, recomendando formato e gerando roteiro...</div>
+          <div className="h1-sub">
+            {ingestionStep
+              ? (INGESTION_STEP_LABELS[ingestionStep] ?? "Analisando vídeo de referência...")
+              : "Analisando produto, recomendando formato e gerando roteiro..."}
+          </div>
         </div>
       </div>
     );

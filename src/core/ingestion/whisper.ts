@@ -8,12 +8,10 @@ import type { TranscriptSegment } from "./transcribe";
 
 const run = promisify(execFile);
 
-/**
- * Extrai áudio mono 16kHz e transcreve via Whisper hospedado na Groq
- * (whisper-large-v3) — sem custo de API separada, mesma chave do resto do
- * pipeline. Só roda quando o vídeo não tem legenda nativa/automática.
- */
-export async function transcribeWithWhisper(videoPath: string, workDir: string): Promise<TranscriptSegment[]> {
+/** Extrai áudio mono 16kHz do vídeo — separado de `transcribeAudioFile` pra
+ * caber em steps distintos do Job Engine (download+extração num step,
+ * transcrição noutro, cada um sob o teto de 60s de uma invocação). */
+export async function extractAudio(videoPath: string, workDir: string): Promise<string> {
   const audioPath = join(workDir, "audio.mp3");
   const ffmpegPath = await getVendoredBinaryPath("ffmpeg");
   await run(ffmpegPath, [
@@ -32,7 +30,13 @@ export async function transcribeWithWhisper(videoPath: string, workDir: string):
     "64k",
     audioPath,
   ]);
+  return audioPath;
+}
 
+/** Transcreve um arquivo de áudio já extraído via Whisper hospedado na Groq
+ * (whisper-large-v3) — sem custo de API separada, mesma chave do resto do
+ * pipeline. Só roda quando o vídeo não tem legenda nativa/automática. */
+export async function transcribeAudioFile(audioPath: string): Promise<TranscriptSegment[]> {
   const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
   const transcription = await client.audio.transcriptions.create({
     file: createReadStream(audioPath),
@@ -49,4 +53,11 @@ export async function transcribeWithWhisper(videoPath: string, workDir: string):
   }
 
   return segments.map((s) => ({ startSeconds: s.start, endSeconds: s.end, text: s.text.trim() }));
+}
+
+/** Composição das duas etapas — usada pelo caminho síncrono por link
+ * (`ingest.ts`, ainda usado pelos smoke-tests e pelo Caminho A original). */
+export async function transcribeWithWhisper(videoPath: string, workDir: string): Promise<TranscriptSegment[]> {
+  const audioPath = await extractAudio(videoPath, workDir);
+  return transcribeAudioFile(audioPath);
 }
