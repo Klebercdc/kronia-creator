@@ -32,6 +32,12 @@ em todo roteiro):
   já...") cria conexão mais forte que uma mensagem impessoal — só use se soar genuíno pro tema
   dado, nunca invente um testemunho específico e detalhado como se fosse fato real de alguém.
 
+Quando o roteiro for de um produto físico cristão (acessório, joia, bíblia, camiseta devocional),
+o gancho e a cena de produto nunca tratam o objeto como mercadoria genérica — ancoram no
+significado espiritual real que ele carrega pra quem usa (fé, proteção, lembrança, identidade),
+com a mesma exigência de base bíblica real das outras regras acima, nunca um significado
+inventado só pra soar bonito.
+
 Retorne o roteiro revisado completo, no mesmo formato de entrada.`;
 
 /** Sub-agente da Geração — só roda quando request.project === "jeova_fala".
