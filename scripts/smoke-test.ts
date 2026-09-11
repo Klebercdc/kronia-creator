@@ -11,7 +11,7 @@ const request: ContentRequest = {
   project: "jeova_fala",
   objective: "educar",
   mode: "organico",
-  productPhotoUrl: null,
+  productPhotoUrls: [],
   productInfo: [
     { text: "Tema: a parábola do filho pródigo e o perdão", kind: "fato", source: "campo de informações" },
   ],

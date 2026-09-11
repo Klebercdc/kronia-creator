@@ -22,7 +22,9 @@ export const ContentRequestSchema = z.object({
   objective: z.enum(OBJECTIVES),
   mode: z.enum(MODES),
 
-  productPhotoUrl: z.string().url().nullable(),
+  /** Fotos do produto (frente, verso, rótulo etc.) — todas analisadas juntas
+   * numa chamada de visão só (product-vision.ts). */
+  productPhotoUrls: z.array(z.string().url()),
   /** Fonte de verdade junto com a foto — nunca inventar além disso */
   productInfo: z.array(EvidencedClaimSchema),
 

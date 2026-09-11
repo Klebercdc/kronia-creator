@@ -89,14 +89,16 @@ export const analyzeActorPhoto = createServerFn({ method: "POST" })
   });
 
 /**
- * RPC que lê a foto do produto e devolve uma descrição visual real extraída
- * da imagem — vira EvidencedClaim (kind "inferencia") somada ao que o
- * usuário escreveu, em vez de a foto ficar só decorativa na tela.
+ * RPC que lê a(s) foto(s) do produto e devolve uma descrição visual real
+ * extraída delas — vira EvidencedClaim (kind "inferencia") somada ao que o
+ * usuário escreveu, em vez de a foto ficar só decorativa na tela. Aceita
+ * mais de uma foto (ex: frente, verso, rótulo) — todas analisadas juntas
+ * numa chamada só.
  */
 export const analyzeProductPhoto = createServerFn({ method: "POST" })
-  .validator((data: unknown) => z.object({ imageDataUrl: z.string() }).parse(data))
+  .validator((data: unknown) => z.object({ imageDataUrls: z.array(z.string()).min(1) }).parse(data))
   .handler(async ({ data }): Promise<{ visualDescription: string }> => {
-    const visualDescription = await analyzeProductImage(data.imageDataUrl);
+    const visualDescription = await analyzeProductImage(data.imageDataUrls);
     return { visualDescription };
   });
 

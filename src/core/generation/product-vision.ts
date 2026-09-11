@@ -13,15 +13,21 @@ const ResultSchema = z.object({
   visualDescription: z.string(),
 });
 
-/** Deriva uma descrição visual real do produto a partir da foto enviada —
+/** Deriva uma descrição visual real do produto a partir das fotos enviadas —
  * vira uma EvidencedClaim kind "inferencia" (observação visual, não fato
- * declarado pelo usuário), usada pelo Roteirista/recomendação de formato. */
-export async function analyzeProductImage(imageDataUrl: string): Promise<string> {
+ * declarado pelo usuário), usada pelo Roteirista/recomendação de formato.
+ * Aceita mais de uma foto (ex: frente, verso, rótulo) numa chamada só — o
+ * modelo vê todas juntas e escreve uma descrição combinada, em vez de N
+ * chamadas separadas e desconectadas. */
+export async function analyzeProductImage(imageDataUrls: string[]): Promise<string> {
   const result = await callStructuredVisionFromDataUrls({
     schema: ResultSchema,
     system: SYSTEM,
-    prompt: "Descreva o que está literalmente visível nesta foto de produto.",
-    images: [imageDataUrl],
+    prompt:
+      imageDataUrls.length > 1
+        ? "Descreva o que está literalmente visível nestas fotos do mesmo produto (ângulos/lados diferentes)."
+        : "Descreva o que está literalmente visível nesta foto de produto.",
+    images: imageDataUrls,
     toolName: "product_visual_description",
   });
 

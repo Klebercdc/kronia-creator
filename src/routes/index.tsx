@@ -473,7 +473,7 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
   const [objective, setObjective] = useState<ContentRequest["objective"]>("vender");
   const [mode, setMode] = useState<ContentRequest["mode"]>("tiktok_shop");
   const [productInfoText, setProductInfoText] = useState("");
-  const [productPhotoDataUrl, setProductPhotoDataUrl] = useState<string | null>(null);
+  const [productPhotoDataUrls, setProductPhotoDataUrls] = useState<string[]>([]);
   const [productPhotoDescription, setProductPhotoDescription] = useState<string | null>(null);
   const [analyzingProductPhoto, setAnalyzingProductPhoto] = useState(false);
   const [targetDurationSeconds, setTargetDurationSeconds] = useState<number | null>(null);
@@ -547,12 +547,16 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
 
   async function handleProductPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
     const dataUrl = await readFileAsDataUrl(file);
-    setProductPhotoDataUrl(dataUrl);
+    // Soma à lista em vez de substituir — várias fotos do mesmo produto
+    // (frente, verso, rótulo) analisadas juntas numa chamada só.
+    const nextPhotos = [...productPhotoDataUrls, dataUrl];
+    setProductPhotoDataUrls(nextPhotos);
     setAnalyzingProductPhoto(true);
     try {
-      const { visualDescription } = await analyzeProductPhotoFn({ data: { imageDataUrl: dataUrl } });
+      const { visualDescription } = await analyzeProductPhotoFn({ data: { imageDataUrls: nextPhotos } });
       setProductPhotoDescription(visualDescription);
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Erro ao analisar a foto do produto");
@@ -580,7 +584,7 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
       project,
       objective,
       mode,
-      productPhotoUrl: productPhotoDataUrl,
+      productPhotoUrls: productPhotoDataUrls,
       productInfo,
       referenceVideoUrl: null,
       referenceVideoStoragePath: referenceVideoFile?.storagePath ?? null,
@@ -612,7 +616,7 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
         // blob de novo em toda geração só infla o banco sem necessidade.
         const outputForHistory: PipelineOutput = {
           ...res.output,
-          request: { ...res.output.request, productPhotoUrl: null },
+          request: { ...res.output.request, productPhotoUrls: [] },
         };
         await addHistoryEntryRpc({
           data: {
@@ -750,14 +754,33 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
                 justifyContent: "center",
                 color: "#8A8A8A",
                 fontSize: 12,
+                position: "relative",
               }}
             >
-              {productPhotoDataUrl ? (
-                <img
-                  src={productPhotoDataUrl}
-                  alt="Produto"
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
+              {productPhotoDataUrls.length > 0 ? (
+                <>
+                  <img
+                    src={productPhotoDataUrls[productPhotoDataUrls.length - 1]}
+                    alt="Produto"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                  {productPhotoDataUrls.length > 1 && (
+                    <span
+                      style={{
+                        position: "absolute",
+                        bottom: 6,
+                        right: 6,
+                        background: "rgba(0,0,0,0.7)",
+                        color: "#fff",
+                        borderRadius: 999,
+                        fontSize: 11,
+                        padding: "2px 7px",
+                      }}
+                    >
+                      {productPhotoDataUrls.length} fotos
+                    </span>
+                  )}
+                </>
               ) : (
                 "Foto do produto"
               )}
@@ -783,7 +806,7 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
                   "Analisando..."
                 ) : (
                   <>
-                    {productPhotoDataUrl ? "Trocar" : "Adicionar"} foto
+                    Adicionar foto
                     <br />
                     do produto
                   </>
@@ -792,7 +815,26 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
               <input type="file" accept="image/*" onChange={handleProductPhoto} style={{ display: "none" }} />
             </label>
           </div>
-          {productPhotoDescription && <div className="hint">Da foto: {productPhotoDescription}</div>}
+          {productPhotoDescription && (
+            <div className="hint">
+              Das fotos: {productPhotoDescription}
+              {productPhotoDataUrls.length > 0 && (
+                <>
+                  {" — "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProductPhotoDataUrls([]);
+                      setProductPhotoDescription(null);
+                    }}
+                    style={{ background: "none", border: "none", color: "inherit", textDecoration: "underline", cursor: "pointer", padding: 0 }}
+                  >
+                    limpar
+                  </button>
+                </>
+              )}
+            </div>
+          )}
 
           <div style={{ marginTop: 16 }}>
             <div className="section-label">{project === "jeova_fala" ? "Tema" : "Informações do produto"}</div>
@@ -1079,9 +1121,9 @@ function ResultadoView({
               fontSize: 11,
             }}
           >
-            {output.request.productPhotoUrl ? (
+            {output.request.productPhotoUrls[0] ? (
               <img
-                src={output.request.productPhotoUrl}
+                src={output.request.productPhotoUrls[0]}
                 alt=""
                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
               />
@@ -1330,7 +1372,7 @@ function RoteiroView({
   onGenerationUpdate: (generation: GenerationResult) => void;
 }) {
   const { generation, compliance } = output;
-  const productPhoto = output.request.productPhotoUrl;
+  const productPhoto = output.request.productPhotoUrls[0] ?? null;
 
   return (
     <div className="app">
