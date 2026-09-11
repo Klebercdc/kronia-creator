@@ -483,6 +483,7 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
   const [referenceVideoFile, setReferenceVideoFile] = useState<{ name: string; storagePath: string } | null>(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [ingestionStep, setIngestionStep] = useState<string | null>(null);
+  const [ingestionProgressPercent, setIngestionProgressPercent] = useState<number | null>(null);
   const [actorName, setActorName] = useState("");
   const [actorVoice, setActorVoice] = useState("");
   const [actorAppearance, setActorAppearance] = useState("");
@@ -540,8 +541,9 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
 
   /** Enfileira a Ingestão e faz polling até o job terminar — cada chamada
    * de advanceIngestionJobFn roda só um step no servidor (cabe nos 60s),
-   * então o "worker" aqui é o próprio loop de poll, sem cron nem fila
-   * gerenciada. */
+   * essa aba fechar no meio, um worker de verdade (pg_cron do Supabase,
+   * independente do navegador) continua avançando o job sozinho — esse
+   * loop aqui é só o caminho rápido enquanto a tela está aberta. */
   async function runIngestionJob(request: ContentRequest) {
     const { jobId } = await enqueueReferenceIngestionFn({ data: request });
     setIngestionStep("download");
@@ -550,12 +552,15 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
       const job = await advanceIngestionJobFn({ data: { jobId } });
       if (job) {
         setIngestionStep(job.step);
+        setIngestionProgressPercent(job.progressPercent);
         if (job.status === "succeeded") {
           setIngestionStep(null);
+          setIngestionProgressPercent(null);
           return job.result ?? undefined;
         }
         if (job.status === "failed") {
           setIngestionStep(null);
+          setIngestionProgressPercent(null);
           throw new Error(job.error ?? "Falha ao analisar o vídeo de referência.");
         }
       }
@@ -705,6 +710,7 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
             {ingestionStep
               ? (INGESTION_STEP_LABELS[ingestionStep] ?? "Analisando vídeo de referência...")
               : "Analisando produto, recomendando formato e gerando roteiro..."}
+            {ingestionStep && ingestionProgressPercent != null ? ` — ${ingestionProgressPercent}%` : ""}
           </div>
         </div>
       </div>

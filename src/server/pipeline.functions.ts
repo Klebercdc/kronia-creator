@@ -16,6 +16,7 @@ import {
   listHistory,
   removeHistoryEntry,
   createJob,
+  getJob as getJobCore,
   type SavedTheme,
   type HistoryEntry,
   type JobStatus,
@@ -41,8 +42,23 @@ export interface JobStatusResult {
   id: string;
   status: JobStatus;
   step: string;
+  /** Progresso semântico (não granular por design) — cada step vale um
+   * pedaço fixo, não é % de bytes processados. */
+  progressPercent: number;
   error: string | null;
   result: ReferenceAnalysis | null;
+}
+
+const STEP_PROGRESS_PERCENT: Record<string, number> = {
+  download: 20,
+  transcript: 55,
+  vision: 85,
+};
+
+function progressPercentFor(status: JobStatus, step: string): number {
+  if (status === "succeeded") return 100;
+  if (status === "failed") return STEP_PROGRESS_PERCENT[step] ?? 0;
+  return STEP_PROGRESS_PERCENT[step] ?? 0;
 }
 
 /**
@@ -50,10 +66,20 @@ export interface JobStatusResult {
  * visão+classificação+recomendação) é lenta demais pra caber numa function
  * só (confirmado em produção: 60s estourado mesmo depois de separar do
  * resto do pipeline). Em vez disso vira um job em 3 steps persistido no
- * Postgres (Supabase) — o cliente chama `enqueueReferenceIngestion` uma vez
- * e depois faz polling em `advanceIngestionJob`, que roda UM step por
- * chamada (cada um cabe nos 60s) até o job chegar em "succeeded"/"failed".
- * Ver core/jobs/reference-ingestion.ts.
+ * Postgres (Supabase).
+ *
+ * Duas formas do job avançar (ver core/jobs/reference-ingestion.ts):
+ * 1) `advanceIngestionJob` — o polling do próprio navegador, chamado pela
+ *    UI enquanto a tela de "Analisando..." está aberta. Rápido (~1.5s por
+ *    step), mas só avança com a aba aberta.
+ * 2) Um worker de verdade, independente do navegador: pg_cron (Postgres)
+ *    chama `/api/jobs/worker` a cada minuto — continua avançando o job
+ *    mesmo se a aba fechar. Os dois convergem no mesmo `claim` atômico, só
+ *    um processa cada step por vez.
+ *
+ * `idempotencyKey` = o storagePath do vídeo (já é único por upload, gerado
+ * no navegador) — enfileirar duas vezes o mesmo vídeo devolve o job
+ * existente em vez de criar um duplicado.
  */
 export const enqueueReferenceIngestion = createServerFn({ method: "POST" })
   .validator((data: unknown) => ContentRequestSchema.parse(data))
@@ -61,11 +87,25 @@ export const enqueueReferenceIngestion = createServerFn({ method: "POST" })
     if (!data.referenceVideoStoragePath) {
       throw new Error("referenceVideoStoragePath é obrigatório pra enfileirar a Ingestão.");
     }
-    const job = await createJob("ingest_reference_video", "download", {
-      storagePath: data.referenceVideoStoragePath,
-      request: data,
-    });
+    const job = await createJob(
+      "ingest_reference_video",
+      "download",
+      { storagePath: data.referenceVideoStoragePath, request: data },
+      `ingest_reference_video:${data.referenceVideoStoragePath}`,
+    );
     return { jobId: job.id };
+  });
+
+/** Leitura pura do status — não processa nada, só consulta. Existe
+ * separada de `advanceIngestionJob` pra deixar claro que consultar
+ * progresso e executar trabalho são operações diferentes (mesmo os dois
+ * hoje sendo chamados juntos pelo polling da UI). */
+export const getIngestionJobStatus = createServerFn({ method: "POST" })
+  .validator((data: unknown) => z.object({ jobId: z.string().min(1) }).parse(data))
+  .handler(async ({ data }): Promise<JobStatusResult | null> => {
+    const job = await getJobCore(data.jobId);
+    if (!job) return null;
+    return toJobStatusResult(job);
   });
 
 export const advanceIngestionJob = createServerFn({ method: "POST" })
@@ -73,14 +113,19 @@ export const advanceIngestionJob = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<JobStatusResult | null> => {
     const job = await advanceIngestionJobCore(data.jobId);
     if (!job) return null;
-    return {
-      id: job.id,
-      status: job.status,
-      step: job.step,
-      error: job.error,
-      result: job.status === "succeeded" ? (job.result as unknown as ReferenceAnalysis) : null,
-    };
+    return toJobStatusResult(job);
   });
+
+function toJobStatusResult(job: NonNullable<Awaited<ReturnType<typeof advanceIngestionJobCore>>>): JobStatusResult {
+  return {
+    id: job.id,
+    status: job.status,
+    step: job.step,
+    progressPercent: progressPercentFor(job.status, job.step),
+    error: job.error,
+    result: job.status === "succeeded" ? (job.result as unknown as ReferenceAnalysis) : null,
+  };
+}
 
 /**
  * RPC chamável do cliente — roda o núcleo inteiro no servidor (onde ficam

@@ -47,6 +47,7 @@ interface Database {
           error: string | null;
           attempts: number;
           max_attempts: number;
+          idempotency_key: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -54,6 +55,7 @@ interface Database {
           kind: string;
           step: string;
           payload: Record<string, unknown>;
+          idempotency_key?: string | null;
         };
         Update: {
           status?: JobStatus;
@@ -68,7 +70,26 @@ interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      claim_next_job: {
+        Args: { job_kind: string; lease_seconds?: number };
+        Returns: {
+          id: string;
+          kind: string;
+          status: JobStatus;
+          step: string;
+          payload: Record<string, unknown>;
+          progress: Record<string, unknown>;
+          result: Record<string, unknown> | null;
+          error: string | null;
+          attempts: number;
+          max_attempts: number;
+          idempotency_key: string | null;
+          created_at: string;
+          updated_at: string;
+        }[];
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
@@ -225,20 +246,44 @@ export async function removeJobArtifacts(prefix: string): Promise<void> {
 }
 
 /**
- * Etapa 0 — Job Engine. Fila persistida em Postgres (Supabase), processada
- * por invocações curtas disparadas pelo próprio polling do cliente — sem
- * depender de Vercel Cron (no Hobby, cron roda no máximo 1x/dia, não serve
- * de worker) nem de Vercel Queues (produto ainda beta). Cada "step" é uma
- * unidade de trabalho que cabe sozinha nos 60s da function; o job avança de
- * step em step a cada poll até `succeeded`/`failed`.
+ * Etapa 0 — Job Engine. Fila persistida em Postgres (Supabase). Dois jeitos
+ * de avançar um job (ambos convergem no mesmo `claim` atômico, então nunca
+ * processam o mesmo step em duplicidade):
+ * 1) O polling do próprio navegador (rápido, mas só avança enquanto a aba
+ *    está aberta).
+ * 2) Um worker de verdade, independente do navegador: pg_cron (extensão já
+ *    instalada no Supabase) chama `/api/jobs/worker` a cada minuto via
+ *    pg_net — continua avançando o job mesmo com a aba fechada. Não usamos
+ *    Vercel Cron porque no plano Hobby ele só roda 1x/dia (não serve de
+ *    worker), nem Vercel Queues (produto ainda beta).
  */
-export async function createJob(kind: string, step: string, payload: Record<string, unknown>): Promise<JobRow> {
+export async function createJob(
+  kind: string,
+  step: string,
+  payload: Record<string, unknown>,
+  idempotencyKey?: string,
+): Promise<JobRow> {
   const { data, error } = await getSupabase()
     .from("creator_jobs")
-    .insert([{ kind, step, payload }])
+    .insert([{ kind, step, payload, idempotency_key: idempotencyKey ?? null }])
     .select("*")
     .single();
-  if (error) throw error;
+
+  if (error) {
+    // 23505 = unique_violation — já existe um job pra essa idempotency_key
+    // (ex: o mesmo vídeo enviado duas vezes). Devolve o job existente em
+    // vez de criar um duplicado.
+    if (error.code === "23505" && idempotencyKey) {
+      const { data: existing, error: fetchError } = await getSupabase()
+        .from("creator_jobs")
+        .select("*")
+        .eq("idempotency_key", idempotencyKey)
+        .single();
+      if (fetchError) throw fetchError;
+      return existing as JobRow;
+    }
+    throw error;
+  }
   return data as JobRow;
 }
 
@@ -248,20 +293,42 @@ export async function getJob(id: string): Promise<JobRow | null> {
   return data as JobRow | null;
 }
 
-/** Reivindica o job pra processar um step — compare-and-swap via
- * `status='pending'` na cláusula WHERE: só um poll concorrente consegue
- * passar de "pending" pra "running" por vez (idempotência). Devolve null
- * se outro poll já estava processando (o chamador só espera o próximo). */
+/** Janela de lease — um step preso em "running" além disso é considerado
+ * abandonado (worker morreu/crashou no meio) e pode ser reivindicado de
+ * novo. Maior que o teto real de execução do Vercel (60s) com folga, pra
+ * nunca reivindicar um step que ainda está genuinamente rodando. */
+const JOB_LEASE_SECONDS = 75;
+
+/** Reivindica o job pra processar um step — compare-and-swap: só passa de
+ * "pending" (ou "running" com lease expirado, ou seja, abandonado) pra
+ * "running" se ESTE chamador ganhar a corrida. Devolve null se outro
+ * chamador (poll do navegador ou o worker) já estava processando. */
 export async function claimJob(id: string): Promise<JobRow | null> {
+  const leaseCutoff = new Date(Date.now() - JOB_LEASE_SECONDS * 1000).toISOString();
   const { data, error } = await getSupabase()
     .from("creator_jobs")
     .update({ status: "running", updated_at: new Date().toISOString() })
     .eq("id", id)
-    .eq("status", "pending")
+    .or(`status.eq.pending,and(status.eq.running,updated_at.lt.${leaseCutoff})`)
     .select("*")
     .maybeSingle();
   if (error) throw error;
   return data as JobRow | null;
+}
+
+/** Mesma reivindicação, mas sem saber o id de antemão — pega o job mais
+ * antigo elegível de um "kind" (pending, ou running com lease expirado).
+ * Usado pelo worker (pg_cron), que só sabe "existe trabalho pendente
+ * desse tipo", não qual job específico. Atômico via função Postgres
+ * (FOR UPDATE SKIP LOCKED) — ver migration creator_jobs_claim_next_function. */
+export async function claimNextJob(kind: string): Promise<JobRow | null> {
+  const { data, error } = await getSupabase().rpc("claim_next_job", {
+    job_kind: kind,
+    lease_seconds: JOB_LEASE_SECONDS,
+  });
+  if (error) throw error;
+  const rows = data as JobRow[] | null;
+  return rows?.[0] ?? null;
 }
 
 /** Avança o job pro próximo step (continua "running" até o cliente pollar
@@ -287,8 +354,11 @@ export async function completeJob(id: string, result: Record<string, unknown>): 
 }
 
 /** Falha do step atual — volta pra "pending" (tenta de novo no próximo
- * poll) até estourar `max_attempts`, aí marca "failed" definitivo. */
-export async function failJobStep(job: JobRow, message: string): Promise<void> {
+ * poll) até estourar `max_attempts`, aí marca "failed" definitivo. Devolve
+ * o status final pro chamador decidir se precisa limpar artefatos órfãos
+ * (só faz sentido quando "failed" — enquanto ainda pode tentar de novo, os
+ * artefatos continuam sendo usados). */
+export async function failJobStep(job: JobRow, message: string): Promise<JobStatus> {
   const attempts = job.attempts + 1;
   const status: JobStatus = attempts >= job.max_attempts ? "failed" : "pending";
   const { error } = await getSupabase()
@@ -296,4 +366,5 @@ export async function failJobStep(job: JobRow, message: string): Promise<void> {
     .update({ status, attempts, error: message, updated_at: new Date().toISOString() })
     .eq("id", job.id);
   if (error) throw error;
+  return status;
 }

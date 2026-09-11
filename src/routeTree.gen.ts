@@ -10,33 +10,43 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiJobsWorkerRouteImport } from './routes/api/jobs/worker'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiJobsWorkerRoute = ApiJobsWorkerRouteImport.update({
+  id: '/api/jobs/worker',
+  path: '/api/jobs/worker',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/jobs/worker': typeof ApiJobsWorkerRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/jobs/worker': typeof ApiJobsWorkerRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/jobs/worker': typeof ApiJobsWorkerRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/api/jobs/worker'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/api/jobs/worker'
+  id: '__root__' | '/' | '/api/jobs/worker'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiJobsWorkerRoute: typeof ApiJobsWorkerRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +58,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/jobs/worker': {
+      id: '/api/jobs/worker'
+      path: '/api/jobs/worker'
+      fullPath: '/api/jobs/worker'
+      preLoaderRoute: typeof ApiJobsWorkerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiJobsWorkerRoute: ApiJobsWorkerRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

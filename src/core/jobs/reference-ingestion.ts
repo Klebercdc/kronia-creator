@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
   claimJob,
+  claimNextJob,
   getJob,
   completeJob,
   advanceJobStep,
@@ -34,22 +35,56 @@ const MAX_FRAMES_FOR_VISION = 16;
  */
 export async function advanceIngestionJob(jobId: string): Promise<JobRow | null> {
   const job = await claimJob(jobId);
-  if (!job) return null; // já em processamento por outro poll, ou já terminou
+  if (!job) return null; // já em processamento por outro chamador, ou já terminou
 
+  await runStep(job);
+
+  // claimJob só devolve linha quando pega o lock (status "pending" ->
+  // "running") — depois de rodar o step o status já mudou de novo, então
+  // uma leitura direta (não outro claim) é o jeito certo de devolver o
+  // estado atual pro chamador.
+  return getJob(jobId);
+}
+
+/**
+ * Mesma coisa, mas pro worker independente do navegador (pg_cron ->
+ * `/api/jobs/worker`) — não sabe qual job id específico processar, só
+ * "existe trabalho pendente desse kind". Devolve null quando não há nada
+ * pra fazer (fila vazia), o que é o caso normal na maior parte dos polls
+ * do cron.
+ */
+export async function advanceNextPendingJob(kind: string): Promise<JobRow | null> {
+  const job = await claimNextJob(kind);
+  if (!job) return null;
+
+  await runStep(job);
+  return getJob(job.id);
+}
+
+async function runStep(job: JobRow): Promise<void> {
   try {
     if (job.step === "download") await stepDownload(job);
     else if (job.step === "transcript") await stepTranscript(job);
     else if (job.step === "vision") await stepVision(job);
     else throw new Error(`Step desconhecido: ${job.step}`);
   } catch (err) {
-    await failJobStep(job, err instanceof Error ? err.message : String(err));
+    const finalStatus = await failJobStep(job, err instanceof Error ? err.message : String(err));
+    // Falha definitiva (estourou max_attempts) — ninguém mais vai tocar
+    // nesse job, então os artefatos intermediários (e o vídeo original, se
+    // a falha foi antes dele ser apagado no step "download") ficariam
+    // órfãos no bucket pra sempre sem essa limpeza.
+    if (finalStatus === "failed") await cleanupAbandonedArtifacts(job);
   }
+}
 
-  // claimJob só devolve linha quando pega o lock (status "pending" ->
-  // "running") — depois de rodar o step o status já mudou de novo, então
-  // uma leitura direta (não outro claim) é o jeito certo de devolver o
-  // estado atual pro cliente.
-  return getJob(jobId);
+async function cleanupAbandonedArtifacts(job: JobRow): Promise<void> {
+  const prefix = artifactPrefix(job.id);
+  await removeJobArtifacts(prefix).catch(() => {});
+  await deleteJobArtifact(`${prefix}/audio.mp3`).catch(() => {});
+  const payload = job.payload as { storagePath?: string };
+  if (payload.storagePath) {
+    await deleteReferenceVideoUpload(payload.storagePath).catch(() => {});
+  }
 }
 
 async function withTempDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
