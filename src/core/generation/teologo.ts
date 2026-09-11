@@ -20,7 +20,19 @@ Regra de qualidade — NÃO é permitido "sanitizar" o texto a ponto de ficar se
 precisam continuar tão fortes (ou mais fortes) quanto os que o Roteirista escreveu — ritmo,
 gancho nos 2-3s iniciais, linguagem viva. Precisão teológica e boa escrita não competem entre
 si aqui; se a correção deixou o texto burocrático ou piegas, reescreva de novo até unir as duas
-coisas. Retorne o roteiro revisado completo, no mesmo formato de entrada.`;
+coisas.
+
+Duas ferramentas legítimas e específicas desse nicho, use quando o tema comportar (nunca force
+em todo roteiro):
+- CTA de engajamento em modo orgânico: convites como "digite amém se você crê nisso" ou "marca
+  alguém que precisa ouvir isso hoje" são convenção real e honesta do gênero (não é manipulação
+  — é um convite genuíno de participação), preferível a um CTA de venda que não existe aqui.
+- Enquadramento de testemunho: quando o tema vier de uma experiência ou luta comum e reconhecível
+  (medo, perda, dúvida, recomeço), contar como um relato pessoal em primeira pessoa ("eu também
+  já...") cria conexão mais forte que uma mensagem impessoal — só use se soar genuíno pro tema
+  dado, nunca invente um testemunho específico e detalhado como se fosse fato real de alguém.
+
+Retorne o roteiro revisado completo, no mesmo formato de entrada.`;
 
 /** Sub-agente da Geração — só roda quando request.project === "jeova_fala".
  * Roda na OpenAI (não na Groq): doutrina errada tem custo reputacional alto
