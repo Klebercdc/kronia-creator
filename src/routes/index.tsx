@@ -14,6 +14,7 @@ import {
 import { ACTOR_PRESETS } from "../core/generation/actor-presets";
 import type { SavedTheme } from "../lib/supabase";
 import type { ContentRequest, GenerationResult, PipelineOutput } from "../types/pipeline";
+import logo from "../assets/logo.png";
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -35,21 +36,7 @@ const CONFIDENCE_LABEL: Record<string, string> = { alta: "Alta", media: "Média"
 function BrandRow() {
   return (
     <div className="brand-row">
-      <svg className="brand-mark" viewBox="0 0 24 24">
-        <defs>
-          <linearGradient id="kg" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#ff9a3c" />
-            <stop offset="1" stopColor="#2dd4a7" />
-          </linearGradient>
-        </defs>
-        <path d="M5.4 2.5v19" stroke="oklch(0.9 0.004 285)" strokeWidth="2.3" strokeLinecap="round" fill="none" />
-        <path d="M18 2.5L7.8 12" stroke="url(#kg)" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-        <path d="M9.6 12L19 21.5" stroke="url(#kg)" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-      </svg>
-      <div>
-        <div className="brand-word">KRONIA</div>
-        <div className="brand-sub">Criador Inteligente</div>
-      </div>
+      <img src={logo} alt="KRONIA Criador Inteligente" style={{ height: 40, width: "auto" }} />
     </div>
   );
 }
@@ -75,7 +62,7 @@ function SavedThemesDrawer({
         <button
           type="button"
           className="btn-secondary"
-          style={{ padding: "6px 10px", fontSize: 11 }}
+          style={{ padding: "6px 10px", fontSize: 13 }}
           onClick={() => setOpen((v) => !v)}
         >
           {open ? "▾" : "▸"} Temas salvos {savedThemes.length > 0 ? `(${savedThemes.length})` : ""}
@@ -84,7 +71,7 @@ function SavedThemesDrawer({
           <button
             type="button"
             className="btn-secondary"
-            style={{ padding: "6px 10px", fontSize: 11 }}
+            style={{ padding: "6px 10px", fontSize: 13 }}
             onClick={onSave}
           >
             + Salvar este
@@ -106,14 +93,14 @@ function SavedThemesDrawer({
           }}
         >
           {savedThemes.length === 0 ? (
-            <div style={{ fontSize: 11.5, color: "oklch(0.6 0.02 285)" }}>Nada salvo ainda.</div>
+            <div style={{ fontSize: 13.5, color: "oklch(0.6 0.02 285)" }}>Nada salvo ainda.</div>
           ) : (
             savedThemes.map((theme) => (
               <div key={theme.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <button
                   type="button"
                   className="btn-secondary"
-                  style={{ flex: 1, textAlign: "left", padding: "6px 10px", fontSize: 11.5 }}
+                  style={{ flex: 1, textAlign: "left", padding: "6px 10px", fontSize: 13.5 }}
                   onClick={() => onPick(theme.text)}
                 >
                   {theme.text}
@@ -121,7 +108,7 @@ function SavedThemesDrawer({
                 <button
                   type="button"
                   onClick={() => onRemove(theme.id)}
-                  style={{ background: "none", border: "none", color: "oklch(0.6 0.02 285)", cursor: "pointer", fontSize: 14, padding: "0 6px" }}
+                  style={{ background: "none", border: "none", color: "oklch(0.6 0.02 285)", cursor: "pointer", fontSize: 16, padding: "0 6px" }}
                   aria-label="Remover"
                 >
                   ×
@@ -518,7 +505,7 @@ function ResultadoView({
   return (
     <div className="app">
       <BrandRow />
-      <h1 className="h1" style={{ fontSize: 18 }}>
+      <h1 className="h1" style={{ fontSize: 20 }}>
         Resultado da análise
       </h1>
 
@@ -553,7 +540,7 @@ function ResultadoView({
           {generation.hooks.map((h, i) => (
             <div key={i} className="hook-card">
               <div className="hook-num">{i + 1}</div>
-              <div style={{ fontSize: 12 }}>{h}</div>
+              <div style={{ fontSize: 14 }}>{h}</div>
             </div>
           ))}
         </div>
@@ -610,7 +597,7 @@ function FlowSegmentCard({
         BLOCO {segment.index + 1} — {segment.startSeconds}s–{segment.endSeconds}s (10s no Flow)
       </div>
       {coveredScenes.map((s) => (
-        <div key={s.index} style={{ fontSize: 11.5, marginBottom: 4 }}>
+        <div key={s.index} style={{ fontSize: 13.5, marginBottom: 4 }}>
           <span style={{ color: "oklch(0.65 0.02 285)" }}>[{s.role}]</span> {s.narration}
           {s.onScreenText && (
             <span style={{ color: "oklch(0.7 0.02 285)" }}> · Texto na tela: {s.onScreenText}</span>
@@ -619,7 +606,7 @@ function FlowSegmentCard({
       ))}
       <div
         style={{
-          fontSize: 11.5,
+          fontSize: 13.5,
           background: "oklch(0.13 0.012 285)",
           border: "1px solid oklch(0.24 0.018 285)",
           borderRadius: 10,
@@ -633,14 +620,14 @@ function FlowSegmentCard({
       <div style={{ display: "flex", gap: 8 }}>
         <button
           className="btn-secondary"
-          style={{ padding: "8px 12px", fontSize: 11.5 }}
+          style={{ padding: "8px 12px", fontSize: 13.5 }}
           onClick={() => navigator.clipboard?.writeText(segment.videoPrompt)}
         >
           Copiar prompt deste bloco
         </button>
         <button
           className="btn-secondary"
-          style={{ padding: "8px 12px", fontSize: 11.5 }}
+          style={{ padding: "8px 12px", fontSize: 13.5 }}
           onClick={() => setShowFeedback((v) => !v)}
         >
           Não ficou bom no Flow?
@@ -655,7 +642,7 @@ function FlowSegmentCard({
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
           />
-          <button className="btn-primary" style={{ fontSize: 11.5, padding: "8px 12px" }} onClick={handleRefine} disabled={refining}>
+          <button className="btn-primary" style={{ fontSize: 13.5, padding: "8px 12px" }} onClick={handleRefine} disabled={refining}>
             {refining ? "Ajustando..." : "Ajustar só este bloco"}
           </button>
         </div>
@@ -688,7 +675,7 @@ function SeoSection({ output, onSeoResult }: { output: PipelineOutput; onSeoResu
       <div>
         <div className="section-label">Legenda</div>
         <div className="card">
-          <div style={{ fontSize: 12, color: "oklch(0.7 0.02 285)", marginBottom: 10 }}>
+          <div style={{ fontSize: 14, color: "oklch(0.7 0.02 285)", marginBottom: 10 }}>
             Gerada só quando você pedir — sem hashtag (sem dado real de TikTok por trás pra confiar).
           </div>
           <button className="btn-primary" onClick={handleGenerate} disabled={loading}>
@@ -703,10 +690,10 @@ function SeoSection({ output, onSeoResult }: { output: PipelineOutput; onSeoResu
     <div>
       <div className="section-label">Legenda</div>
       <div className="card">
-        <div style={{ fontSize: 12.5, marginBottom: 8 }}>{generation.caption}</div>
+        <div style={{ fontSize: 14.5, marginBottom: 8 }}>{generation.caption}</div>
         {warnings.length > 0 && (
           <div className="reject-card" style={{ marginBottom: 8 }}>
-            <div style={{ fontWeight: 700, fontSize: 12 }}>Checagem automática encontrou possível problema:</div>
+            <div style={{ fontWeight: 700, fontSize: 14 }}>Checagem automática encontrou possível problema:</div>
             {warnings.map((w, i) => (
               <div key={i} className="violation-item">
                 <div>"{w.flaggedText}"</div>
@@ -717,7 +704,7 @@ function SeoSection({ output, onSeoResult }: { output: PipelineOutput; onSeoResu
         )}
         <button
           className="btn-secondary"
-          style={{ padding: "8px 12px", fontSize: 11.5 }}
+          style={{ padding: "8px 12px", fontSize: 13.5 }}
           onClick={() => navigator.clipboard?.writeText(generation.caption)}
         >
           Copiar legenda
@@ -745,13 +732,13 @@ function RoteiroView({
   return (
     <div className="app">
       <BrandRow />
-      <h1 className="h1" style={{ fontSize: 18 }}>
+      <h1 className="h1" style={{ fontSize: 20 }}>
         {approved ? "Roteiro aprovado ✓" : "Roteiro (compliance pendente)"}
       </h1>
 
       <div>
         <div className="section-label">Hook selecionado</div>
-        <div className="card" style={{ fontStyle: "italic", fontSize: 13 }}>
+        <div className="card" style={{ fontStyle: "italic", fontSize: 15 }}>
           "{generation.selectedHook}"
         </div>
       </div>
@@ -775,12 +762,12 @@ function RoteiroView({
 
       {approved ? (
         <div className="approve-card">
-          <div style={{ fontWeight: 700, fontSize: 13 }}>Compliance aprovado</div>
-          <div style={{ fontSize: 11, marginTop: 4 }}>{compliance.checkedGroups.length} grupos de regra verificados.</div>
+          <div style={{ fontWeight: 700, fontSize: 15 }}>Compliance aprovado</div>
+          <div style={{ fontSize: 13, marginTop: 4 }}>{compliance.checkedGroups.length} grupos de regra verificados.</div>
         </div>
       ) : (
         <div className="reject-card">
-          <div style={{ fontWeight: 700, fontSize: 13 }}>Correção necessária</div>
+          <div style={{ fontWeight: 700, fontSize: 15 }}>Correção necessária</div>
           {compliance.violations.map((v, i) => (
             <div key={i} className="violation-item">
               <div style={{ fontWeight: 700 }}>{v.group}</div>
@@ -821,7 +808,7 @@ function ManualView({ output, onReset }: { output: PipelineOutput; onReset: () =
   return (
     <div className="app">
       <BrandRow />
-      <h1 className="h1" style={{ fontSize: 18 }}>
+      <h1 className="h1" style={{ fontSize: 20 }}>
         Correção necessária
       </h1>
       <div className="h1-sub">

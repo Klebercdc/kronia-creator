@@ -1,0 +1,13 @@
+{
+  "name": "KRONIA — Criador Inteligente",
+  "short_name": "KRONIA",
+  "description": "Criador de roteiro e prompts de vídeo com IA para TikTok/TikTok Shop e Jeová Fala.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#17171a",
+  "theme_color": "#17171a",
+  "icons": [
+    { "src": "/favicon.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any" },
+    { "src": "/favicon.png", "sizes": "1254x1254", "type": "image/png", "purpose": "maskable" }
+  ]
+}
