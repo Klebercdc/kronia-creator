@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { runPipeline, ManualEditRequiredError } from "../core/pipeline";
+import { runPipeline, analyzeReference, ManualEditRequiredError } from "../core/pipeline";
 import { analyzeActorImage } from "../core/generation/actor-vision";
 import { analyzeProductImage } from "../core/generation/product-vision";
 import { refineScenePrompt } from "../core/generation/refine-scene";
@@ -22,9 +22,11 @@ import {
   ContentRequestSchema,
   FlowSegmentSchema,
   GenerationResultSchema,
+  ReferenceAnalysisSchema,
   ScriptSceneSchema,
   type GenerationResult,
   type PipelineOutput,
+  type ReferenceAnalysis,
 } from "../types/pipeline";
 import type { ComplianceViolation } from "../types/compliance";
 
@@ -33,15 +35,39 @@ export type RunPipelineResult =
   | { status: "manual"; output: PipelineOutput };
 
 /**
+ * RPC que roda só a Ingestão/Classificação/Recomendação (o pedaço lento do
+ * Caminho A — download do vídeo via yt-dlp, ffmpeg, Whisper, visão
+ * computacional). Separada de `runContentPipeline` porque as duas juntas
+ * numa function só estouravam o timeout de 60s do Vercel (confirmado em
+ * produção). O cliente chama esta primeiro e manda o resultado de volta em
+ * `runContentPipeline` — reaproveita sem baixar o vídeo de novo.
+ */
+export const analyzeReferenceVideo = createServerFn({ method: "POST" })
+  .validator((data: unknown) => ContentRequestSchema.parse(data))
+  .handler(async ({ data }): Promise<ReferenceAnalysis> => analyzeReference(data));
+
+/**
  * RPC chamável do cliente — roda o núcleo inteiro no servidor (onde ficam
  * as chaves de API e as ferramentas de vídeo). O cliente nunca fala direto
  * com Groq/OpenAI/yt-dlp.
+ *
+ * `precomputedAnalysis` é o resultado de `analyzeReferenceVideo`, quando o
+ * cliente já rodou essa etapa antes (Caminho A) — evita refazer a Ingestão.
+ * Sem vídeo de referência (Caminho B) não há nada lento pra separar, então
+ * o cliente chama direto sem passar por `analyzeReferenceVideo`.
  */
 export const runContentPipeline = createServerFn({ method: "POST" })
-  .validator((data: unknown) => ContentRequestSchema.parse(data))
+  .validator((data: unknown) =>
+    z
+      .object({
+        request: ContentRequestSchema,
+        precomputedAnalysis: ReferenceAnalysisSchema.optional(),
+      })
+      .parse(data),
+  )
   .handler(async ({ data }): Promise<RunPipelineResult> => {
     try {
-      const output = await runPipeline(data);
+      const output = await runPipeline(data.request, data.precomputedAnalysis);
       return { status: "aprovado", output };
     } catch (err) {
       if (err instanceof ManualEditRequiredError) {

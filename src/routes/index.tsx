@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState, useEffect, type FormEvent } from "react";
 import {
   runContentPipeline,
+  analyzeReferenceVideo,
   analyzeActorPhoto,
   analyzeProductPhoto,
   refineScene,
@@ -466,6 +467,7 @@ function CriadorApp() {
 
 function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
   const runPipelineFn = useServerFn(runContentPipeline);
+  const analyzeReferenceVideoFn = useServerFn(analyzeReferenceVideo);
   const analyzeActorPhotoFn = useServerFn(analyzeActorPhoto);
   const analyzeProductPhotoFn = useServerFn(analyzeProductPhoto);
   const listSavedThemesRpc = useServerFn(listSavedThemesFn);
@@ -585,7 +587,15 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
     };
 
     try {
-      const res = await runPipelineFn({ data: request });
+      // Caminho A (com vídeo de referência): a Ingestão sozinha (download +
+      // ffmpeg + Whisper + visão) já é o pedaço lento — separada numa
+      // chamada própria pra não somar com a cadeia de 6 agentes da Geração
+      // e estourar o timeout de 60s da function no Vercel (aconteceu em
+      // produção). Caminho B não tem nada lento pra separar.
+      const precomputedAnalysis = request.referenceVideoUrl
+        ? await analyzeReferenceVideoFn({ data: request })
+        : undefined;
+      const res = await runPipelineFn({ data: { request, precomputedAnalysis } });
       setResult(res);
       setStep(res.status === "aprovado" ? "resultado" : "manual");
       try {

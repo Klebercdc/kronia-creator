@@ -131,6 +131,22 @@ export const GenerationResultSchema = z.object({
 });
 export type GenerationResult = z.infer<typeof GenerationResultSchema>;
 
+/**
+ * Saída das etapas 1-3 (Ingestão + Classificação + Recomendação) —
+ * exatamente o pedaço lento do Caminho A (download de vídeo, ffmpeg,
+ * Whisper, visão computacional). Devolvida ao cliente numa chamada própria
+ * (`analyzeReferenceVideo`) pra a chamada de geração não precisar refazer
+ * esse trabalho nem correr o risco de estourar o timeout da function
+ * somando as duas coisas numa só (é dado pequeno — não guarda o vídeo em
+ * si, que já é descartado ao fim da Ingestão).
+ */
+export const ReferenceAnalysisSchema = z.object({
+  ingestion: VideoAnalysisSchema.nullable(),
+  classification: ClassificationResultSchema.nullable(),
+  recommendation: FormatRecommendationSchema,
+});
+export type ReferenceAnalysis = z.infer<typeof ReferenceAnalysisSchema>;
+
 /** Etapa 5 — Compliance. Gate: aprovado -> entrega; reprovado -> correção -> Compliance de novo. */
 export interface PipelineOutput {
   request: ContentRequest;
