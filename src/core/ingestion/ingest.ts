@@ -2,27 +2,35 @@ import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { VideoAnalysisSchema, type VideoAnalysis } from "../../types/video-analysis";
 import { downloadVideo } from "./download";
+import { downloadFromStorage } from "./storage-download";
 import { probeVideo, extractFrames, sampleFrames } from "./frames";
 import { parseVtt, type TranscriptSegment } from "./transcribe";
 import { transcribeWithWhisper } from "./whisper";
 import { analyzeFrames } from "./analyze";
+import { deleteReferenceVideoUpload } from "../../lib/supabase";
 
 interface TranscriptResult {
   transcript: TranscriptSegment[];
   source: VideoAnalysis["transcriptSource"];
 }
 
+/** Duas formas de chegar num vídeo de referência: link direto (yt-dlp) ou
+ * upload feito pelo usuário (fallback quando o link não funciona — ex:
+ * gravação de tela), já salvo no Supabase Storage pelo navegador. */
+export type ReferenceVideoSource = { kind: "url"; url: string } | { kind: "upload"; storagePath: string };
+
 /** Teto de frames mandados pro modelo de visão — controla custo da chamada paga. */
 const MAX_FRAMES_FOR_VISION = 16;
 
 /**
  * Etapa 1 — Ingestão. Baseado no Video Analyzer:
- * download (yt-dlp) → frames (ffmpeg, fps auto-escalado) → transcript
- * (legendas ou Whisper via Groq, grátis) → análise visual estruturada
- * (OpenAI — a única peça paga do núcleo, reservada pra o que a Groq não cobre).
+ * download (yt-dlp ou upload) → frames (ffmpeg, fps auto-escalado) →
+ * transcript (legendas ou Whisper via Groq, grátis) → análise visual
+ * estruturada (OpenAI — a única peça paga do núcleo, reservada pra o que a
+ * Groq não cobre).
  */
-export async function ingest(referenceVideoUrl: string): Promise<VideoAnalysis> {
-  const download = await downloadVideo(referenceVideoUrl);
+export async function ingest(source: ReferenceVideoSource): Promise<VideoAnalysis> {
+  const download = source.kind === "url" ? await downloadVideo(source.url) : await downloadFromStorage(source.storagePath);
 
   try {
     const meta = await probeVideo(download.videoPath);
@@ -56,11 +64,16 @@ export async function ingest(referenceVideoUrl: string): Promise<VideoAnalysis> 
 
     return VideoAnalysisSchema.parse({
       ...analysis,
-      sourceUrl: referenceVideoUrl,
+      sourceUrl: source.kind === "url" ? source.url : undefined,
       framesAnalyzed: visionFrames.length,
       transcriptSource,
     });
   } finally {
     await rm(download.workDir, { recursive: true, force: true });
+    if (source.kind === "upload") {
+      // Best-effort — não deixa o objeto pra sempre no bucket, mas também
+      // não derruba a Ingestão se a limpeza falhar (já processamos o dado).
+      await deleteReferenceVideoUpload(source.storagePath).catch(() => {});
+    }
   }
 }

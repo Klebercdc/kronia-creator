@@ -139,3 +139,22 @@ export async function removeHistoryEntry(id: string): Promise<void> {
   const { error } = await getSupabase().from("creator_history").delete().eq("id", id);
   if (error) throw error;
 }
+
+/** Nome do bucket usado pra upload direto do navegador de vídeo de
+ * referência (fallback quando o link do TikTok/yt-dlp não funciona — ex:
+ * o usuário grava a própria tela). Bucket privado; ver
+ * supabase/migrations (RLS: anon só insert/select/delete, escopado a este
+ * bucket, nunca lista/lê outro). */
+export const REFERENCE_VIDEO_BUCKET = "creator-reference-videos";
+
+/** Baixa o arquivo enviado pelo navegador — o servidor processa e descarta,
+ * nunca guarda o vídeo (mesma política do Caminho A via yt-dlp). */
+export async function downloadReferenceVideoUpload(storagePath: string): Promise<ArrayBuffer> {
+  const { data, error } = await getSupabase().storage.from(REFERENCE_VIDEO_BUCKET).download(storagePath);
+  if (error) throw error;
+  return data.arrayBuffer();
+}
+
+export async function deleteReferenceVideoUpload(storagePath: string): Promise<void> {
+  await getSupabase().storage.from(REFERENCE_VIDEO_BUCKET).remove([storagePath]);
+}

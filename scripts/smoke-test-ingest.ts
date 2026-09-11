@@ -11,7 +11,7 @@ if (!url) {
   process.exit(1);
 }
 
-ingest(url)
+ingest({ kind: "url", url })
   .then((analysis) => console.log(JSON.stringify(analysis, null, 2)))
   .catch((err) => {
     console.error("Falhou:", err);

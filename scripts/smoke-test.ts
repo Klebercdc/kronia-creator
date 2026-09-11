@@ -16,6 +16,7 @@ const request: ContentRequest = {
     { text: "Tema: a parábola do filho pródigo e o perdão", kind: "fato", source: "campo de informações" },
   ],
   referenceVideoUrl: null,
+  referenceVideoStoragePath: null,
   actorProfile: JESUS_KRONIA,
   targetDurationSeconds: 30,
 };

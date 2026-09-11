@@ -22,7 +22,12 @@ export class ManualEditRequiredError extends Error {
  * produção (confirmado: "Task timed out after 60 seconds").
  */
 export async function analyzeReference(request: ContentRequest): Promise<ReferenceAnalysis> {
-  const ingestion = request.referenceVideoUrl ? await ingest(request.referenceVideoUrl) : null;
+  const source = request.referenceVideoStoragePath
+    ? ({ kind: "upload", storagePath: request.referenceVideoStoragePath } as const)
+    : request.referenceVideoUrl
+      ? ({ kind: "url", url: request.referenceVideoUrl } as const)
+      : null;
+  const ingestion = source ? await ingest(source) : null;
   const classification = ingestion ? await classify(ingestion) : null;
   const recommendation = await recommend(request, classification);
   return { ingestion, classification, recommendation };

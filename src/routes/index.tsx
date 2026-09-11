@@ -17,6 +17,7 @@ import {
   type RunPipelineResult,
 } from "../server/pipeline.functions";
 import { ACTOR_PRESETS } from "../core/generation/actor-presets";
+import { uploadReferenceVideo } from "../lib/supabase-client";
 import type { SavedTheme, HistoryEntry } from "../lib/supabase";
 import type { ContentRequest, GenerationResult, PipelineOutput } from "../types/pipeline";
 import logoIcon from "../assets/logo-icon.png";
@@ -489,6 +490,8 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
   const [targetDurationSeconds, setTargetDurationSeconds] = useState<number | null>(null);
   const [savedThemes, setSavedThemes] = useState<SavedTheme[]>([]);
   const [referenceVideoUrl, setReferenceVideoUrl] = useState("");
+  const [referenceVideoFile, setReferenceVideoFile] = useState<{ name: string; storagePath: string } | null>(null);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [actorName, setActorName] = useState("");
   const [actorVoice, setActorVoice] = useState("");
   const [actorAppearance, setActorAppearance] = useState("");
@@ -538,6 +541,23 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
     }
   }
 
+  async function handleReferenceVideoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploadingVideo(true);
+    setErrorMessage(null);
+    try {
+      const storagePath = await uploadReferenceVideo(file);
+      setReferenceVideoFile({ name: file.name, storagePath });
+      setReferenceVideoUrl("");
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Erro ao enviar o vídeo");
+    } finally {
+      setUploadingVideo(false);
+    }
+  }
+
   async function handleProductPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -575,7 +595,8 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
       mode,
       productPhotoUrl: productPhotoDataUrl,
       productInfo,
-      referenceVideoUrl: referenceVideoUrl.trim() || null,
+      referenceVideoUrl: referenceVideoFile ? null : referenceVideoUrl.trim() || null,
+      referenceVideoStoragePath: referenceVideoFile?.storagePath ?? null,
       actorProfile: hasActor
         ? {
             name: actorName.trim(),
@@ -592,9 +613,10 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
       // chamada própria pra não somar com a cadeia de 6 agentes da Geração
       // e estourar o timeout de 60s da function no Vercel (aconteceu em
       // produção). Caminho B não tem nada lento pra separar.
-      const precomputedAnalysis = request.referenceVideoUrl
-        ? await analyzeReferenceVideoFn({ data: request })
-        : undefined;
+      const precomputedAnalysis =
+        request.referenceVideoUrl || request.referenceVideoStoragePath
+          ? await analyzeReferenceVideoFn({ data: request })
+          : undefined;
       const res = await runPipelineFn({ data: { request, precomputedAnalysis } });
       setResult(res);
       setStep(res.status === "aprovado" ? "resultado" : "manual");
@@ -890,18 +912,42 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
                 fontSize: 13.5,
                 fontFamily: "inherit",
               }}
-              placeholder="Adicionar vídeo de referência"
-              value={referenceVideoUrl}
+              placeholder={referenceVideoFile ? referenceVideoFile.name : "Adicionar vídeo de referência"}
+              value={referenceVideoFile ? "" : referenceVideoUrl}
+              disabled={!!referenceVideoFile}
               onChange={(e) => setReferenceVideoUrl(e.target.value)}
             />
-            <span style={{ color: "#6B6B6B", flex: "0 0 auto" }}>
-              <IconLink />
-            </span>
+            {referenceVideoFile ? (
+              <button
+                type="button"
+                onClick={() => setReferenceVideoFile(null)}
+                style={{ background: "none", border: "none", color: "#6B6B6B", flex: "0 0 auto", cursor: "pointer" }}
+              >
+                remover
+              </button>
+            ) : (
+              <span style={{ color: "#6B6B6B", flex: "0 0 auto" }}>
+                <IconLink />
+              </span>
+            )}
           </div>
           <div className="hint">
             A primeira geração com vídeo de referência pode demorar alguns segundos a mais —
             as ferramentas de extração são baixadas na primeira vez.
           </div>
+          <label
+            className="hint"
+            style={{ display: "block", marginTop: 6, cursor: "pointer", textDecoration: "underline" }}
+          >
+            {uploadingVideo ? "Enviando vídeo..." : "ou envie um arquivo de vídeo (ex: gravação de tela)"}
+            <input
+              type="file"
+              accept="video/*"
+              style={{ display: "none" }}
+              disabled={uploadingVideo}
+              onChange={handleReferenceVideoFile}
+            />
+          </label>
         </div>
 
         <button

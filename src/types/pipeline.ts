@@ -27,6 +27,12 @@ export const ContentRequestSchema = z.object({
   productInfo: z.array(EvidencedClaimSchema),
 
   referenceVideoUrl: z.string().url().nullable(),
+  /** Alternativa ao link — vídeo que o usuário enviou direto (ex: gravação
+   * de tela, quando o download via link não funciona). Path dentro do
+   * bucket `creator-reference-videos` no Supabase Storage, já uploadado
+   * pelo navegador antes desta chamada. Tem precedência sobre
+   * `referenceVideoUrl` quando os dois vêm preenchidos. */
+  referenceVideoStoragePath: z.string().nullable(),
 
   /** Opcional — trava voz/aparência do ator principal em todas as cenas geradas. */
   actorProfile: ActorProfileSchema.nullable(),
