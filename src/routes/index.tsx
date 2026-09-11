@@ -150,17 +150,6 @@ function IconPlay() {
   );
 }
 
-function IconLink() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path
-        d="M9 15l6-6M8 12l-1.5 1.5a3 3 0 004.24 4.24L12 16.5M16 12l1.5-1.5a3 3 0 00-4.24-4.24L12 7.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 function IconCamera() {
   return (
     <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
@@ -489,7 +478,6 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
   const [analyzingProductPhoto, setAnalyzingProductPhoto] = useState(false);
   const [targetDurationSeconds, setTargetDurationSeconds] = useState<number | null>(null);
   const [savedThemes, setSavedThemes] = useState<SavedTheme[]>([]);
-  const [referenceVideoUrl, setReferenceVideoUrl] = useState("");
   const [referenceVideoFile, setReferenceVideoFile] = useState<{ name: string; storagePath: string } | null>(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [actorName, setActorName] = useState("");
@@ -550,7 +538,6 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
     try {
       const storagePath = await uploadReferenceVideo(file);
       setReferenceVideoFile({ name: file.name, storagePath });
-      setReferenceVideoUrl("");
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Erro ao enviar o vídeo");
     } finally {
@@ -595,7 +582,7 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
       mode,
       productPhotoUrl: productPhotoDataUrl,
       productInfo,
-      referenceVideoUrl: referenceVideoFile ? null : referenceVideoUrl.trim() || null,
+      referenceVideoUrl: null,
       referenceVideoStoragePath: referenceVideoFile?.storagePath ?? null,
       actorProfile: hasActor
         ? {
@@ -613,10 +600,9 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
       // chamada própria pra não somar com a cadeia de 6 agentes da Geração
       // e estourar o timeout de 60s da function no Vercel (aconteceu em
       // produção). Caminho B não tem nada lento pra separar.
-      const precomputedAnalysis =
-        request.referenceVideoUrl || request.referenceVideoStoragePath
-          ? await analyzeReferenceVideoFn({ data: request })
-          : undefined;
+      const precomputedAnalysis = request.referenceVideoStoragePath
+        ? await analyzeReferenceVideoFn({ data: request })
+        : undefined;
       const res = await runPipelineFn({ data: { request, precomputedAnalysis } });
       setResult(res);
       setStep(res.status === "aprovado" ? "resultado" : "manual");
@@ -876,7 +862,7 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
 
         <div>
           <div className="section-label">Vídeo de referência (opcional)</div>
-          <div
+          <label
             style={{
               display: "flex",
               alignItems: "center",
@@ -885,6 +871,7 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
               border: "1.5px dashed #2A2A2A",
               borderRadius: 14,
               padding: 14,
+              cursor: uploadingVideo ? "default" : "pointer",
             }}
           >
             <span
@@ -902,52 +889,38 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
             >
               <IconPlay />
             </span>
-            <input
-              style={{
-                flex: 1,
-                border: "none",
-                background: "none",
-                padding: 0,
-                color: "#B5B5B5",
-                fontSize: 13.5,
-                fontFamily: "inherit",
-              }}
-              placeholder={referenceVideoFile ? referenceVideoFile.name : "Adicionar vídeo de referência"}
-              value={referenceVideoFile ? "" : referenceVideoUrl}
-              disabled={!!referenceVideoFile}
-              onChange={(e) => setReferenceVideoUrl(e.target.value)}
-            />
+            <span style={{ flex: 1, color: "#B5B5B5", fontSize: 13.5 }}>
+              {uploadingVideo
+                ? "Enviando vídeo..."
+                : referenceVideoFile
+                  ? referenceVideoFile.name
+                  : "Enviar vídeo (ex: gravação de tela)"}
+            </span>
             {referenceVideoFile ? (
               <button
                 type="button"
-                onClick={() => setReferenceVideoFile(null)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setReferenceVideoFile(null);
+                }}
                 style={{ background: "none", border: "none", color: "#6B6B6B", flex: "0 0 auto", cursor: "pointer" }}
               >
                 remover
               </button>
             ) : (
-              <span style={{ color: "#6B6B6B", flex: "0 0 auto" }}>
-                <IconLink />
-              </span>
+              <input
+                type="file"
+                accept="video/*"
+                style={{ display: "none" }}
+                disabled={uploadingVideo}
+                onChange={handleReferenceVideoFile}
+              />
             )}
-          </div>
+          </label>
           <div className="hint">
             A primeira geração com vídeo de referência pode demorar alguns segundos a mais —
             as ferramentas de extração são baixadas na primeira vez.
           </div>
-          <label
-            className="hint"
-            style={{ display: "block", marginTop: 6, cursor: "pointer", textDecoration: "underline" }}
-          >
-            {uploadingVideo ? "Enviando vídeo..." : "ou envie um arquivo de vídeo (ex: gravação de tela)"}
-            <input
-              type="file"
-              accept="video/*"
-              style={{ display: "none" }}
-              disabled={uploadingVideo}
-              onChange={handleReferenceVideoFile}
-            />
-          </label>
         </div>
 
         <button
