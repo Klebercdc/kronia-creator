@@ -3,6 +3,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { createReadStream } from "node:fs";
 import { join } from "node:path";
+import { getVendoredBinaryPath } from "../../lib/vendored-binary";
 import type { TranscriptSegment } from "./transcribe";
 
 const run = promisify(execFile);
@@ -14,7 +15,8 @@ const run = promisify(execFile);
  */
 export async function transcribeWithWhisper(videoPath: string, workDir: string): Promise<TranscriptSegment[]> {
   const audioPath = join(workDir, "audio.mp3");
-  await run("ffmpeg", [
+  const ffmpegPath = await getVendoredBinaryPath("ffmpeg");
+  await run(ffmpegPath, [
     "-hide_banner",
     "-loglevel",
     "error",

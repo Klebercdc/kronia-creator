@@ -128,40 +128,12 @@ tentativas.
 
 ## Pendências / dívida técnica conhecida
 
-- **[Auditoria — Ingestão (Caminho A) desligada na UI até resolver de
-  verdade]** `download.ts`, `frames.ts` e `whisper.ts` chamam os binários
-  externos `yt-dlp`, `ffmpeg` e `ffprobe` via `execFile`. Nenhum dos três é
-  instalado por padrão no runtime serverless do Vercel, e não havia vendoring
-  configurado.
-
-  Investiguei as 3 saídas antes de decidir:
-  - **Vendorizar binário**: `ffmpeg-static`/`@ffprobe-installer/ffprobe` são
-    pacotes maduros, amplamente usados em Vercel — confiança alta que
-    funcionariam. Já `yt-dlp` não tem pacote npm equivalente confiável: testei
-    `youtube-dl-exec` e o install falhou no meio do teste por rate limit da
-    API do GitHub (`npm error API rate limit exceeded` — falha real,
-    reproduzida, não hipotética) — o mesmo tipo de falha intermitente
-    aconteceria num build do Vercel. Vendorizar o binário standalone do
-    yt-dlp direto no repo funciona tecnicamente (testei o download, ~40MB),
-    mas ele + ffmpeg + ffprobe (~80MB cada, build estático) somados arriscam
-    estourar o limite de tamanho de function do Vercel, e eu não tenho como
-    testar contra o runtime real do Vercel a partir daqui pra confirmar que
-    cabe e roda dentro do tempo de execução permitido.
-  - **API de extração em nuvem**: troca a dependência de binário por uma
-    dependência de outro serviço pago — não avaliei fornecedor nenhum ainda,
-    é a opção que precisa mais decisão de produto (qual serviço, custo).
-  - **Desligar até resolver (opção escolhida agora)**: campo "Vídeo de
-    referência" desabilitado na UI (`routes/index.tsx`) com texto explicando
-    o motivo, e uma trava correspondente no servidor
-    (`server/pipeline.functions.ts` — `runContentPipeline` rejeita com
-    mensagem clara se `referenceVideoUrl` vier preenchido, em vez de deixar
-    estourar erro cru de binário ausente). O Caminho B (produto/foto/texto,
-    sem vídeo de referência) não é afetado — é o caminho que já estava sendo
-    testado e funciona.
-
-  Nenhuma das 3 saídas foi implementada de verdade ainda — decisão de qual
-  seguir (vendorizar mesmo assim, usar serviço em nuvem, ou manter desligado)
-  é do usuário.
+- ~~Ingestão (Caminho A) desligada~~ — **[Corrigido]** ver seção
+  "Auditoria (histórico)" abaixo. `yt-dlp`/`ffmpeg`/`ffprobe` agora são
+  baixados sob demanda pra `/tmp` na primeira execução de cada instância
+  fria (`src/lib/vendored-binary.ts`), em vez de depender do PATH do
+  runtime ou de empacotar os binários no build. Campo "Vídeo de
+  referência" reabilitado na UI.
 - Cost-tracker não sobrevive a deploy serverless e subestima o custo do
   fallback OpenAI (ver acima).
 - Nenhum aviso na UI quando uma geração usa o fallback pago (Groq
@@ -187,3 +159,24 @@ tentativas.
   Trocado pra `target: "jsonSchema7"`, confirmado sem `exclusiveMinimum`
   booleano restante em `GenerationResultSchema`, `ContentRequestSchema`,
   `VideoAnalysisSchema` e `ComplianceResultSchema`.
+
+- **[Corrigido, ver RELATORIO-AUDITORIA.md pro histórico completo das 3
+  tentativas falhas]** Ingestão dependia de `yt-dlp`/`ffmpeg`/`ffprobe` no
+  PATH do sistema, inexistentes no runtime do Vercel. Três formas de
+  vendorizar falharam (rate limit de API no install, binário não incluído
+  no bundle, build estourando memória tentando embutir ~200MB via base64).
+  A que funcionou: `src/lib/vendored-binary.ts` baixa cada binário sob
+  demanda direto pra `/tmp` na primeira chamada de cada instância fria
+  (yt-dlp: download direto do release do GitHub, ~40MB; ffmpeg+ffprobe: um
+  único tarball estático do johnvansickle.com, ~42MB comprimido, os dois
+  binários saem da mesma extração). Nada disso entra no bundle de deploy —
+  `.output` voltou a 4.5MB (era >250MB tentando embutir). Testado de ponta
+  a ponta: download+execução dos 3 binários (yt-dlp 1.9s, ffmpeg+ffprobe
+  5.7s na primeira vez, instantâneo depois — cache em memória por
+  instância), e o pipeline de processamento de vídeo completo
+  (`probeVideo`, `extractFrames`, `transcribeWithWhisper` — essa última
+  com uma chamada real à Groq) rodando sobre um vídeo sintético gerado
+  localmente. Não testado: o download real de uma URL do TikTok/YouTube
+  via yt-dlp em produção (só o binário rodando, `--version`) — o mecanismo
+  de download em si é o uso normal e documentado do yt-dlp, risco residual
+  baixo comparado ao que já foi validado.

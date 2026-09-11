@@ -90,25 +90,57 @@ morrendo por falta de RAM tentando converter ~200MB de binário pra base64
 de uma vez, dentro do bundler (Rollup/Nitro). Isso quebra o build **local**;
 nem chegaria a ser testado no Vercel.
 
-**Decisão**: revertido tudo (código, `vendor/`, dependências). Campo
-"Vídeo de referência" desabilitado na UI (`src/routes/index.tsx`) com
-texto explicando o motivo, e trava correspondente no servidor
-(`src/server/pipeline.functions.ts` — `runContentPipeline` rejeita com
-mensagem clara se vier `referenceVideoUrl`, em vez de deixar estourar erro
-cru de binário ausente).
+Revertido tudo dessa tentativa (código, `vendor/`, dependências) — não dava
+pra empacotar os 3 binários no build.
 
-**Caminhos reais que sobram** (nenhum testado ainda, todos exigem decisão
-de produto/custo, não são "ajuste rápido"):
-1. Aumentar o heap do build (`--max-old-space-size`) — resolveria só o
-   build local; não há garantia de que o *runtime* do Vercel aceita uma
-   function desse tamanho (~250MB é o limite documentado).
-2. Trocar os binários locais por uma API de extração em nuvem (serviço
-   pago, novo custo recorrente).
-3. Mover a Ingestão pra um ambiente separado, fora do serverless padrão
-   do Vercel (ex: um worker dedicado).
+### Tentativa 4 — baixar sob demanda em vez de empacotar no build
+A saída que funcionou. Em vez de tentar colocar os binários *dentro* do
+pacote de deploy (que é o que faz o build estourar memória), eles são
+baixados **em runtime**, na primeira chamada de cada instância fria do
+servidor, direto pra `/tmp` (único diretório gravável garantido em
+qualquer ambiente serverless) — nunca entram no bundle.
 
-**Status**: ❌ não corrigido. Desligado com clareza, documentado, Caminho B
-(produto/foto/texto, sem vídeo de referência) não afetado.
+- `yt-dlp`: download direto do link de release do GitHub (não da API —
+  esse é o link que tinha dado rate limit; o link de release direto nunca
+  deu problema nos testes), ~40MB.
+- `ffmpeg` + `ffprobe`: um único tarball estático do johnvansickle.com
+  (~42MB comprimido), extraído uma vez — os dois binários saem da mesma
+  extração, sem baixar duas vezes.
+
+Implementado em `src/lib/vendored-binary.ts`. Testei de ponta a ponta,
+com binário de verdade, sem mock:
+
+```
+yt-dlp: 2026.08.19 at /tmp/kronia-bin/yt-dlp
+yt-dlp download+run: 1.896s
+ffmpeg: ... at /tmp/kronia-bin/ffmpeg
+ffmpeg download+run: 5.730s
+ffprobe: ffprobe version 7.0.2-static ... at /tmp/kronia-bin/ffprobe
+ffprobe (reutilizou a extração do ffmpeg): 7.778ms
+yt-dlp segunda chamada (cacheada em memória): 0.007ms
+```
+
+E depois validei o pipeline de processamento completo (`probeVideo`,
+`extractFrames`, `transcribeWithWhisper` — essa última com uma chamada
+real à API da Groq, não mockada) rodando sobre um vídeo sintético de 6s
+gerado localmente com o próprio ffmpeg (pra não depender de nenhuma URL
+externa no teste) — os 3 passos rodaram e devolveram dado real.
+
+`.output` do build voltou a 4.5MB (era >250MB na tentativa 3, e o build
+não crashava mais).
+
+**O que não foi testado**: baixar um vídeo de verdade de uma URL do
+TikTok/YouTube via yt-dlp rodando dentro do Vercel em produção — só validei
+o binário rodando (`--version`) e o mecanismo de download em si, que é o
+uso normal e documentado do yt-dlp (não uma parte nova/arriscada do meu
+código). Risco residual baixo comparado ao que já foi provado funcionando.
+
+**Decisão**: campo "Vídeo de referência" reabilitado na UI
+(`src/routes/index.tsx`), trava do servidor removida
+(`src/server/pipeline.functions.ts`).
+
+**Status**: ✅ corrigido e testado (exceto o download real de um vídeo de
+plataforma em produção, não verificável a partir daqui).
 
 ---
 
@@ -131,5 +163,5 @@ de produto/custo, não são "ajuste rápido"):
 | # | Achado | Severidade | Status |
 |---|---|---|---|
 | 1 | Schema inválido pra OpenAI (Teólogo/Psicologia de Compra/Ingestão) | Crítico | ✅ Corrigido |
-| 2 | Ingestão depende de binários não disponíveis no Vercel | Alto | ❌ Desligado, não corrigido |
+| 2 | Ingestão depende de binários não disponíveis no Vercel | Alto | ✅ Corrigido (download sob demanda) |
 | 3 | Cost-tracker não sobrevive a serverless + preço errado no fallback | Baixo | ❌ Não corrigido |

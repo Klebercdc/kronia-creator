@@ -40,16 +40,6 @@ export type RunPipelineResult =
 export const runContentPipeline = createServerFn({ method: "POST" })
   .validator((data: unknown) => ContentRequestSchema.parse(data))
   .handler(async ({ data }): Promise<RunPipelineResult> => {
-    // Trava de segurança: a Ingestão (Caminho A) depende de yt-dlp/ffmpeg/ffprobe
-    // via execFile, e não há vendoring desses binários confirmado rodando no
-    // runtime de produção — ver ARCHITECTURE.md. Bloqueia aqui, com mensagem
-    // clara, em vez de deixar estourar um erro cru de binário ausente.
-    if (data.referenceVideoUrl) {
-      throw new Error(
-        "Vídeo de referência está temporariamente desligado — a ferramenta de extração ainda não " +
-          "foi confirmada funcionando no ambiente de produção. Gere sem vídeo de referência por enquanto.",
-      );
-    }
     try {
       const output = await runPipeline(data);
       return { status: "aprovado", output };

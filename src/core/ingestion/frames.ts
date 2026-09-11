@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
+import { getVendoredBinaryPath } from "../../lib/vendored-binary";
 
 const run = promisify(execFile);
 
@@ -26,7 +27,8 @@ interface FfprobeStream {
 }
 
 export async function probeVideo(videoPath: string): Promise<VideoMeta> {
-  const { stdout } = await run("ffprobe", [
+  const ffprobePath = await getVendoredBinaryPath("ffprobe");
+  const { stdout } = await run(ffprobePath, [
     "-v",
     "quiet",
     "-print_format",
@@ -68,8 +70,9 @@ export async function extractFrames(
   await mkdir(outDir, { recursive: true });
   const fps = autoFps(durationSeconds, maxFrames);
   const pattern = join(outDir, "frame_%04d.jpg");
+  const ffmpegPath = await getVendoredBinaryPath("ffmpeg");
 
-  await run("ffmpeg", [
+  await run(ffmpegPath, [
     "-hide_banner",
     "-loglevel",
     "error",

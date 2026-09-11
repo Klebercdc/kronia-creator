@@ -843,7 +843,7 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
         </div>
 
         <div>
-          <div className="section-label">Vídeo de referência (em breve)</div>
+          <div className="section-label">Vídeo de referência (opcional)</div>
           <div
             style={{
               display: "flex",
@@ -853,7 +853,6 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
               border: "1.5px dashed #2A2A2A",
               borderRadius: 14,
               padding: 14,
-              opacity: 0.5,
             }}
           >
             <span
@@ -872,7 +871,6 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
               <IconPlay />
             </span>
             <input
-              disabled
               style={{
                 flex: 1,
                 border: "none",
@@ -881,9 +879,8 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
                 color: "#B5B5B5",
                 fontSize: 13.5,
                 fontFamily: "inherit",
-                cursor: "not-allowed",
               }}
-              placeholder="Temporariamente indisponível"
+              placeholder="Adicionar vídeo de referência"
               value={referenceVideoUrl}
               onChange={(e) => setReferenceVideoUrl(e.target.value)}
             />
@@ -892,9 +889,8 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
             </span>
           </div>
           <div className="hint">
-            Desligado por enquanto — depende de ferramentas externas (download + extração de
-            frames) que ainda não estão confirmadas rodando no ambiente de produção. Sem isso,
-            o roteiro é gerado só a partir da foto/texto do produto — que já funciona normalmente.
+            A primeira geração com vídeo de referência pode demorar alguns segundos a mais —
+            as ferramentas de extração são baixadas na primeira vez.
           </div>
         </div>
 
