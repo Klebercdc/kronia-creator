@@ -2,12 +2,8 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
-  claimJob,
-  claimNextJob,
-  getJob,
   completeJob,
   advanceJobStep,
-  failJobStep,
   downloadReferenceVideoUpload,
   deleteReferenceVideoUpload,
   uploadJobArtifact,
@@ -23,59 +19,26 @@ import { classify } from "../classification/classify";
 import { recommend } from "../recommendation/recommend";
 import { VideoAnalysisSchema } from "../../types/video-analysis";
 import type { ContentRequest, ReferenceAnalysis } from "../../types/pipeline";
+import type { JobKindHandlers } from "./dispatcher";
 
 const MAX_FRAMES_FOR_VISION = 16;
 
 /**
- * Job Engine — Ingestão de vídeo de referência via upload, quebrada em 3
- * steps (download+frames, transcript, visão+classificação+recomendação).
- * Cada step é uma invocação curta, cabe sozinha nos 60s de uma function;
- * `advanceIngestionJob` roda UM step por chamada e devolve o job
- * atualizado — o cliente poll a fila até "succeeded"/"failed".
+ * Handlers do kind `ingest_reference_video` — Ingestão de vídeo de
+ * referência via upload, quebrada em 3 steps (download+frames, transcript,
+ * visão+classificação+recomendação). Cada step é uma invocação curta,
+ * cabe sozinha nos 60s de uma function; registrado no dispatcher genérico
+ * (`core/jobs/dispatcher.ts`), que roda UM step por chamada até
+ * "succeeded"/"failed".
  */
-export async function advanceIngestionJob(jobId: string): Promise<JobRow | null> {
-  const job = await claimJob(jobId);
-  if (!job) return null; // já em processamento por outro chamador, ou já terminou
-
-  await runStep(job);
-
-  // claimJob só devolve linha quando pega o lock (status "pending" ->
-  // "running") — depois de rodar o step o status já mudou de novo, então
-  // uma leitura direta (não outro claim) é o jeito certo de devolver o
-  // estado atual pro chamador.
-  return getJob(jobId);
-}
-
-/**
- * Mesma coisa, mas pro worker independente do navegador (pg_cron ->
- * `/api/jobs/worker`) — não sabe qual job id específico processar, só
- * "existe trabalho pendente desse kind". Devolve null quando não há nada
- * pra fazer (fila vazia), o que é o caso normal na maior parte dos polls
- * do cron.
- */
-export async function advanceNextPendingJob(kind: string): Promise<JobRow | null> {
-  const job = await claimNextJob(kind);
-  if (!job) return null;
-
-  await runStep(job);
-  return getJob(job.id);
-}
-
-async function runStep(job: JobRow): Promise<void> {
-  try {
-    if (job.step === "download") await stepDownload(job);
-    else if (job.step === "transcript") await stepTranscript(job);
-    else if (job.step === "vision") await stepVision(job);
-    else throw new Error(`Step desconhecido: ${job.step}`);
-  } catch (err) {
-    const finalStatus = await failJobStep(job, err instanceof Error ? err.message : String(err));
-    // Falha definitiva (estourou max_attempts) — ninguém mais vai tocar
-    // nesse job, então os artefatos intermediários (e o vídeo original, se
-    // a falha foi antes dele ser apagado no step "download") ficariam
-    // órfãos no bucket pra sempre sem essa limpeza.
-    if (finalStatus === "failed") await cleanupAbandonedArtifacts(job);
-  }
-}
+export const referenceIngestionHandlers: JobKindHandlers = {
+  steps: {
+    download: stepDownload,
+    transcript: stepTranscript,
+    vision: stepVision,
+  },
+  onPermanentFailure: cleanupAbandonedArtifacts,
+};
 
 async function cleanupAbandonedArtifacts(job: JobRow): Promise<void> {
   const prefix = artifactPrefix(job.id);

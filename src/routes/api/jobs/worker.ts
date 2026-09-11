@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { advanceNextPendingJob } from "../../../core/jobs/reference-ingestion";
+import { advanceNextPendingJob } from "../../../core/jobs/dispatcher";
 
 /**
  * Worker independente do navegador — chamado pelo pg_cron do Supabase

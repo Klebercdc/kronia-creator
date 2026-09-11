@@ -20,7 +20,9 @@ import {
 import { ACTOR_PRESETS } from "../core/generation/actor-presets";
 import { uploadReferenceVideo } from "../lib/supabase-client";
 import type { SavedTheme, HistoryEntry } from "../lib/supabase";
-import type { ContentRequest, GenerationResult, PipelineOutput } from "../types/pipeline";
+import type { ContentRequest, GenerationResult, PipelineOutput, ReferenceAnalysis } from "../types/pipeline";
+import { findOpportunities, type OpportunityWithScore, type FindOpportunitiesResult } from "../server/intelligence.functions";
+import { opportunityToPrecomputedAnalysis } from "../core/intelligence/opportunities/bridge";
 import logoIcon from "../assets/logo-icon.png";
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -343,6 +345,161 @@ function SavedThemesDrawer({
   );
 }
 
+const FORMAT_LABEL: Record<string, string> = {
+  product_showcase: "Vitrine de produto",
+  ugc: "UGC",
+  pov: "POV",
+  unboxing: "Unboxing",
+  tutorial: "Tutorial",
+  demonstracao: "Demonstração",
+  cinematografico: "Cinematográfico",
+  produto_em_uso: "Produto em uso",
+  antes_e_depois: "Antes e depois",
+  review: "Review",
+  teste: "Teste",
+  comparacao: "Comparação",
+  storytelling: "Storytelling",
+  produto_360: "Produto 360°",
+  apresentacao_por_modelo: "Apresentação por modelo",
+};
+
+function OportunidadesTab({ onCreateContent }: { onCreateContent: (seed: PendingOpportunitySeed) => void }) {
+  const findOpportunitiesFn = useServerFn(findOpportunities);
+
+  const [niche, setNiche] = useState("");
+  const [objective, setObjective] = useState("");
+  const [trendText, setTrendText] = useState("");
+  const [growthHint, setGrowthHint] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [result, setResult] = useState<FindOpportunitiesResult | null>(null);
+
+  async function handleFind(e: FormEvent) {
+    e.preventDefault();
+    if (!niche.trim() || !objective.trim() || !trendText.trim()) return;
+    setLoading(true);
+    setErrorMessage(null);
+    setResult(null);
+    try {
+      const res = await findOpportunitiesFn({
+        data: {
+          trendInput: {
+            trendText: trendText.trim(),
+            growthHint: growthHint.trim() || null,
+            niche: niche.trim(),
+            objective: objective.trim(),
+          },
+        },
+      });
+      setResult(res);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Erro ao buscar oportunidades");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleCreateContent(opportunity: OpportunityWithScore) {
+    const precomputedAnalysis = opportunityToPrecomputedAnalysis(opportunity);
+    const productInfoText = `Tema: ${opportunity.title}. Ângulo: ${opportunity.angle}. Hook sugerido: "${opportunity.hookText}"`;
+    onCreateContent({ productInfoText, precomputedAnalysis });
+  }
+
+  return (
+    <div className="app">
+      <BrandRow />
+      <h1 className="h1" style={{ fontSize: 20, marginBottom: 4 }}>
+        Oportunidades
+      </h1>
+      <div className="hint" style={{ marginBottom: 16 }}>
+        O TikTok mostra a tendência. O KRONIA decide o que fazer com ela.
+      </div>
+
+      <form onSubmit={handleFind} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div>
+          <div className="section-label">Nicho</div>
+          <input
+            className="input"
+            placeholder="Ex: nutrição esportiva"
+            value={niche}
+            onChange={(e) => setNiche(e.target.value)}
+          />
+        </div>
+        <div>
+          <div className="section-label">Objetivo</div>
+          <input
+            className="input"
+            placeholder="Ex: vender consultoria online"
+            value={objective}
+            onChange={(e) => setObjective(e.target.value)}
+          />
+        </div>
+        <div>
+          <div className="section-label">Tendência</div>
+          <textarea
+            className="input"
+            rows={2}
+            placeholder="Ex: Café proteico crescendo forte no TikTok"
+            value={trendText}
+            onChange={(e) => setTrendText(e.target.value)}
+          />
+        </div>
+        <div>
+          <div className="section-label">Crescimento (opcional)</div>
+          <input
+            className="input"
+            placeholder="Ex: +1.350%"
+            value={growthHint}
+            onChange={(e) => setGrowthHint(e.target.value)}
+          />
+        </div>
+        <button type="submit" className="btn-primary" disabled={loading}>
+          {loading ? "Analisando..." : "Encontrar oportunidades"}
+        </button>
+      </form>
+
+      {errorMessage && (
+        <div className="card" style={{ marginTop: 16, color: "#E5484D" }}>
+          Algo deu errado: {errorMessage}
+        </div>
+      )}
+
+      {result && (
+        <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="hint">
+            🔥 {result.opportunities.length} oportunidade{result.opportunities.length === 1 ? "" : "s"} encontrada
+            {result.opportunities.length === 1 ? "" : "s"}
+          </div>
+          {result.opportunities
+            .slice()
+            .sort((a, b) => b.score - a.score)
+            .map((opp, i) => (
+              <div key={i} className="card" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                  <div style={{ fontWeight: 700, fontSize: 15 }}>{opp.title}</div>
+                  <div style={{ flex: "0 0 auto", fontWeight: 700, color: "#FF7A1A" }}>{opp.score}/100</div>
+                </div>
+                <div style={{ fontSize: 13.5, color: "#B5B5B5" }}>{opp.reasoning}</div>
+                <div style={{ fontSize: 12.5, color: "#8A8A8A" }}>
+                  Ângulo: {opp.angle} · Formato: {FORMAT_LABEL[opp.format] ?? opp.format} · Hook: {opp.hookType}
+                </div>
+                <div style={{ fontSize: 13, fontStyle: "italic" }}>"{opp.hookText}"</div>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ marginTop: 4 }}
+                  onClick={() => handleCreateContent(opp)}
+                >
+                  Criar conteúdo
+                </button>
+              </div>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function HistoricoTab() {
   const listHistoryRpc = useServerFn(listHistoryFn);
   const removeHistoryRpc = useServerFn(removeHistoryEntryFn);
@@ -436,16 +593,35 @@ function HistoricoTab() {
   );
 }
 
+/** O que a aba Oportunidades passa pra aba Criar quando o usuário clica
+ * "Criar conteúdo" — pré-preenche o tema e já leva a classificação/
+ * recomendação sintetizadas (bridge, sem chamada de servidor), pra
+ * `runContentPipeline` não refazer Ingestão/Classificação/Recomendação
+ * (não existe vídeo de referência aqui pra analisar mesmo). */
+interface PendingOpportunitySeed {
+  productInfoText: string;
+  precomputedAnalysis: ReferenceAnalysis;
+}
+
 function CriadorApp() {
   const [tab, setTab] = useState<AppTab>("criar");
+  const [pendingOpportunity, setPendingOpportunity] = useState<PendingOpportunitySeed | null>(null);
   return (
     <>
-      {tab === "criar" && <CriarFlow onOpenProfile={() => setTab("perfil")} />}
+      {tab === "criar" && (
+        <CriarFlow
+          onOpenProfile={() => setTab("perfil")}
+          pendingOpportunity={pendingOpportunity}
+          onConsumePendingOpportunity={() => setPendingOpportunity(null)}
+        />
+      )}
       {tab === "historico" && <HistoricoTab />}
       {tab === "explorar" && (
-        <PlaceholderTab
-          title="Explorar"
-          hint="Em breve: temas em alta e exemplos de outros criadores direto no app."
+        <OportunidadesTab
+          onCreateContent={(seed) => {
+            setPendingOpportunity(seed);
+            setTab("criar");
+          }}
         />
       )}
       {tab === "perfil" && (
@@ -456,7 +632,15 @@ function CriadorApp() {
   );
 }
 
-function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
+function CriarFlow({
+  onOpenProfile,
+  pendingOpportunity,
+  onConsumePendingOpportunity,
+}: {
+  onOpenProfile: () => void;
+  pendingOpportunity: PendingOpportunitySeed | null;
+  onConsumePendingOpportunity: () => void;
+}) {
   const runPipelineFn = useServerFn(runContentPipeline);
   const enqueueReferenceIngestionFn = useServerFn(enqueueReferenceIngestion);
   const advanceIngestionJobFn = useServerFn(advanceIngestionJob);
@@ -489,6 +673,7 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
   const [actorAppearance, setActorAppearance] = useState("");
   const [analyzingPhoto, setAnalyzingPhoto] = useState(false);
   const [showMore, setShowMore] = useState(false);
+  const [opportunityAnalysis, setOpportunityAnalysis] = useState<ReferenceAnalysis | null>(null);
 
   useEffect(() => {
     listSavedThemesRpc()
@@ -497,6 +682,17 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
         // best-effort — sem tema salvo carregado não quebra o resto do app
       });
   }, []);
+
+  // Veio da aba Oportunidades — pré-preenche o tema e guarda a
+  // classificação/recomendação sintetizadas (bridge, sem vídeo de
+  // referência) pra usar no lugar da análise de Ingestão quando o usuário
+  // clicar em "Criar". Consumido uma vez só (o pai limpa o estado).
+  useEffect(() => {
+    if (!pendingOpportunity) return;
+    setProductInfoText(pendingOpportunity.productInfoText);
+    setOpportunityAnalysis(pendingOpportunity.precomputedAnalysis);
+    onConsumePendingOpportunity();
+  }, [pendingOpportunity]);
 
   async function saveCurrentTheme() {
     const text = productInfoText.trim();
@@ -647,9 +843,13 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
       // `advanceIngestionJob` roda só UM step (cabe nos 60s) e devolve o
       // job atualizado, até "succeeded"/"failed". Caminho B não tem nada
       // lento pra enfileirar.
+      // Oportunidade escolhida na aba Oportunidades: classificação/
+      // recomendação já vêm sintetizadas do bridge (sem custo de
+      // servidor), então nem a Ingestão nem re-análise rodam de novo.
       const precomputedAnalysis = request.referenceVideoStoragePath
         ? await runIngestionJob(request)
-        : undefined;
+        : (opportunityAnalysis ?? undefined);
+      if (opportunityAnalysis) setOpportunityAnalysis(null); // consumido — não reaproveitar numa próxima geração manual
       const res = await runPipelineFn({ data: { request, precomputedAnalysis } });
       setResult(res);
       setStep(res.status === "aprovado" ? "resultado" : "manual");

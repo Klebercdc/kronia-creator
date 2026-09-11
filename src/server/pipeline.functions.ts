@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { runPipeline, ManualEditRequiredError } from "../core/pipeline";
-import { advanceIngestionJob as advanceIngestionJobCore } from "../core/jobs/reference-ingestion";
+import { advanceJob as advanceIngestionJobCore } from "../core/jobs/dispatcher";
 import { analyzeActorImage } from "../core/generation/actor-vision";
 import { analyzeProductImage } from "../core/generation/product-vision";
 import { refineScenePrompt } from "../core/generation/refine-scene";
