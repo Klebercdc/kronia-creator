@@ -48,7 +48,11 @@ function enforceStrict(node: unknown): unknown {
 }
 
 function toJsonSchema(schema: z.ZodType) {
-  const { $schema, ...rest } = zodToJsonSchema(schema, { target: "openApi3" }) as Record<string, unknown>;
+  // target "openApi3" gera "exclusiveMinimum": true (boolean, estilo draft-04) em campos
+  // .positive()/.negative() — a OpenAI em modo strict rejeita isso com "400 Invalid schema:
+  // True is not of type 'number'". "jsonSchema7" gera o valor numérico correto. Mesmo bug
+  // (e mesmo fix) que já existia no fallback do lib/llm.ts.
+  const { $schema, ...rest } = zodToJsonSchema(schema, { target: "jsonSchema7" }) as Record<string, unknown>;
   return enforceStrict(rest) as Record<string, unknown>;
 }
 
