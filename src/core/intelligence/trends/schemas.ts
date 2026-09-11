@@ -16,6 +16,12 @@ export const TrendInputSchema = z.object({
    * características reais que ele sabe (nunca inventar propriedade além
    * disso, mesma regra de EvidencedClaim no resto do pipeline). */
   product: z.string().min(1),
+  /** "Quem você quer alcançar" — distinto de nicho (o nicho é o
+   * posicionamento/identidade do criador; a audiência é quem de fato
+   * compraria/assistiria). Opcional: nem todo criador sabe descrever isso
+   * de antemão, e o LLM consegue inferir um público provável a partir do
+   * nicho+produto quando não informado. */
+  audience: z.string().nullable(),
   trendText: z.string().nullable(),
   /** Texto livre tipo "+1.350%" — nunca tratado como dado confiável, só
    * contexto pro LLM interpretar. */

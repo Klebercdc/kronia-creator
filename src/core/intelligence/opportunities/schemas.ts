@@ -42,7 +42,7 @@ export function scoreTier(score: number): "alta" | "media" | "baixa" {
 export function recommendationBadge(score: number): { emoji: string; label: string } {
   const tier = scoreTier(score);
   if (tier === "alta") return { emoji: "🟢", label: "Recomendado" };
-  if (tier === "media") return { emoji: "🟡", label: "Testar" };
+  if (tier === "media") return { emoji: "🟡", label: "Recomendado com ressalvas" };
   return { emoji: "🔴", label: "Não recomendado" };
 }
 
@@ -62,6 +62,16 @@ export const OpportunitySchema = z.object({
   format: z.enum(CONTENT_FORMATS),
   hookType: z.enum(HOOK_TYPES),
   persuasionMechanisms: z.array(z.enum(PERSUASION_MECHANISMS)),
+  /** Chamada pra ação sugerida — campo próprio (antes ficava implícito
+   * dentro do reasoning), pra virar estratégia+criativo acionável sem
+   * precisar de uma tela separada de "Criar Anúncio". */
+  cta: z.string(),
+  /** Risco/limitação — nunca opcional na prática: se não houver risco
+   * real, o LLM deve escrever algo como "nenhuma limitação relevante
+   * identificada" em vez de omitir. Existe pra separar claim que PODE ser
+   * comunicada de claim que deve ser evitada, principalmente em nichos
+   * sensíveis. */
+  risk: z.string(),
   scoreComponents: OpportunityScoreComponentsSchema,
 });
 export type Opportunity = z.infer<typeof OpportunitySchema>;

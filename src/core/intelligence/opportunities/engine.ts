@@ -47,7 +47,14 @@ escreveu no reasoning — não infle:
 - executionFit (0-10): quão viável é executar esse ângulo com o formato escolhido.
 Isso é uma heurística de aderência, nunca uma probabilidade de viralização — e o score pode e
 deve ser BAIXO quando a oportunidade for fraca. Não existe obrigação de toda oportunidade
-parecer boa.`;
+parecer boa.
+
+CTA: preencha "cta" com a chamada pra ação específica dessa oportunidade (ex: "comente QUERO
+pra saber onde comprar", "toque no carrinho amarelo") — nunca genérica.
+
+RISCO/LIMITAÇÃO: preencha "risk" sempre. Se houver claim que precisa ser evitada, alegação que
+soa forte demais, ou limitação real do produto/formato, diga explicitamente. Se não houver
+nenhuma, escreva algo como "nenhuma limitação relevante identificada" — nunca deixe implícito.`;
 
 /** Opportunity Engine — 1 chamada LLM (Groq), síncrona, mesmo motivo do
  * Trend Interpreter: não é trabalho pesado o suficiente pro Job Engine. */
@@ -61,6 +68,7 @@ export async function generateOpportunities(params: {
 
   const prompt = `Produto que o criador quer vender: ${trendInput.product}
 Nicho do criador: ${trendInput.niche}
+${trendInput.audience ? `Público que o criador quer alcançar: ${trendInput.audience}` : "Público: não informado — infira um público provável a partir do nicho e do produto."}
 Objetivo do criador: ${trendInput.objective}
 ${
   trendAnalysis

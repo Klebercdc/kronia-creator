@@ -364,12 +364,28 @@ const FORMAT_LABEL: Record<string, string> = {
   apresentacao_por_modelo: "Apresentação por modelo",
 };
 
+const HOOK_TYPE_LABEL: Record<string, string> = {
+  curiosity: "Curiosidade",
+  pattern_interrupt: "Quebra de padrão",
+  bold_statement: "Afirmação forte",
+  question: "Pergunta",
+  social_proof: "Prova social",
+  before_after: "Antes e depois",
+  negative_hook: "Alerta/erro",
+  relatable_pain: "Dor identificável",
+  story_open: "Abertura de história",
+  result_first: "Resultado primeiro",
+  identity_call: "Chamada por identidade",
+  number_stat: "Número/estatística",
+};
+
 function OportunidadesTab({ onCreateContent }: { onCreateContent: (seed: PendingOpportunitySeed) => void }) {
   const findOpportunitiesFn = useServerFn(findOpportunities);
 
   const [niche, setNiche] = useState("");
   const [objective, setObjective] = useState("");
   const [product, setProduct] = useState("");
+  const [audience, setAudience] = useState("");
   const [trendText, setTrendText] = useState("");
   const [growthHint, setGrowthHint] = useState("");
   const [loading, setLoading] = useState(false);
@@ -389,6 +405,7 @@ function OportunidadesTab({ onCreateContent }: { onCreateContent: (seed: Pending
             niche: niche.trim(),
             objective: objective.trim(),
             product: product.trim(),
+            audience: audience.trim() || null,
             trendText: trendText.trim() || null,
             growthHint: growthHint.trim() || null,
           },
@@ -404,7 +421,21 @@ function OportunidadesTab({ onCreateContent }: { onCreateContent: (seed: Pending
 
   function handleCreateContent(opportunity: OpportunityWithScore) {
     const precomputedAnalysis = opportunityToPrecomputedAnalysis(opportunity);
-    const productInfoText = `Produto: ${product}. Tema: ${opportunity.title}. Ângulo: ${opportunity.angle}. Hook sugerido: "${opportunity.hookText}"`;
+    // Contexto comercial rico pro Marketing agent (nicho/público/produto/
+    // ângulo/CTA) — sem criar um Copywriter separado, é o mesmo canal de
+    // texto livre (EvidencedClaim) que o campo "Informações do produto" já
+    // usava, só que mais completo.
+    const productInfoText = [
+      `Produto: ${product}.`,
+      `Nicho: ${niche}.`,
+      audience ? `Público-alvo: ${audience}.` : null,
+      `Tema/oportunidade: ${opportunity.title}.`,
+      `Ângulo: ${opportunity.angle}.`,
+      `Hook sugerido: "${opportunity.hookText}".`,
+      `CTA sugerido: ${opportunity.cta}.`,
+    ]
+      .filter(Boolean)
+      .join(" ");
     onCreateContent({ productInfoText, precomputedAnalysis });
   }
 
@@ -447,6 +478,16 @@ function OportunidadesTab({ onCreateContent }: { onCreateContent: (seed: Pending
             onChange={(e) => setProduct(e.target.value)}
           />
           <div className="hint">Descreva as características reais que você sabe — nada além disso é usado.</div>
+        </div>
+        <div>
+          <div className="section-label">Público (opcional)</div>
+          <input
+            className="input"
+            placeholder="Ex: mulheres 25-40 interessadas em bem-estar"
+            value={audience}
+            onChange={(e) => setAudience(e.target.value)}
+          />
+          <div className="hint">Quem você quer alcançar — se não souber, a IA infere a partir do nicho e do produto.</div>
         </div>
         <div>
           <div className="section-label">Tendência (opcional)</div>
@@ -500,9 +541,16 @@ function OportunidadesTab({ onCreateContent }: { onCreateContent: (seed: Pending
                 </div>
                 <div style={{ fontSize: 13.5, color: "#B5B5B5" }}>{opp.reasoning}</div>
                 <div style={{ fontSize: 12.5, color: "#8A8A8A" }}>
-                  Ângulo: {opp.angle} · Formato: {FORMAT_LABEL[opp.format] ?? opp.format} · Hook: {opp.hookType}
+                  Ângulo: {opp.angle} · Formato: {FORMAT_LABEL[opp.format] ?? opp.format} · Gancho:{" "}
+                  {HOOK_TYPE_LABEL[opp.hookType] ?? opp.hookType}
                 </div>
                 <div style={{ fontSize: 13, fontStyle: "italic" }}>"{opp.hookText}"</div>
+                <div style={{ fontSize: 12.5, color: "#8A8A8A" }}>
+                  <strong style={{ color: "#B5B5B5" }}>CTA:</strong> {opp.cta}
+                </div>
+                <div style={{ fontSize: 12.5, color: "#8A8A8A" }}>
+                  <strong style={{ color: "#B5B5B5" }}>Atenção:</strong> {opp.risk}
+                </div>
                 <button
                   type="button"
                   className="btn-secondary"

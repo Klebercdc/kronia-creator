@@ -25,6 +25,7 @@ export async function interpretTrend(input: TrendInput & { trendText: string }):
   const prompt = `Tendência informada pelo criador: "${input.trendText}"
 ${input.growthHint ? `Indicativo de crescimento (não verificado, só contexto): ${input.growthHint}` : ""}
 Nicho do criador: ${input.niche}
+${input.audience ? `Público que o criador quer alcançar: ${input.audience}` : ""}
 Objetivo do criador: ${input.objective}
 Produto que o criador quer vender: ${input.product}
 
