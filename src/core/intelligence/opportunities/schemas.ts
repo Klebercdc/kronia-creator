@@ -36,6 +36,16 @@ export function scoreTier(score: number): "alta" | "media" | "baixa" {
   return "baixa";
 }
 
+/** Selo de recomendação — derivado do mesmo score, nunca um campo novo do
+ * LLM (o sistema precisa ser capaz de dizer "não recomendo", não só
+ * variar a intensidade do "sim"). */
+export function recommendationBadge(score: number): { emoji: string; label: string } {
+  const tier = scoreTier(score);
+  if (tier === "alta") return { emoji: "🟢", label: "Recomendado" };
+  if (tier === "media") return { emoji: "🟡", label: "Testar" };
+  return { emoji: "🔴", label: "Não recomendado" };
+}
+
 /**
  * Uma oportunidade acionável. `format`/`hookType`/`persuasionMechanisms`
  * reaproveitam a MESMA taxonomia fechada que o resto do pipeline já usa

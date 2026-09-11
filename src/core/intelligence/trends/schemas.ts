@@ -1,16 +1,25 @@
 import { z } from "zod";
 
-/** Entrada do Trend Interpreter — o usuário informa a tendência, não o
- * sistema sai varrendo o TikTok inteiro (fora de escopo do MVP). */
+/**
+ * Entrada do Trend Interpreter/Opportunity Engine. `product` é a entrada
+ * principal agora (usuário do TikTok Shop que já tem produto mas não sabe
+ * como vender) — `trendText` virou contexto OPCIONAL, não obrigatório: o
+ * usuário pode simplesmente perguntar "como vendo este produto pro meu
+ * nicho", sem tendência nenhuma.
+ */
 export const TrendInputSchema = z.object({
-  trendText: z.string().min(1),
-  /** Texto livre tipo "+1.350%" — nunca tratado como dado confiável, só
-   * contexto pro LLM interpretar. */
-  growthHint: z.string().nullable(),
   niche: z.string().min(1),
   /** Vocabulário próprio da camada de inteligência — NÃO é o enum
    * OBJECTIVES do pipeline de geração (esse fica intocado). */
   objective: z.string().min(1),
+  /** O produto/serviço que o criador quer vender — texto livre com as
+   * características reais que ele sabe (nunca inventar propriedade além
+   * disso, mesma regra de EvidencedClaim no resto do pipeline). */
+  product: z.string().min(1),
+  trendText: z.string().nullable(),
+  /** Texto livre tipo "+1.350%" — nunca tratado como dado confiável, só
+   * contexto pro LLM interpretar. */
+  growthHint: z.string().nullable(),
 });
 export type TrendInput = z.infer<typeof TrendInputSchema>;
 

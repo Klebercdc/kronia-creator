@@ -23,6 +23,7 @@ import type { SavedTheme, HistoryEntry } from "../lib/supabase";
 import type { ContentRequest, GenerationResult, PipelineOutput, ReferenceAnalysis } from "../types/pipeline";
 import { findOpportunities, type OpportunityWithScore, type FindOpportunitiesResult } from "../server/intelligence.functions";
 import { opportunityToPrecomputedAnalysis } from "../core/intelligence/opportunities/bridge";
+import { recommendationBadge } from "../core/intelligence/opportunities/schemas";
 import logoIcon from "../assets/logo-icon.png";
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -368,6 +369,7 @@ function OportunidadesTab({ onCreateContent }: { onCreateContent: (seed: Pending
 
   const [niche, setNiche] = useState("");
   const [objective, setObjective] = useState("");
+  const [product, setProduct] = useState("");
   const [trendText, setTrendText] = useState("");
   const [growthHint, setGrowthHint] = useState("");
   const [loading, setLoading] = useState(false);
@@ -376,7 +378,7 @@ function OportunidadesTab({ onCreateContent }: { onCreateContent: (seed: Pending
 
   async function handleFind(e: FormEvent) {
     e.preventDefault();
-    if (!niche.trim() || !objective.trim() || !trendText.trim()) return;
+    if (!niche.trim() || !objective.trim() || !product.trim()) return;
     setLoading(true);
     setErrorMessage(null);
     setResult(null);
@@ -384,10 +386,11 @@ function OportunidadesTab({ onCreateContent }: { onCreateContent: (seed: Pending
       const res = await findOpportunitiesFn({
         data: {
           trendInput: {
-            trendText: trendText.trim(),
-            growthHint: growthHint.trim() || null,
             niche: niche.trim(),
             objective: objective.trim(),
+            product: product.trim(),
+            trendText: trendText.trim() || null,
+            growthHint: growthHint.trim() || null,
           },
         },
       });
@@ -401,7 +404,7 @@ function OportunidadesTab({ onCreateContent }: { onCreateContent: (seed: Pending
 
   function handleCreateContent(opportunity: OpportunityWithScore) {
     const precomputedAnalysis = opportunityToPrecomputedAnalysis(opportunity);
-    const productInfoText = `Tema: ${opportunity.title}. Ângulo: ${opportunity.angle}. Hook sugerido: "${opportunity.hookText}"`;
+    const productInfoText = `Produto: ${product}. Tema: ${opportunity.title}. Ângulo: ${opportunity.angle}. Hook sugerido: "${opportunity.hookText}"`;
     onCreateContent({ productInfoText, precomputedAnalysis });
   }
 
@@ -435,7 +438,18 @@ function OportunidadesTab({ onCreateContent }: { onCreateContent: (seed: Pending
           />
         </div>
         <div>
-          <div className="section-label">Tendência</div>
+          <div className="section-label">Produto</div>
+          <textarea
+            className="input"
+            rows={2}
+            placeholder="Ex: Cristal de quartzo — pedra natural, uso decorativo, vendido em kit com suporte de madeira"
+            value={product}
+            onChange={(e) => setProduct(e.target.value)}
+          />
+          <div className="hint">Descreva as características reais que você sabe — nada além disso é usado.</div>
+        </div>
+        <div>
+          <div className="section-label">Tendência (opcional)</div>
           <textarea
             className="input"
             rows={2}
@@ -477,7 +491,12 @@ function OportunidadesTab({ onCreateContent }: { onCreateContent: (seed: Pending
               <div key={i} className="card" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                   <div style={{ fontWeight: 700, fontSize: 15 }}>{opp.title}</div>
-                  <div style={{ flex: "0 0 auto", fontWeight: 700, color: "#FF7A1A" }}>{opp.score}/100</div>
+                  <div style={{ flex: "0 0 auto", fontWeight: 700, color: "#FF7A1A", textAlign: "right" }}>
+                    {opp.score}/100
+                    <div style={{ fontWeight: 400, fontSize: 12, color: "#B5B5B5" }}>
+                      {recommendationBadge(opp.score).emoji} {recommendationBadge(opp.score).label}
+                    </div>
+                  </div>
                 </div>
                 <div style={{ fontSize: 13.5, color: "#B5B5B5" }}>{opp.reasoning}</div>
                 <div style={{ fontSize: 12.5, color: "#8A8A8A" }}>
