@@ -12,10 +12,10 @@ let client: ReturnType<typeof createClient> | null = null;
 
 export function getSupabaseBrowserClient() {
   if (!client) {
-    const url = import.meta.env.KRONIA_PUBLIC_SUPABASE_URL;
-    const key = import.meta.env.KRONIA_PUBLIC_SUPABASE_ANON_KEY;
+    const url = import.meta.env.VITE_SUPABASE_URL;
+    const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
     if (!url || !key) {
-      throw new Error("KRONIA_PUBLIC_SUPABASE_URL/KRONIA_PUBLIC_SUPABASE_ANON_KEY não configurados no .env");
+      throw new Error("VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY não configurados no .env");
     }
     client = createClient(url, key);
   }
