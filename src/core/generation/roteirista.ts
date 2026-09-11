@@ -87,6 +87,19 @@ múltipla de 10 mais sensata pro formato/objetivo (normalmente 20-30s pra Comerc
 Jeová Fala). Distribua as cenas dentro dessa duração total — não precisa uma cena por bloco de
 10s, várias cenas podem caber no mesmo bloco; isso é resolvido depois pelo Cinematográfico.
 
+REGRA DE OFÍCIO — quantidade de palavras cabe no tempo da cena, não o contrário:
+Nunca escreva a narração primeiro e "depois vê se cabe" — a duração da cena (endSeconds -
+startSeconds) já limita quantas palavras cabem, calcule ANTES de escrever. Fala natural fica em
+torno de 2,5 a 3 palavras por segundo — uma cena de 3s comporta uns 8-9 palavras faladas
+confortavelmente, não uma frase inteira espremida. Se o conteúdo não cabe, ou a cena é curta
+demais pro que precisa ser dito, ou o texto precisa ser cortado — nunca acelere a fala além do
+natural só pra caber tudo.
+O RITMO muda com a emoção da cena, não é fixo: um momento reflexivo/pesado (dúvida, luto, tensão
+silenciosa) pede menos palavras e mais pausa/respiro — cena mais longa com poucas palavras, ou
+até sem fala nenhuma, deixando a imagem falar; um momento de urgência/energia (CTA, virada,
+revelação) aguenta mais densidade de palavras no mesmo tempo. Ajuste palavra-por-segundo por
+cena de acordo com o tom dela, não use a mesma cadência do início ao fim do roteiro.
+
 "caption" e "hashtags" são preenchidos só pelo agente de SEO, no fim da cadeia — nesta etapa
 deixe "caption" como string vazia "" e "hashtags" como array vazio [].
 "flowSegments" é preenchido só pelo Cinematográfico — nesta etapa deixe como array vazio [].`;
