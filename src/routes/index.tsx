@@ -92,11 +92,78 @@ function StageIndicator({ current }: { current: 0 | 1 | 2 }) {
 
 type AppTab = "criar" | "historico" | "explorar" | "perfil";
 
-const TAB_ITEMS: { id: AppTab; label: string; icon: string }[] = [
-  { id: "criar", label: "Criar", icon: "＋" },
-  { id: "historico", label: "Histórico", icon: "🕐" },
-  { id: "explorar", label: "Explorar", icon: "⦿" },
-  { id: "perfil", label: "Perfil", icon: "☺" },
+/** Ícones em traço, minimalistas, sem depender de biblioteca externa —
+ * mesmo currentColor do texto, sem emoji/glifo colorido. */
+function IconPlusSquare() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <rect x="2.5" y="2.5" width="15" height="15" rx="4" />
+      <path d="M10 6.5v7M6.5 10h7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconClock() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <circle cx="10" cy="10" r="7.5" />
+      <path d="M10 5.5V10l3.2 2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconCompass() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <circle cx="10" cy="10" r="7.5" />
+      <path d="M12.8 7.2l-1.9 4.2-4.2 1.9 1.9-4.2z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconUser() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <circle cx="10" cy="7.2" r="3.2" />
+      <path d="M3.8 17c0-3.4 2.8-5.7 6.2-5.7s6.2 2.3 6.2 5.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconPlay() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+      <path d="M6.5 4.5v11l9-5.5z" />
+    </svg>
+  );
+}
+
+function IconLink() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <path
+        d="M8.3 11.7a2.8 2.8 0 0 0 4 0l2.4-2.4a2.8 2.8 0 0 0-4-4l-1.1 1.1M11.7 8.3a2.8 2.8 0 0 0-4 0l-2.4 2.4a2.8 2.8 0 0 0 4 4l1.1-1.1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconCamera() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <path d="M3 7.2c0-.9.7-1.6 1.6-1.6h1.6l1-1.6h5.6l1 1.6h1.6c.9 0 1.6.7 1.6 1.6v7.6c0 .9-.7 1.6-1.6 1.6H4.6c-.9 0-1.6-.7-1.6-1.6z" strokeLinejoin="round" />
+      <circle cx="10" cy="11" r="3" />
+    </svg>
+  );
+}
+
+const TAB_ITEMS: { id: AppTab; label: string; Icon: () => React.JSX.Element }[] = [
+  { id: "criar", label: "Criar", Icon: IconPlusSquare },
+  { id: "historico", label: "Histórico", Icon: IconClock },
+  { id: "explorar", label: "Explorar", Icon: IconCompass },
+  { id: "perfil", label: "Perfil", Icon: IconUser },
 ];
 
 function BottomNav({ active, onChange }: { active: AppTab; onChange: (tab: AppTab) => void }) {
@@ -109,7 +176,9 @@ function BottomNav({ active, onChange }: { active: AppTab; onChange: (tab: AppTa
           className={`bottom-nav-item ${active === item.id ? "active" : ""}`}
           onClick={() => onChange(item.id)}
         >
-          <span className="bottom-nav-icon">{item.icon}</span>
+          <span className="bottom-nav-icon">
+            <item.Icon />
+          </span>
           {item.label}
         </button>
       ))}
@@ -546,61 +615,64 @@ function CriarFlow() {
 
         <div>
           <div className="section-label">Produto</div>
-          <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-            {productPhotoDataUrl ? (
-              <img
-                src={productPhotoDataUrl}
-                alt="Produto"
-                style={{ width: 84, height: 84, borderRadius: 14, objectFit: "cover", border: "1px solid oklch(0.28 0.02 285)" }}
-              />
-            ) : null}
-            <label
-              className="btn-secondary"
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 84,
-                height: 84,
-                borderRadius: 14,
-                borderStyle: "dashed",
-                cursor: "pointer",
-                fontSize: 12,
-                textAlign: "center",
-                gap: 4,
-              }}
-            >
-              <span style={{ fontSize: 20 }}>+</span>
-              {productPhotoDataUrl ? "Trocar foto" : "Adicionar foto"}
-              <input type="file" accept="image/*" onChange={handleProductPhoto} style={{ display: "none" }} />
-            </label>
-          </div>
-          <textarea
-            className="field-textarea"
-            placeholder={
-              project === "jeova_fala"
-                ? "Tema — ex: mensagem de deus pra você hoje forte, salmo 27, medo e confiança..."
-                : "Nome, material, benefícios conhecidos..."
-            }
-            value={productInfoText}
-            onChange={(e) => setProductInfoText(e.target.value)}
-          />
-          {project === "jeova_fala" ? (
-            <div className="hint">
-              Dica: no app do TikTok, em "Informações de pesquisas para criadores", tem assuntos reais em
-              alta (com % de crescimento de verdade) — cole um aqui em vez de inventar um tema do zero.
+          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", gap: 10 }}>
+              {productPhotoDataUrl ? (
+                <img
+                  src={productPhotoDataUrl}
+                  alt="Produto"
+                  style={{ width: 84, height: 84, borderRadius: 14, objectFit: "cover", border: "1px solid oklch(0.28 0.02 285)" }}
+                />
+              ) : null}
+              <label
+                className="btn-secondary"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flex: "0 0 84px",
+                  width: 84,
+                  height: 84,
+                  borderRadius: 14,
+                  borderStyle: "dashed",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  textAlign: "center",
+                  gap: 4,
+                }}
+              >
+                <IconCamera />
+                {productPhotoDataUrl ? "Trocar foto" : "Adicionar foto"}
+                <input type="file" accept="image/*" onChange={handleProductPhoto} style={{ display: "none" }} />
+              </label>
             </div>
-          ) : (
-            <div className="hint">Usado apenas o que você informar aqui — nada é inventado sobre o produto.</div>
-          )}
-          <SavedThemesDrawer
-            savedThemes={savedThemes}
-            currentText={productInfoText}
-            onSave={saveCurrentTheme}
-            onPick={setProductInfoText}
-            onRemove={removeSavedTheme}
-          />
+            <textarea
+              className="field-textarea"
+              placeholder={
+                project === "jeova_fala"
+                  ? "Tema — ex: mensagem de deus pra você hoje forte, salmo 27, medo e confiança..."
+                  : "Nome, material, benefícios conhecidos..."
+              }
+              value={productInfoText}
+              onChange={(e) => setProductInfoText(e.target.value)}
+            />
+            {project === "jeova_fala" ? (
+              <div className="hint">
+                Dica: no app do TikTok, em "Informações de pesquisas para criadores", tem assuntos reais
+                em alta (com % de crescimento de verdade) — cole um aqui em vez de inventar um tema do zero.
+              </div>
+            ) : (
+              <div className="hint">Usado apenas o que você informar aqui — nada é inventado sobre o produto.</div>
+            )}
+            <SavedThemesDrawer
+              savedThemes={savedThemes}
+              currentText={productInfoText}
+              onSave={saveCurrentTheme}
+              onPick={setProductInfoText}
+              onRemove={removeSavedTheme}
+            />
+          </div>
         </div>
 
         <div>
@@ -644,12 +716,42 @@ function CriarFlow() {
             <span>Vídeo de referência</span>
             <span style={{ fontWeight: 500, color: "oklch(0.5 0.02 285)" }}>Opcional</span>
           </div>
-          <input
-            className="field-input"
-            placeholder="Link do vídeo (TikTok, YouTube...)"
-            value={referenceVideoUrl}
-            onChange={(e) => setReferenceVideoUrl(e.target.value)}
-          />
+          <div
+            className="card"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              borderStyle: "dashed",
+              padding: "10px 12px",
+            }}
+          >
+            <span
+              style={{
+                flex: "0 0 44px",
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: "oklch(0.20 0.018 285)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "oklch(0.6 0.02 285)",
+              }}
+            >
+              <IconPlay />
+            </span>
+            <input
+              className="field-input"
+              style={{ flex: 1, border: "none", background: "none", padding: "6px 0" }}
+              placeholder="Link do vídeo (TikTok, YouTube...)"
+              value={referenceVideoUrl}
+              onChange={(e) => setReferenceVideoUrl(e.target.value)}
+            />
+            <span style={{ color: "oklch(0.55 0.02 285)", flex: "0 0 auto" }}>
+              <IconLink />
+            </span>
+          </div>
         </div>
 
         <button
@@ -728,8 +830,12 @@ function CriarFlow() {
                 style={{ marginBottom: 8 }}
               />
 
-              <label className="btn-secondary" style={{ display: "block", textAlign: "center", marginBottom: 8, cursor: "pointer" }}>
-                {analyzingPhoto ? "Analisando foto..." : "📷 Enviar foto de referência (opcional)"}
+              <label
+                className="btn-secondary"
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, marginBottom: 8, cursor: "pointer" }}
+              >
+                <IconCamera />
+                {analyzingPhoto ? "Analisando foto..." : "Enviar foto de referência (opcional)"}
                 <input type="file" accept="image/*" onChange={handleActorPhoto} disabled={analyzingPhoto} style={{ display: "none" }} />
               </label>
 
