@@ -6,9 +6,13 @@ import {
   analyzeActorPhoto,
   refineScene,
   generateSeoPackage,
+  listSavedThemesFn,
+  addSavedThemeFn,
+  removeSavedThemeFn,
   type RunPipelineResult,
 } from "../server/pipeline.functions";
 import { ACTOR_PRESETS } from "../core/generation/actor-presets";
+import type { SavedTheme } from "../lib/supabase";
 import type { ContentRequest, GenerationResult, PipelineOutput } from "../types/pipeline";
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -57,11 +61,11 @@ function SavedThemesDrawer({
   onPick,
   onRemove,
 }: {
-  savedThemes: string[];
+  savedThemes: SavedTheme[];
   currentText: string;
   onSave: () => void;
   onPick: (text: string) => void;
-  onRemove: (text: string) => void;
+  onRemove: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -105,18 +109,18 @@ function SavedThemesDrawer({
             <div style={{ fontSize: 11.5, color: "oklch(0.6 0.02 285)" }}>Nada salvo ainda.</div>
           ) : (
             savedThemes.map((theme) => (
-              <div key={theme} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div key={theme.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <button
                   type="button"
                   className="btn-secondary"
                   style={{ flex: 1, textAlign: "left", padding: "6px 10px", fontSize: 11.5 }}
-                  onClick={() => onPick(theme)}
+                  onClick={() => onPick(theme.text)}
                 >
-                  {theme}
+                  {theme.text}
                 </button>
                 <button
                   type="button"
-                  onClick={() => onRemove(theme)}
+                  onClick={() => onRemove(theme.id)}
                   style={{ background: "none", border: "none", color: "oklch(0.6 0.02 285)", cursor: "pointer", fontSize: 14, padding: "0 6px" }}
                   aria-label="Remover"
                 >
@@ -134,6 +138,9 @@ function SavedThemesDrawer({
 function CriadorApp() {
   const runPipelineFn = useServerFn(runContentPipeline);
   const analyzeActorPhotoFn = useServerFn(analyzeActorPhoto);
+  const listSavedThemesRpc = useServerFn(listSavedThemesFn);
+  const addSavedThemeRpc = useServerFn(addSavedThemeFn);
+  const removeSavedThemeRpc = useServerFn(removeSavedThemeFn);
 
   const [step, setStep] = useState<Step>("form");
   const [result, setResult] = useState<RunPipelineResult | null>(null);
@@ -143,7 +150,7 @@ function CriadorApp() {
   const [objective, setObjective] = useState<ContentRequest["objective"]>("vender");
   const [mode, setMode] = useState<ContentRequest["mode"]>("tiktok_shop");
   const [productInfoText, setProductInfoText] = useState("");
-  const [savedThemes, setSavedThemes] = useState<string[]>([]);
+  const [savedThemes, setSavedThemes] = useState<SavedTheme[]>([]);
   const [referenceVideoUrl, setReferenceVideoUrl] = useState("");
   const [actorName, setActorName] = useState("");
   const [actorVoice, setActorVoice] = useState("");
@@ -151,33 +158,30 @@ function CriadorApp() {
   const [analyzingPhoto, setAnalyzingPhoto] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("kronia-saved-themes");
-      if (raw) setSavedThemes(JSON.parse(raw));
-    } catch {
-      // localStorage indisponível (modo privado, etc.) — segue sem lista salva
-    }
+    listSavedThemesRpc()
+      .then(setSavedThemes)
+      .catch(() => {
+        // best-effort — sem tema salvo carregado não quebra o resto do app
+      });
   }, []);
 
-  function saveCurrentTheme() {
+  async function saveCurrentTheme() {
     const text = productInfoText.trim();
-    if (!text || savedThemes.includes(text)) return;
-    const next = [text, ...savedThemes].slice(0, 30);
-    setSavedThemes(next);
+    if (!text || savedThemes.some((t) => t.text === text)) return;
     try {
-      localStorage.setItem("kronia-saved-themes", JSON.stringify(next));
+      const saved = await addSavedThemeRpc({ data: { text } });
+      setSavedThemes((prev) => [saved, ...prev]);
     } catch {
       // best-effort
     }
   }
 
-  function removeSavedTheme(text: string) {
-    const next = savedThemes.filter((t) => t !== text);
-    setSavedThemes(next);
+  async function removeSavedTheme(id: string) {
+    setSavedThemes((prev) => prev.filter((t) => t.id !== id));
     try {
-      localStorage.setItem("kronia-saved-themes", JSON.stringify(next));
+      await removeSavedThemeRpc({ data: { id } });
     } catch {
-      // best-effort
+      // best-effort — já removeu da tela, tenta de novo depois se falhar
     }
   }
 

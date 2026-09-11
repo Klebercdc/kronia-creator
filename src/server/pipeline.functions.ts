@@ -6,6 +6,7 @@ import { refineScenePrompt } from "../core/generation/refine-scene";
 import { seo } from "../core/generation/seo";
 import { checkFabricatedNumbers } from "../core/compliance/numeric-guard";
 import { checkBannedAbsoluteClaims } from "../core/compliance/absolute-claims-guard";
+import { listSavedThemes, addSavedTheme, removeSavedTheme, type SavedTheme } from "../lib/supabase";
 import {
   ActorProfileSchema,
   ContentRequestSchema,
@@ -90,3 +91,16 @@ export const generateSeoPackage = createServerFn({ method: "POST" })
     ];
     return { generation, warnings };
   });
+
+/** RPCs de temas salvos (Supabase) — lista, adiciona e remove. */
+export const listSavedThemesFn = createServerFn({ method: "GET" }).handler(
+  async (): Promise<SavedTheme[]> => listSavedThemes(),
+);
+
+export const addSavedThemeFn = createServerFn({ method: "POST" })
+  .validator((data: unknown) => z.object({ text: z.string().min(1) }).parse(data))
+  .handler(async ({ data }): Promise<SavedTheme> => addSavedTheme(data.text));
+
+export const removeSavedThemeFn = createServerFn({ method: "POST" })
+  .validator((data: unknown) => z.object({ id: z.string().min(1) }).parse(data))
+  .handler(async ({ data }): Promise<void> => removeSavedTheme(data.id));

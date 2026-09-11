@@ -14,6 +14,7 @@
     "smoke-test:ingest": "tsx scripts/smoke-test-ingest.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
     "@tanstack/react-router": "^1.114.0",
     "@tanstack/react-start": "^1.114.0",
     "groq-sdk": "^0.9.0",
