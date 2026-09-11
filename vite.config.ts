@@ -10,6 +10,13 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
+  // "VITE_" é reconhecido pelo Vercel como prefixo público de framework —
+  // uma env var marcada como sensível com esse prefixo trava o Save no
+  // painel dele (aviso de conflito, sem opção clara de resolver no app
+  // mobile). KRONIA_PUBLIC_ é só nosso, o Vercel não reconhece e não
+  // bloqueia — mantém VITE_ também pra não quebrar nada que dependa do
+  // prefixo padrão do Vite.
+  envPrefix: ["VITE_", "KRONIA_PUBLIC_"],
   plugins: [
     tanstackStart(),
     // nitro() é o que faz o build virar função serverless reconhecível pelo
