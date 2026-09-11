@@ -150,6 +150,7 @@ function CriadorApp() {
   const [objective, setObjective] = useState<ContentRequest["objective"]>("vender");
   const [mode, setMode] = useState<ContentRequest["mode"]>("tiktok_shop");
   const [productInfoText, setProductInfoText] = useState("");
+  const [targetDurationSeconds, setTargetDurationSeconds] = useState<number | null>(null);
   const [savedThemes, setSavedThemes] = useState<SavedTheme[]>([]);
   const [referenceVideoUrl, setReferenceVideoUrl] = useState("");
   const [actorName, setActorName] = useState("");
@@ -223,6 +224,7 @@ function CriadorApp() {
             appearanceDescription: actorAppearance.trim(),
           }
         : null,
+      targetDurationSeconds,
     };
 
     try {
@@ -241,11 +243,13 @@ function CriadorApp() {
     setErrorMessage(null);
   }
 
-  function updateSceneVideoPrompt(sceneIndex: number, videoPrompt: string) {
+  function updateSegmentVideoPrompt(segmentIndex: number, videoPrompt: string) {
     setResult((prev) => {
       if (!prev) return prev;
-      const scenes = prev.output.generation.scenes.map((s) => (s.index === sceneIndex ? { ...s, videoPrompt } : s));
-      return { ...prev, output: { ...prev.output, generation: { ...prev.output.generation, scenes } } };
+      const flowSegments = prev.output.generation.flowSegments.map((s) =>
+        s.index === segmentIndex ? { ...s, videoPrompt } : s,
+      );
+      return { ...prev, output: { ...prev.output, generation: { ...prev.output.generation, flowSegments } } };
     });
   }
 
@@ -289,7 +293,7 @@ function CriadorApp() {
         output={result.output}
         approved={result.status === "aprovado"}
         onReset={reset}
-        onSceneVideoPromptChange={updateSceneVideoPrompt}
+        onSegmentVideoPromptChange={updateSegmentVideoPrompt}
         onGenerationUpdate={updateGeneration}
       />
     );
@@ -392,6 +396,32 @@ function CriadorApp() {
             >
               Orgânico
             </button>
+          </div>
+        </div>
+
+        <div>
+          <div className="section-label">Duração (blocos de 10s no Flow)</div>
+          <div className="pill-row">
+            <button
+              type="button"
+              className={`pill ${targetDurationSeconds === null ? "active" : ""}`}
+              onClick={() => setTargetDurationSeconds(null)}
+            >
+              Automático
+            </button>
+            {[10, 20, 30, 40, 50, 60].map((seconds) => (
+              <button
+                key={seconds}
+                type="button"
+                className={`pill ${targetDurationSeconds === seconds ? "active" : ""}`}
+                onClick={() => setTargetDurationSeconds(seconds)}
+              >
+                {seconds}s
+              </button>
+            ))}
+          </div>
+          <div className="hint">
+            Cada 10s vira uma submissão separada no Flow — 50s = 5 blocos de prompt pra colar um por vez.
           </div>
         </div>
 
@@ -539,26 +569,32 @@ function ResultadoView({
   );
 }
 
-function SceneCard({
-  scene,
+function FlowSegmentCard({
+  segment,
+  scenes,
   actorProfile,
   onVideoPromptChange,
 }: {
-  scene: PipelineOutput["generation"]["scenes"][number];
+  segment: PipelineOutput["generation"]["flowSegments"][number];
+  scenes: PipelineOutput["generation"]["scenes"];
   actorProfile: ContentRequest["actorProfile"];
-  onVideoPromptChange: (sceneIndex: number, videoPrompt: string) => void;
+  onVideoPromptChange: (segmentIndex: number, videoPrompt: string) => void;
 }) {
   const refineSceneFn = useServerFn(refineScene);
   const [feedback, setFeedback] = useState("");
   const [refining, setRefining] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
 
+  const coveredScenes = scenes.filter((s) => segment.sceneIndexes.includes(s.index));
+
   async function handleRefine() {
     if (!feedback.trim()) return;
     setRefining(true);
     try {
-      const { videoPrompt } = await refineSceneFn({ data: { scene, actorProfile, feedback: feedback.trim() } });
-      onVideoPromptChange(scene.index, videoPrompt);
+      const { videoPrompt } = await refineSceneFn({
+        data: { segment, scenes, actorProfile, feedback: feedback.trim() },
+      });
+      onVideoPromptChange(segment.index, videoPrompt);
       setFeedback("");
       setShowFeedback(false);
     } catch {
@@ -571,16 +607,16 @@ function SceneCard({
   return (
     <div className="card">
       <div className="scene-tag">
-        CENA {scene.index + 1} — {scene.role.toUpperCase()} · {scene.startSeconds}–{scene.endSeconds}s
+        BLOCO {segment.index + 1} — {segment.startSeconds}s–{segment.endSeconds}s (10s no Flow)
       </div>
-      <div className="scene-meta">Câmera: {scene.camera}</div>
-      <div className="scene-meta">Ação: {scene.action}</div>
-      <div style={{ fontSize: 12.5, marginBottom: 8 }}>{scene.narration}</div>
-      {scene.onScreenText && (
-        <div style={{ fontSize: 11, color: "oklch(0.7 0.02 285)", marginBottom: 8 }}>
-          Texto na tela: {scene.onScreenText}
+      {coveredScenes.map((s) => (
+        <div key={s.index} style={{ fontSize: 11.5, marginBottom: 4 }}>
+          <span style={{ color: "oklch(0.65 0.02 285)" }}>[{s.role}]</span> {s.narration}
+          {s.onScreenText && (
+            <span style={{ color: "oklch(0.7 0.02 285)" }}> · Texto na tela: {s.onScreenText}</span>
+          )}
         </div>
-      )}
+      ))}
       <div
         style={{
           fontSize: 11.5,
@@ -588,18 +624,19 @@ function SceneCard({
           border: "1px solid oklch(0.24 0.018 285)",
           borderRadius: 10,
           padding: 10,
+          marginTop: 6,
           marginBottom: 8,
         }}
       >
-        {scene.videoPrompt}
+        {segment.videoPrompt}
       </div>
       <div style={{ display: "flex", gap: 8 }}>
         <button
           className="btn-secondary"
           style={{ padding: "8px 12px", fontSize: 11.5 }}
-          onClick={() => navigator.clipboard?.writeText(scene.videoPrompt)}
+          onClick={() => navigator.clipboard?.writeText(segment.videoPrompt)}
         >
-          Copiar prompt desta cena
+          Copiar prompt deste bloco
         </button>
         <button
           className="btn-secondary"
@@ -619,7 +656,7 @@ function SceneCard({
             onChange={(e) => setFeedback(e.target.value)}
           />
           <button className="btn-primary" style={{ fontSize: 11.5, padding: "8px 12px" }} onClick={handleRefine} disabled={refining}>
-            {refining ? "Ajustando..." : "Ajustar só essa cena"}
+            {refining ? "Ajustando..." : "Ajustar só este bloco"}
           </button>
         </div>
       )}
@@ -694,13 +731,13 @@ function RoteiroView({
   output,
   approved,
   onReset,
-  onSceneVideoPromptChange,
+  onSegmentVideoPromptChange,
   onGenerationUpdate,
 }: {
   output: PipelineOutput;
   approved: boolean;
   onReset: () => void;
-  onSceneVideoPromptChange: (sceneIndex: number, videoPrompt: string) => void;
+  onSegmentVideoPromptChange: (segmentIndex: number, videoPrompt: string) => void;
   onGenerationUpdate: (generation: GenerationResult) => void;
 }) {
   const { generation, compliance } = output;
@@ -720,14 +757,15 @@ function RoteiroView({
       </div>
 
       <div>
-        <div className="section-label">Cenas — prompts prontos pro Flow</div>
+        <div className="section-label">Blocos de 10s — prompts prontos pro Flow</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {generation.scenes.map((scene) => (
-            <SceneCard
-              key={scene.index}
-              scene={scene}
+          {generation.flowSegments.map((segment) => (
+            <FlowSegmentCard
+              key={segment.index}
+              segment={segment}
+              scenes={generation.scenes}
               actorProfile={output.request.actorProfile}
-              onVideoPromptChange={onSceneVideoPromptChange}
+              onVideoPromptChange={onSegmentVideoPromptChange}
             />
           ))}
         </div>
@@ -765,7 +803,7 @@ function RoteiroView({
           style={{ flex: 1.4 }}
           onClick={() =>
             navigator.clipboard?.writeText(
-              generation.scenes.map((s) => `Cena ${s.index + 1}:\n${s.videoPrompt}`).join("\n\n"),
+              generation.flowSegments.map((s) => `Bloco ${s.index + 1} (${s.startSeconds}s-${s.endSeconds}s):\n${s.videoPrompt}`).join("\n\n"),
             )
           }
         >

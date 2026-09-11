@@ -31,6 +31,7 @@ async function main() {
       ],
       referenceVideoUrl: null,
       actorProfile: JESUS_KRONIA,
+      targetDurationSeconds: 30,
     });
 
     console.log("Rodando pipeline OFFLINE (mock LLM local, sem custo nem cota)...\n");

@@ -3,12 +3,23 @@ import { GenerationResultSchema, type ContentRequest, type GenerationResult } fr
 import type { VideoAnalysis } from "../../types/video-analysis";
 
 const BASE_SYSTEM = `Você é o agente Cinematográfico do KRONIA. Transforma o roteiro aprovado em direção
-visual final: para CADA cena, escreve um "videoPrompt" pronto pra colar direto no Google Flow
-(Veo) e gerar aquele clipe especificamente — o Flow gera um plano por vez, então cada videoPrompt
-é autossuficiente, não um resumo do vídeo inteiro.
+visual final, em duas camadas:
 
-Cada videoPrompt deve ser um parágrafo único, em prosa cinematográfica fluida (não lista, não
-JSON), cobrindo sempre:
+1. Pra CADA cena, escreve o "videoPrompt" da cena — direção profissional daquele momento
+   específico (câmera, ação, luz), usado como referência interna e pra ajuste pontual depois.
+
+2. Agrupa as cenas em "flowSegments" — blocos de EXATOS 10 segundos, prontos pra colar no Google
+   Flow (Veo). Essa é a restrição real: o Flow só gera em blocos fixos de 10s, cada bloco é uma
+   submissão separada. A duração total do roteiro (soma das cenas) é sempre múltiplo de 10 — divida
+   em ceil(duração_total / 10) segmentos, cada um cobrindo exatamente 10s (startSeconds/endSeconds
+   com diferença de 10). Uma ou mais cenas podem caber no mesmo segmento — quando isso acontecer,
+   o videoPrompt do segmento NÃO é uma lista das cenas, é UM parágrafo cinematográfico contínuo
+   descrevendo a sequência de ações/cortes dentro desses 10s, com transições explícitas ("então",
+   "em seguida", "corta para") — como se fosse um único plano-sequência ou uma sequência de cortes
+   rápidos, nunca um resumo picotado.
+
+Cada videoPrompt (de cena OU de segmento) deve ser um parágrafo único, em prosa cinematográfica
+fluida (não lista, não JSON), cobrindo sempre:
 - Enquadramento e movimento de câmera com vocabulário técnico real (ex: "close-up com dolly-in
   lento", "plano médio, handheld sutil", "macro com push-in", "wide shot estático") — nunca só
   "close" ou "câmera se move".
@@ -17,12 +28,12 @@ JSON), cobrindo sempre:
   ordem, com que ritmo.
 - Iluminação e paleta (ex: "luz natural de janela, tons quentes", "iluminação de estúdio,
   contraste alto").
-- Continuidade visual entre cenas: mesmo produto, mesma pessoa/ambiente quando fizer sentido,
+- Continuidade visual entre segmentos: mesmo produto, mesma pessoa/ambiente quando fizer sentido,
   pra não parecer um vídeo costurado de pedaços aleatórios.
 - 9:16 vertical, sempre.
 
 Nunca inclua texto na tela dentro do videoPrompt — Veo renderiza texto de forma não confiável;
-selos e legendas vão só no campo "onScreenText", adicionados depois em pós-produção.
+selos e legendas vão só no campo "onScreenText" da cena, adicionados depois em pós-produção.
 Nunca invente uma característica do produto que não esteja nas claims do roteiro.
 
 Pra cenas de "hero shot" de produto (o plano que mostra o produto sozinho, sem ator), use como
@@ -38,8 +49,9 @@ padrões cinematográficos comprovados em vídeos de venda de alta conversão:
 Escolha o padrão que fizer sentido pro produto da cena (ou nenhum, se não for hero shot) — a
 fórmula é reaproveitável entre categorias de produto, o conteúdo específico nunca é.
 
-Retorne o roteiro completo, no mesmo formato de entrada, com "camera"/"action" das cenas
-mantidos como estavam e "videoPrompt" preenchido em cada cena.`;
+Retorne o roteiro completo, no mesmo formato de entrada, com "camera"/"action" das cenas mantidos
+como estavam, "videoPrompt" de cada cena preenchido, e "flowSegments" preenchido com os blocos de
+10s (cada um com "sceneIndexes" listando quais cenas ele cobre).`;
 
 function buildSystem(actorProfile: ContentRequest["actorProfile"], ingestion: VideoAnalysis | null): string {
   let system = BASE_SYSTEM;
@@ -59,10 +71,10 @@ que já funcionou, só com o produto/ator novos, nunca copiando o conteúdo lite
   return `${system}
 
 ATOR PRINCIPAL FIXO — "${actorProfile.name}": todo videoPrompt que incluir esse personagem
-precisa repetir literalmente estas características, sem variar de cena pra cena:
+precisa repetir literalmente estas características, sem variar de segmento pra segmento:
 - Voz: ${actorProfile.voiceDescription}
 - Aparência: ${actorProfile.appearanceDescription}
-Nunca mude a voz ou a aparência descritas acima entre cenas — é o mesmo ator/avatar em todo o vídeo.`;
+Nunca mude a voz ou a aparência descritas acima entre segmentos — é o mesmo ator/avatar no vídeo todo.`;
 }
 
 /** Sub-agente 6 de 6 da Geração. */
@@ -71,7 +83,13 @@ export async function cinematografico(
   actorProfile: ContentRequest["actorProfile"] = null,
   ingestion: VideoAnalysis | null = null,
 ): Promise<GenerationResult> {
-  const prompt = `Roteiro aprovado para direção visual:\n${JSON.stringify(draft, null, 2)}`;
+  const totalSeconds = Math.max(...draft.scenes.map((s) => s.endSeconds), 0);
+  const expectedSegments = Math.ceil(totalSeconds / 10) || 1;
+
+  const prompt = `Roteiro aprovado para direção visual:\n${JSON.stringify(draft, null, 2)}
+
+Duração total: ${totalSeconds}s → gere exatamente ${expectedSegments} flowSegments de 10s cada
+(o último pode ser mais curto só se a duração total não for múltiplo de 10 — mas ela deveria ser).`;
 
   return callStructured({
     schema: GenerationResultSchema,

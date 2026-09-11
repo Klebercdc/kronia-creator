@@ -30,6 +30,11 @@ export const ContentRequestSchema = z.object({
 
   /** Opcional — trava voz/aparência do ator principal em todas as cenas geradas. */
   actorProfile: ActorProfileSchema.nullable(),
+
+  /** Duração total desejada, em segundos — SEMPRE múltiplo de 10 (o Flow gera
+   * em blocos fixos de 10s; cada bloco = 1 submissão separada no Flow).
+   * null deixa o Roteirista escolher uma duração padrão sensata. */
+  targetDurationSeconds: z.number().int().positive().multipleOf(10).nullable(),
 });
 export type ContentRequest = z.infer<typeof ContentRequestSchema>;
 
@@ -91,10 +96,32 @@ export const ScriptSceneSchema = z.object({
 });
 export type ScriptScene = z.infer<typeof ScriptSceneSchema>;
 
+/**
+ * Um bloco de exatos 10 segundos, pronto pra colar no Flow numa única
+ * geração — o Flow gera em blocos fixos de 10s, então um vídeo de 50s vira
+ * 5 flowSegments, cada um submetido separadamente. Uma ou mais "cenas"
+ * narrativas (hook/problema/etc) podem caber dentro do mesmo segmento; o
+ * videoPrompt do segmento descreve tudo que acontece nesses 10s como uma
+ * ação cinematográfica contínua, com cortes/transições internas quando
+ * mais de uma cena cabe no bloco.
+ */
+export const FlowSegmentSchema = z.object({
+  index: z.number().int().nonnegative(),
+  startSeconds: z.number().nonnegative(),
+  endSeconds: z.number().positive(),
+  /** Índices das cenas (ScriptScene.index) cobertas por este segmento de 10s. */
+  sceneIndexes: z.array(z.number().int().nonnegative()),
+  videoPrompt: z.string(),
+});
+export type FlowSegment = z.infer<typeof FlowSegmentSchema>;
+
 export const GenerationResultSchema = z.object({
   hooks: z.array(z.string()).length(5),
   selectedHook: z.string(),
   scenes: z.array(ScriptSceneSchema),
+  /** Preenchido só pelo Cinematográfico, no fim da cadeia — agrupa as cenas
+   * em blocos de 10s prontos pro Flow. Vazio [] até lá. */
+  flowSegments: z.array(FlowSegmentSchema),
   claims: z.array(EvidencedClaimSchema),
   /** Preenchido de verdade só pelo agente de SEO, no fim da cadeia — os
    * agentes anteriores devem deixar "" / [] (mesmo padrão do rascunho de

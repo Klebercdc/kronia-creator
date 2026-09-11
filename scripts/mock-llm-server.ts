@@ -53,8 +53,10 @@ function fillSchema(schema: JsonSchema, root: JsonSchema = schema): unknown {
       if (schema.format === "uri") return "https://exemplo.com/mock";
       return `Texto de teste offline #${counter} (mock-llm).`;
     case "integer":
-    case "number":
-      return schema.minimum ?? 1;
+    case "number": {
+      const base = schema.minimum ?? 1;
+      return schema.exclusiveMinimum ? base + 1 : base;
+    }
     case "boolean":
       return true;
     case "null":

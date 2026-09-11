@@ -79,8 +79,17 @@ quando não houver texto na tela para aquela cena.
 Cada cena também tem "videoPrompt" — nesta etapa deixe um rascunho simples (1 frase) descrevendo
 a cena; o agente Cinematográfico depois reescreve com direção profissional completa.
 
+REGRA DE OFÍCIO — duração em blocos de 10 segundos (restrição real do Flow):
+O Flow gera vídeo em blocos fixos de 10 segundos — cada bloco é uma submissão separada. A duração
+TOTAL do roteiro (soma de todas as cenas) precisa ser exatamente um múltiplo de 10 (10, 20, 30,
+40, 50...). Se a duração desejada foi informada, use exatamente ela. Se não, escolha a duração
+múltipla de 10 mais sensata pro formato/objetivo (normalmente 20-30s pra Comercial, 30-50s pra
+Jeová Fala). Distribua as cenas dentro dessa duração total — não precisa uma cena por bloco de
+10s, várias cenas podem caber no mesmo bloco; isso é resolvido depois pelo Cinematográfico.
+
 "caption" e "hashtags" são preenchidos só pelo agente de SEO, no fim da cadeia — nesta etapa
-deixe "caption" como string vazia "" e "hashtags" como array vazio [].`;
+deixe "caption" como string vazia "" e "hashtags" como array vazio [].
+"flowSegments" é preenchido só pelo Cinematográfico — nesta etapa deixe como array vazio [].`;
 
 /** Sub-agente 1 de 4 da Geração. */
 export async function roteirista(
@@ -95,10 +104,14 @@ Estrutura narrativa: ${classification.narrativeStructure.join(" → ")}.
 Mecanismos de persuasão já identificados: ${classification.persuasionMechanisms.join(", ")}.`
     : "";
 
+  const durationBlock = request.targetDurationSeconds
+    ? `\nDuração total desejada: ${request.targetDurationSeconds}s (${request.targetDurationSeconds / 10} blocos de 10s no Flow) — use exatamente essa duração.`
+    : "\nDuração total: escolha um múltiplo de 10s sensato pro formato/objetivo.";
+
   const prompt = `Formato recomendado: ${recommendation.format} (${recommendation.reasoning}).
 Objetivo: ${request.objective}. Modo: ${request.mode}. Projeto: ${request.project}.
 Informações do produto (única fonte de verdade): ${JSON.stringify(request.productInfo)}.
-${referenceBlock}
+${referenceBlock}${durationBlock}
 
 Gere 5 hooks, escolha o melhor como selectedHook, e o roteiro completo em cenas timestampadas.`;
 

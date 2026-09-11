@@ -10,6 +10,7 @@ import { listSavedThemes, addSavedTheme, removeSavedTheme, type SavedTheme } fro
 import {
   ActorProfileSchema,
   ContentRequestSchema,
+  FlowSegmentSchema,
   GenerationResultSchema,
   ScriptSceneSchema,
   type GenerationResult,
@@ -52,16 +53,18 @@ export const analyzeActorPhoto = createServerFn({ method: "POST" })
   });
 
 /**
- * RPC que ajusta o videoPrompt de UMA cena a partir de feedback do usuário
- * (ex: "no Flow a boca não mexeu") — não roda o pipeline inteiro de novo,
- * só o agente Cinematográfico focado nessa cena. Mais rápido e mais barato
- * que clicar em "Criar" de novo pra corrigir um detalhe.
+ * RPC que ajusta o videoPrompt de UM segmento de 10s (o bloco que realmente
+ * vai pro Flow) a partir de feedback do usuário (ex: "no Flow a boca não
+ * mexeu") — não roda o pipeline inteiro de novo, só o agente Cinematográfico
+ * focado nesse segmento. Mais rápido e mais barato que clicar em "Criar" de
+ * novo pra corrigir um detalhe.
  */
 export const refineScene = createServerFn({ method: "POST" })
   .validator((data: unknown) =>
     z
       .object({
-        scene: ScriptSceneSchema,
+        segment: FlowSegmentSchema,
+        scenes: z.array(ScriptSceneSchema),
         actorProfile: ActorProfileSchema.nullable(),
         feedback: z.string().min(1),
       })

@@ -17,6 +17,7 @@ const request: ContentRequest = {
   ],
   referenceVideoUrl: null,
   actorProfile: JESUS_KRONIA,
+  targetDurationSeconds: 30,
 };
 
 async function main() {
