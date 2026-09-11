@@ -45,10 +45,10 @@ function BrandRow({ onBack, onProfile }: { onBack?: () => void; onProfile?: () =
           <IconChevronLeft />
         </button>
       )}
-      <img src={logoIcon} alt="" style={{ height: 34, width: "auto" }} />
-      <div style={{ flex: 1 }}>
+      <img src={logoIcon} alt="Kronia" style={{ width: 26, height: 26, objectFit: "contain", flexShrink: 0 }} />
+      <div style={{ flex: 1, lineHeight: 1 }}>
         <div className="brand-word">KRONIA</div>
-        <div className="brand-sub">Criador Inteligente</div>
+        <div className="brand-sub">CRIADOR INTELIGENTE</div>
       </div>
       {onProfile && (
         <button type="button" onClick={onProfile} className="brand-avatar" aria-label="Perfil">
@@ -63,38 +63,29 @@ const STAGES = ["Criar", "Analisar", "Resultado"] as const;
 
 function StageIndicator({ current }: { current: 0 | 1 | 2 }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700 }}>
       {STAGES.map((label, i) => (
-        <span key={label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 5,
-              fontSize: 12.5,
-              fontWeight: 700,
-              color: i <= current ? "oklch(0.85 0.15 45)" : "oklch(0.48 0.015 285)",
-            }}
-          >
+        <span key={label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             <span
               style={{
-                width: 16,
-                height: 16,
+                width: 20,
+                height: 20,
                 borderRadius: 999,
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 10,
-                fontWeight: 800,
-                background: i <= current ? "oklch(0.68 0.19 45)" : "oklch(0.24 0.018 285)",
-                color: i <= current ? "#fff" : "oklch(0.55 0.02 285)",
+                fontSize: 11,
+                border: i <= current ? "none" : "1px solid #3A3A3A",
+                background: i <= current ? "#FF6A1A" : "transparent",
+                color: i <= current ? "#fff" : "#7A7A7A",
               }}
             >
               {i + 1}
             </span>
-            {label}
+            <span style={{ color: i <= current ? "#fff" : "#7A7A7A" }}>{label}</span>
           </span>
-          {i < STAGES.length - 1 && <span style={{ color: "oklch(0.35 0.015 285)" }}>—</span>}
+          {i < STAGES.length - 1 && <span style={{ width: 16, height: 1, background: "#333", flexShrink: 0 }} />}
         </span>
       ))}
     </div>
@@ -103,67 +94,66 @@ function StageIndicator({ current }: { current: 0 | 1 | 2 }) {
 
 type AppTab = "criar" | "historico" | "explorar" | "perfil";
 
-/** Ícones em traço, minimalistas, sem depender de biblioteca externa —
- * mesmo currentColor do texto, sem emoji/glifo colorido. */
-function IconPlusSquare() {
+/** Ícones — traçados copiados 1:1 do handoff de design (KroniaMockup.dc.html),
+ * não reinventados, pra bater pixel a pixel com o mockup aprovado. */
+function IconHome() {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
-      <rect x="2.5" y="2.5" width="15" height="15" rx="4" />
-      <path d="M10 6.5v7M6.5 10h7" strokeLinecap="round" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M3 10.5L12 3l9 7.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5 9.5V20a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V9.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
 function IconClock() {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
-      <circle cx="10" cy="10" r="7.5" />
-      <path d="M10 5.5V10l3.2 2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3.5 2" strokeLinecap="round" />
     </svg>
   );
 }
 
 function IconCompass() {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
-      <circle cx="10" cy="10" r="7.5" />
-      <path d="M12.8 7.2l-1.9 4.2-4.2 1.9 1.9-4.2z" strokeLinejoin="round" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M15.5 8.5l-3 5-5 3 3-5 5-3z" fill="currentColor" stroke="none" />
     </svg>
   );
 }
 
 function IconUser() {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
-      <circle cx="10" cy="7.2" r="3.2" />
-      <path d="M3.8 17c0-3.4 2.8-5.7 6.2-5.7s6.2 2.3 6.2 5.7" strokeLinecap="round" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" strokeLinecap="round" />
     </svg>
   );
 }
 
 function IconChevronLeft() {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M12.5 4.5 6.5 10l6 5.5" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M15 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
 function IconPlay() {
   return (
-    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-      <path d="M6.5 4.5v11l9-5.5z" />
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M6 4l14 8-14 8V4z" />
     </svg>
   );
 }
 
 function IconLink() {
   return (
-    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path
-        d="M8.3 11.7a2.8 2.8 0 0 0 4 0l2.4-2.4a2.8 2.8 0 0 0-4-4l-1.1 1.1M11.7 8.3a2.8 2.8 0 0 0-4 0l-2.4 2.4a2.8 2.8 0 0 0 4 4l1.1-1.1"
+        d="M9 15l6-6M8 12l-1.5 1.5a3 3 0 004.24 4.24L12 16.5M16 12l1.5-1.5a3 3 0 00-4.24-4.24L12 7.5"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
     </svg>
   );
@@ -178,8 +168,69 @@ function IconCamera() {
   );
 }
 
+function IconArrowRight() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconAddPhoto() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 8v8M8 12h8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconCopy() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="8" y="8" width="12" height="12" rx="2" />
+      <path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2" />
+    </svg>
+  );
+}
+
+function IconStar() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="#FF9A1A">
+      <path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.7 7-6.3-3.9-6.3 3.9 1.7-7L2 9.2l7.1-.6L12 2z" />
+    </svg>
+  );
+}
+
+function IconShieldCheck() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3z" fill="#22C55E" />
+      <path d="M8.5 12l2.5 2.5 5-5" stroke="#0A0A0A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconCheckCircleSmall() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" fill="#22C55E" />
+      <path d="M7 12.5l3 3 7-7" stroke="#0A0A0A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconApprovedBadge() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" fill="#22C55E" />
+      <path d="M7 12.5l3 3 7-7" stroke="#0A0A0A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 const TAB_ITEMS: { id: AppTab; label: string; Icon: () => React.JSX.Element }[] = [
-  { id: "criar", label: "Criar", Icon: IconPlusSquare },
+  { id: "criar", label: "Criar", Icon: IconHome },
   { id: "historico", label: "Histórico", Icon: IconClock },
   { id: "explorar", label: "Explorar", Icon: IconCompass },
   { id: "perfil", label: "Perfil", Icon: IconUser },
@@ -212,7 +263,7 @@ function PlaceholderTab({ title, hint }: { title: string; hint: string }) {
       <h1 className="h1" style={{ fontSize: 20 }}>
         {title}
       </h1>
-      <div className="card" style={{ color: "oklch(0.6 0.02 285)", fontSize: 14 }}>
+      <div className="card" style={{ color: "#8A8A8A", fontSize: 14 }}>
         {hint}
       </div>
     </div>
@@ -261,7 +312,7 @@ function SavedThemesDrawer({
           style={{
             marginTop: 8,
             padding: 10,
-            border: "1px solid oklch(0.24 0.018 285)",
+            border: "1px solid #252525",
             borderRadius: 10,
             display: "flex",
             flexDirection: "column",
@@ -271,14 +322,14 @@ function SavedThemesDrawer({
           }}
         >
           {savedThemes.length === 0 ? (
-            <div style={{ fontSize: 13.5, color: "oklch(0.6 0.02 285)" }}>Nada salvo ainda.</div>
+            <div style={{ fontSize: 13.5, color: "#8A8A8A" }}>Nada salvo ainda.</div>
           ) : (
             savedThemes.map((theme) => (
               <div key={theme.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <button
                   type="button"
                   className="btn-secondary"
-                  style={{ flex: 1, textAlign: "left", padding: "6px 10px", fontSize: 13.5 }}
+                  style={{ flex: 1, justifyContent: "flex-start", textAlign: "left", padding: "6px 10px", fontSize: 13.5 }}
                   onClick={() => onPick(theme.text)}
                 >
                   {theme.text}
@@ -286,7 +337,7 @@ function SavedThemesDrawer({
                 <button
                   type="button"
                   onClick={() => onRemove(theme.id)}
-                  style={{ background: "none", border: "none", color: "oklch(0.6 0.02 285)", cursor: "pointer", fontSize: 16, padding: "0 6px" }}
+                  style={{ background: "none", border: "none", color: "#8A8A8A", cursor: "pointer", fontSize: 16, padding: "0 6px" }}
                   aria-label="Remover"
                 >
                   ×
@@ -331,7 +382,7 @@ function HistoricoTab() {
 
       {entries === null && <div className="hint">Carregando...</div>}
       {entries?.length === 0 && (
-        <div className="card" style={{ color: "oklch(0.6 0.02 285)", fontSize: 14 }}>
+        <div className="card" style={{ color: "#8A8A8A", fontSize: 14 }}>
           Nada gerado ainda. Vá em "Criar" pra começar.
         </div>
       )}
@@ -343,14 +394,14 @@ function HistoricoTab() {
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
               <div>
                 <div className="scene-tag">{formatLabel(entry.format)}</div>
-                <div style={{ fontSize: 13.5, color: "oklch(0.7 0.02 285)" }}>
+                <div style={{ fontSize: 13.5, color: "#B5B5B5" }}>
                   {entry.theme || "(sem tema)"} · {new Date(entry.createdAt).toLocaleDateString("pt-BR")}
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => handleRemove(entry.id)}
-                style={{ background: "none", border: "none", color: "oklch(0.6 0.02 285)", cursor: "pointer", fontSize: 16 }}
+                style={{ background: "none", border: "none", color: "#8A8A8A", cursor: "pointer", fontSize: 16 }}
                 aria-label="Remover"
               >
                 ×
@@ -372,8 +423,8 @@ function HistoricoTab() {
                     key={s.index}
                     style={{
                       fontSize: 13,
-                      background: "oklch(0.13 0.012 285)",
-                      border: "1px solid oklch(0.24 0.018 285)",
+                      background: "#070707",
+                      border: "1px solid #252525",
                       borderRadius: 10,
                       padding: 10,
                     }}
@@ -667,41 +718,66 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
 
         <div>
           <div className="section-label">Produto</div>
-          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+            <div
+              style={{
+                flex: 1,
+                height: 130,
+                borderRadius: 14,
+                overflow: "hidden",
+                background: "#131313",
+                border: "1px solid #262626",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#8A8A8A",
+                fontSize: 12,
+              }}
+            >
               {productPhotoDataUrl ? (
                 <img
                   src={productPhotoDataUrl}
                   alt="Produto"
-                  style={{ width: 84, height: 84, borderRadius: 14, objectFit: "cover", border: "1px solid oklch(0.28 0.02 285)" }}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
-              ) : null}
-              <label
-                className="btn-secondary"
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flex: "0 0 84px",
-                  width: 84,
-                  height: 84,
-                  borderRadius: 14,
-                  borderStyle: "dashed",
-                  cursor: "pointer",
-                  fontSize: 12,
-                  textAlign: "center",
-                  gap: 4,
-                }}
-              >
-                <IconCamera />
-                {analyzingProductPhoto ? "Analisando..." : productPhotoDataUrl ? "Trocar foto" : "Adicionar foto"}
-                <input type="file" accept="image/*" onChange={handleProductPhoto} style={{ display: "none" }} />
-              </label>
+              ) : (
+                "Foto do produto"
+              )}
             </div>
-            {productPhotoDescription && (
-              <div className="hint">Da foto: {productPhotoDescription}</div>
-            )}
+            <label
+              style={{
+                flex: 1,
+                height: 130,
+                borderRadius: 14,
+                border: "1.5px dashed #2E2E2E",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                color: "#8A8A8A",
+                cursor: "pointer",
+              }}
+            >
+              <IconAddPhoto />
+              <span style={{ fontSize: 12, textAlign: "center", lineHeight: 1.3 }}>
+                {analyzingProductPhoto ? (
+                  "Analisando..."
+                ) : (
+                  <>
+                    {productPhotoDataUrl ? "Trocar" : "Adicionar"} foto
+                    <br />
+                    do produto
+                  </>
+                )}
+              </span>
+              <input type="file" accept="image/*" onChange={handleProductPhoto} style={{ display: "none" }} />
+            </label>
+          </div>
+          {productPhotoDescription && <div className="hint">Da foto: {productPhotoDescription}</div>}
+
+          <div style={{ marginTop: 16 }}>
+            <div className="section-label">{project === "jeova_fala" ? "Tema" : "Informações do produto"}</div>
             <textarea
               className="field-textarea"
               placeholder={
@@ -767,43 +843,48 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
         </div>
 
         <div>
-          <div className="section-label" style={{ display: "flex", justifyContent: "space-between" }}>
-            <span>Vídeo de referência</span>
-            <span style={{ fontWeight: 500, color: "oklch(0.5 0.02 285)" }}>Opcional</span>
-          </div>
+          <div className="section-label">Vídeo de referência (opcional)</div>
           <div
-            className="card"
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 10,
-              borderStyle: "dashed",
-              padding: "10px 12px",
+              gap: 12,
+              background: "#101010",
+              border: "1.5px dashed #2A2A2A",
+              borderRadius: 14,
+              padding: 14,
             }}
           >
             <span
               style={{
-                flex: "0 0 44px",
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                background: "oklch(0.20 0.018 285)",
+                flex: "0 0 38px",
+                width: 38,
+                height: 38,
+                borderRadius: 999,
+                background: "#1C1C1C",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "oklch(0.6 0.02 285)",
+                color: "#9A9A9A",
               }}
             >
               <IconPlay />
             </span>
             <input
-              className="field-input"
-              style={{ flex: 1, border: "none", background: "none", padding: "6px 0" }}
-              placeholder="Link do vídeo (TikTok, YouTube...)"
+              style={{
+                flex: 1,
+                border: "none",
+                background: "none",
+                padding: 0,
+                color: "#B5B5B5",
+                fontSize: 13.5,
+                fontFamily: "inherit",
+              }}
+              placeholder="Adicionar vídeo de referência"
               value={referenceVideoUrl}
               onChange={(e) => setReferenceVideoUrl(e.target.value)}
             />
-            <span style={{ color: "oklch(0.55 0.02 285)", flex: "0 0 auto" }}>
+            <span style={{ color: "#6B6B6B", flex: "0 0 auto" }}>
               <IconLink />
             </span>
           </div>
@@ -848,7 +929,7 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
             <div>
               <div className="section-label" style={{ display: "flex", justifyContent: "space-between" }}>
                 <span>Ator principal</span>
-                <span style={{ fontWeight: 500, color: "oklch(0.5 0.02 285)" }}>Opcional</span>
+                <span style={{ fontWeight: 500, color: "#7A7A7A" }}>Opcional</span>
               </div>
 
               {ACTOR_PRESETS.length > 0 && (
@@ -911,7 +992,8 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
         )}
 
         <button type="submit" className="btn-primary">
-          Analisar →
+          Analisar
+          <IconArrowRight />
         </button>
       </form>
     </div>
@@ -933,38 +1015,61 @@ function ResultadoView({
   return (
     <div className="app">
       <BrandRow onBack={onBack} />
-      <h1 className="h1" style={{ fontSize: 20 }}>
+      <h1 className="h1" style={{ fontSize: 26, marginBottom: 20 }}>
         Resultado da análise
       </h1>
 
       <div className="rec-card">
-        <div className="rec-eyebrow">FORMATO RECOMENDADO</div>
-        <div className="rec-head">
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {output.request.productPhotoUrl && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <span className="rec-eyebrow" style={{ margin: 0 }}>
+            Formato recomendado
+          </span>
+          <span className="conf-badge">
+            {/* recommendation.confidence é heurística categórica, nunca um número — não inventa "91%" */}
+            Confiança {CONFIDENCE_LABEL[recommendation.confidence]}
+          </span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 12,
+              flexShrink: 0,
+              background: "#131313",
+              border: "1px solid #262626",
+              overflow: "hidden",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#8A8A8A",
+              fontSize: 11,
+            }}
+          >
+            {output.request.productPhotoUrl ? (
               <img
                 src={output.request.productPhotoUrl}
                 alt=""
-                style={{ width: 40, height: 40, borderRadius: 10, objectFit: "cover", flexShrink: 0 }}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
               />
+            ) : (
+              "Foto"
             )}
-            <div className="rec-name">{formatLabel(recommendation.format)}</div>
           </div>
-          <div className="conf-badge">
-            <div className="conf-label">CONFIANÇA</div>
-            <div className="conf-val">{CONFIDENCE_LABEL[recommendation.confidence]}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <IconStar />
+            <span className="rec-name">{formatLabel(recommendation.format)}</span>
           </div>
         </div>
-        <div className="h1-sub" style={{ marginTop: 10 }}>
-          {recommendation.reasoning}
-        </div>
+        <div style={{ color: "#fff", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Por quê?</div>
+        <div style={{ color: "#9A9A9A", fontSize: 13, lineHeight: 1.4 }}>{recommendation.reasoning}</div>
       </div>
 
       <div>
         <div className="section-label">Outras opções</div>
         <div className="pill-row">
           {recommendation.alternatives.map((f) => (
-            <span key={f} className="pill">
+            <span key={f} className="pill" style={{ fontWeight: 600 }}>
               {formatLabel(f)}
             </span>
           ))}
@@ -973,18 +1078,27 @@ function ResultadoView({
 
       <div>
         <div className="section-label">Hooks sugeridos</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {generation.hooks.map((h, i) => (
             <div key={i} className="hook-card">
               <div className="hook-num">{i + 1}</div>
-              <div style={{ fontSize: 14 }}>{h}</div>
+              <div style={{ flex: 1, color: "#E0E0E0", fontSize: 13.5, lineHeight: 1.4 }}>{h}</div>
+              <button
+                type="button"
+                onClick={() => navigator.clipboard?.writeText(h)}
+                style={{ background: "none", border: "none", color: "#6B6B6B", cursor: "pointer", flexShrink: 0, display: "flex" }}
+                aria-label="Copiar hook"
+              >
+                <IconCopy />
+              </button>
             </div>
           ))}
         </div>
       </div>
 
       <button className="btn-primary" onClick={onContinue}>
-        Gerar roteiro →
+        Gerar roteiro
+        <IconArrowRight />
       </button>
       <button className="btn-secondary" onClick={onReset}>
         Começar de novo
@@ -1030,22 +1144,30 @@ function FlowSegmentCard({
 
   return (
     <div className="card">
-      <div className="scene-tag">
+      <button
+        type="button"
+        className="card-copy-btn"
+        onClick={() => navigator.clipboard?.writeText(segment.videoPrompt)}
+        aria-label="Copiar prompt deste bloco"
+      >
+        <IconCopy />
+      </button>
+      <div className="scene-tag" style={{ paddingRight: 24 }}>
         BLOCO {segment.index + 1} — {segment.startSeconds}s–{segment.endSeconds}s (10s no Flow)
       </div>
       {coveredScenes.map((s) => (
         <div key={s.index} style={{ fontSize: 13.5, marginBottom: 4 }}>
-          <span style={{ color: "oklch(0.65 0.02 285)" }}>[{s.role}]</span> {s.narration}
+          <span style={{ color: "#9A9A9A" }}>[{s.role}]</span> {s.narration}
           {s.onScreenText && (
-            <span style={{ color: "oklch(0.7 0.02 285)" }}> · Texto na tela: {s.onScreenText}</span>
+            <span style={{ color: "#B5B5B5" }}> · Texto na tela: {s.onScreenText}</span>
           )}
         </div>
       ))}
       <div
         style={{
           fontSize: 13.5,
-          background: "oklch(0.13 0.012 285)",
-          border: "1px solid oklch(0.24 0.018 285)",
+          background: "#070707",
+          border: "1px solid #252525",
           borderRadius: 10,
           padding: 10,
           marginTop: 6,
@@ -1112,7 +1234,7 @@ function SeoSection({ output, onSeoResult }: { output: PipelineOutput; onSeoResu
       <div>
         <div className="section-label">Legenda</div>
         <div className="card">
-          <div style={{ fontSize: 14, color: "oklch(0.7 0.02 285)", marginBottom: 10 }}>
+          <div style={{ fontSize: 14, color: "#B5B5B5", marginBottom: 10 }}>
             Gerada só quando você pedir — sem hashtag (sem dado real de TikTok por trás pra confiar).
           </div>
           <button className="btn-primary" onClick={handleGenerate} disabled={loading}>
@@ -1134,7 +1256,7 @@ function SeoSection({ output, onSeoResult }: { output: PipelineOutput; onSeoResu
             {warnings.map((w, i) => (
               <div key={i} className="violation-item">
                 <div>"{w.flaggedText}"</div>
-                <div style={{ color: "oklch(0.65 0.02 285)" }}>{w.reason}</div>
+                <div style={{ color: "#9A9A9A" }}>{w.reason}</div>
               </div>
             ))}
           </div>
@@ -1180,67 +1302,105 @@ function RoteiroView({
   return (
     <div className="app">
       <BrandRow onBack={onBack} />
-      <h1 className="h1" style={{ fontSize: 20 }}>
-        {approved ? "Roteiro aprovado ✓" : "Roteiro (compliance pendente)"}
-      </h1>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+        <span style={{ color: "#fff", fontSize: 24, fontWeight: 800 }}>
+          {approved ? "Roteiro aprovado" : "Roteiro (compliance pendente)"}
+        </span>
+        {approved && <IconApprovedBadge />}
+      </div>
 
       <div>
         <div className="section-label">Hook selecionado</div>
-        <div className="card" style={{ fontStyle: "italic", fontSize: 15 }}>
-          "{generation.selectedHook}"
+        <div className="card">
+          <div style={{ color: "#E5E5E5", fontSize: 14, lineHeight: 1.5, paddingRight: 24 }}>
+            "{generation.selectedHook}"
+          </div>
+          <button
+            type="button"
+            className="card-copy-btn"
+            onClick={() => navigator.clipboard?.writeText(generation.selectedHook)}
+            aria-label="Copiar hook"
+          >
+            <IconCopy />
+          </button>
         </div>
       </div>
 
       <div>
         <div className="section-label">Roteiro</div>
-        <div className="card" style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 14 }}>
-          {generation.scenes.map((s, i) => (
-            <div key={s.index}>
-              Cena {i + 1} – {ROLE_LABEL[s.role] ?? s.role}
-            </div>
-          ))}
+        <div className="card">
+          <div style={{ display: "flex", flexDirection: "column", paddingRight: 24 }}>
+            {generation.scenes.map((s, i) => (
+              <div key={s.index} style={{ color: "#D5D5D5", fontSize: 13.5, lineHeight: 1.7 }}>
+                Cena {i + 1} – {ROLE_LABEL[s.role] ?? s.role}
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="card-copy-btn"
+            onClick={() =>
+              navigator.clipboard?.writeText(
+                generation.scenes.map((s, i) => `Cena ${i + 1} – ${ROLE_LABEL[s.role] ?? s.role}`).join("\n"),
+              )
+            }
+            aria-label="Copiar roteiro"
+          >
+            <IconCopy />
+          </button>
         </div>
       </div>
 
       <div>
         <div className="section-label">Cenas</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {generation.scenes.map((s, i) => (
-            <div key={s.index} className="card" style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-              {productPhoto ? (
-                <img
-                  src={productPhoto}
-                  alt=""
-                  style={{ width: 52, height: 52, borderRadius: 10, objectFit: "cover", flexShrink: 0 }}
-                />
-              ) : (
-                <div
-                  style={{
-                    width: 52,
-                    height: 52,
-                    borderRadius: 10,
-                    background: "oklch(0.2 0.018 285)",
-                    flexShrink: 0,
-                  }}
-                />
-              )}
-              <div style={{ fontSize: 13.5 }}>
-                <div style={{ fontWeight: 700, marginBottom: 2 }}>
+            <div key={s.index} className="card" style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div
+                style={{
+                  width: 60,
+                  height: 60,
+                  borderRadius: 12,
+                  flexShrink: 0,
+                  overflow: "hidden",
+                  background: "#131313",
+                  border: "1px solid #262626",
+                }}
+              >
+                {productPhoto && (
+                  <img src={productPhoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                )}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 3 }}>
                   Cena {String(i + 1).padStart(2, "0")}
                 </div>
-                <div style={{ color: "oklch(0.65 0.02 285)" }}>Câmera: {s.camera}</div>
-                <div style={{ color: "oklch(0.65 0.02 285)" }}>Ação: {s.action}</div>
-                <div style={{ color: "oklch(0.65 0.02 285)" }}>
+                <div style={{ color: "#9A9A9A", fontSize: 12, lineHeight: 1.5 }}>
+                  Câmera: {s.camera}
+                  <br />
+                  Ação: {s.action}
+                  <br />
                   Duração: {Math.round(s.endSeconds - s.startSeconds)}s
                 </div>
               </div>
+              <button
+                type="button"
+                className="card-copy-btn"
+                style={{ position: "static" }}
+                onClick={() =>
+                  navigator.clipboard?.writeText(`Câmera: ${s.camera}\nAção: ${s.action}\nDuração: ${Math.round(s.endSeconds - s.startSeconds)}s`)
+                }
+                aria-label="Copiar cena"
+              >
+                <IconCopy />
+              </button>
             </div>
           ))}
         </div>
       </div>
 
       <div>
-        <div className="section-label">Prompt de vídeo — blocos de 10s pro Flow</div>
+        <div className="section-label">Prompt de vídeo</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {generation.flowSegments.map((segment) => (
             <FlowSegmentCard
@@ -1258,8 +1418,16 @@ function RoteiroView({
 
       {approved ? (
         <div className="approve-card">
-          <div style={{ fontWeight: 700, fontSize: 15 }}>Compliance aprovado</div>
-          <div style={{ fontSize: 13, marginTop: 4 }}>{compliance.checkedGroups.length} grupos de regra verificados.</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+            <IconShieldCheck />
+            <span style={{ color: "#22C55E", fontSize: 14, fontWeight: 700 }}>Compliance aprovado</span>
+          </div>
+          {compliance.checkedGroups.map((group) => (
+            <div key={group} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <IconCheckCircleSmall />
+              <span style={{ color: "#BFEBD1", fontSize: 13 }}>{group}</span>
+            </div>
+          ))}
         </div>
       ) : (
         <div className="reject-card">
@@ -1268,7 +1436,7 @@ function RoteiroView({
             <div key={i} className="violation-item">
               <div style={{ fontWeight: 700 }}>{v.group}</div>
               <div>"{v.flaggedText}"</div>
-              <div style={{ color: "oklch(0.65 0.02 285)" }}>{v.reason}</div>
+              <div style={{ color: "#9A9A9A" }}>{v.reason}</div>
             </div>
           ))}
         </div>
@@ -1279,7 +1447,8 @@ function RoteiroView({
           className="btn-secondary"
           onClick={() => navigator.clipboard?.writeText(JSON.stringify(generation, null, 2))}
         >
-          Copiar roteiro
+          <IconCopy />
+          Copiar
         </button>
         <button
           className="btn-primary"
@@ -1290,7 +1459,8 @@ function RoteiroView({
             )
           }
         >
-          Copiar todos os prompts
+          <IconPlay />
+          Gerar vídeo
         </button>
       </div>
       <button className="btn-secondary" onClick={onReset}>
@@ -1324,8 +1494,8 @@ function ManualView({
           <div key={i} className="violation-item">
             <div style={{ fontWeight: 700 }}>{v.group}</div>
             <div>"{v.flaggedText}"</div>
-            <div style={{ color: "oklch(0.65 0.02 285)" }}>{v.reason}</div>
-            <div style={{ color: "oklch(0.75 0.15 45)", marginTop: 4 }}>Sugestão: {v.suggestion}</div>
+            <div style={{ color: "#9A9A9A" }}>{v.reason}</div>
+            <div style={{ color: "#FF6A1A", marginTop: 4 }}>Sugestão: {v.suggestion}</div>
           </div>
         ))}
       </div>
