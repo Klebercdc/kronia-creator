@@ -21,13 +21,11 @@ function getOpenAIClient(): OpenAI {
   return openAIClient;
 }
 
-/** Modelo padrão com bom suporte a saída JSON na camada gratuita da Groq.
- * Confira `console.groq.com/docs/models` de tempos em tempos — o catálogo muda
- * (confirmado via GET /openai/v1/models em 2026-09-10). */
+/** Modelo principal da camada gratuita da Groq. */
 export const DEFAULT_MODEL = "openai/gpt-oss-120b";
 
-/** Modelo de contingência usado quando a Groq não consegue atender por quota/rate limit. */
-export const FALLBACK_OPENAI_MODEL = process.env.OPENAI_FALLBACK_MODEL ?? "gpt-4o-mini";
+/** Fallback automático para quando a Groq estiver sem quota/rate limit. */
+export const FALLBACK_OPENAI_MODEL = process.env.OPENAI_FALLBACK_MODEL ?? "gpt-5";
 
 export class LLMValidationError extends Error {
   constructor(
@@ -39,16 +37,22 @@ export class LLMValidationError extends Error {
   }
 }
 
-function toJsonSchema(schema: z.ZodType) {
+function toGroqJsonSchema(schema: z.ZodType) {
   const { $schema, ...rest } = zodToJsonSchema(schema, { target: "openApi3" }) as Record<string, unknown>;
   return rest;
 }
 
 /**
- * Identifica erros em que insistir na Groq não resolve a chamada atual.
- * O fallback é deliberadamente restrito a quota/rate limit e indisponibilidade
- * transitória; erros de autenticação/configuração não são mascarados.
+ * OpenAI Structured Outputs exige JSON Schema compatível com seu dialeto.
+ * Usamos JSON Schema 7 aqui para evitar artefatos do target OpenAPI 3, como
+ * `exclusiveMinimum: true`, que causou o 400 observado no generation_result.
  */
+function toOpenAIJsonSchema(schema: z.ZodType) {
+  const { $schema, ...rest } = zodToJsonSchema(schema, { target: "jsonSchema7" }) as Record<string, unknown>;
+  return enforceStrict(rest) as Record<string, unknown>;
+}
+
+/** Identifica quota/rate limit e indisponibilidade transitória da Groq. */
 function isGroqFallbackError(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
 
@@ -102,10 +106,6 @@ function enforceStrict(node: unknown): unknown {
   return obj;
 }
 
-function toStrictJsonSchema(schema: z.ZodType) {
-  return enforceStrict(toJsonSchema(schema)) as Record<string, unknown>;
-}
-
 async function callOpenAIFallback<T>(params: {
   schema: z.ZodType<T>;
   system: string;
@@ -124,7 +124,7 @@ async function callOpenAIFallback<T>(params: {
       type: "json_schema",
       json_schema: {
         name: toolName,
-        schema: toStrictJsonSchema(schema),
+        schema: toOpenAIJsonSchema(schema),
         strict: true,
       },
     },
@@ -161,14 +161,8 @@ async function callOpenAIFallback<T>(params: {
 }
 
 /**
- * Chama a Groq em modo JSON e valida a saída contra `schema` em runtime.
- *
- * Resiliência de produção:
- * - Groq continua sendo sempre a primeira tentativa.
- * - Se a Groq responder com quota/rate limit/indisponibilidade transitória,
- *   a mesma operação é automaticamente repetida pela OpenAI.
- * - O schema Zod continua sendo a fonte de verdade nos dois provedores.
- * - Erros de autenticação ou configuração não são escondidos pelo fallback.
+ * Groq primeiro. Em quota/rate limit/indisponibilidade transitória, repete a
+ * mesma operação na OpenAI usando GPT-5 e Structured Outputs estritos.
  */
 export async function callStructured<T>(params: {
   schema: z.ZodType<T>;
@@ -180,7 +174,7 @@ export async function callStructured<T>(params: {
 }): Promise<T> {
   const { schema, system, prompt, toolName, model = DEFAULT_MODEL, maxAttempts = 2 } = params;
 
-  const schemaDescription = JSON.stringify(toJsonSchema(schema));
+  const schemaDescription = JSON.stringify(toGroqJsonSchema(schema));
   const systemWithSchema = `${system}
 
 Responda APENAS com um objeto JSON válido para "${toolName}", sem markdown, sem texto fora do
@@ -243,7 +237,7 @@ ${schemaDescription}`;
       }
     } catch (error) {
       if (isGroqFallbackError(error)) {
-        console.warn(`[LLM] Groq indisponível para ${toolName}; usando OpenAI fallback.`, {
+        console.warn(`[LLM] Groq indisponível para ${toolName}; usando ${FALLBACK_OPENAI_MODEL}.`, {
           status: (error as { status?: number }).status,
           code: (error as { code?: string }).code,
         });
