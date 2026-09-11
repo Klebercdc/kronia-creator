@@ -1,115 +1,104 @@
 import Groq from "groq-sdk";
+import OpenAI from "openai";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import type { z } from "zod";
 import { recordUsage } from "./cost-tracker";
 
-let client: Groq | null = null;
+let groqClient: Groq | null = null;
+let openAIClient: OpenAI | null = null;
 
-function getClient(): Groq {
-  if (!client) {
-    client = new Groq({ apiKey: process.env.GROQ_API_KEY, baseURL: process.env.GROQ_BASE_URL });
-  }
-  return client;
+function getGroqClient(): Groq {
+  if (!groqClient) groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY, baseURL: process.env.GROQ_BASE_URL });
+  return groqClient;
+}
+function getOpenAIClient(): OpenAI {
+  if (!openAIClient) openAIClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, baseURL: process.env.OPENAI_BASE_URL });
+  return openAIClient;
 }
 
-/** Modelo padrão com bom suporte a saída JSON na camada gratuita da Groq.
- * Confira `console.groq.com/docs/models` de tempos em tempos — o catálogo muda
- * (confirmado via GET /openai/v1/models em 2026-09-10). */
 export const DEFAULT_MODEL = "openai/gpt-oss-120b";
+export const FALLBACK_OPENAI_MODEL = process.env.OPENAI_FALLBACK_MODEL ?? "gpt-5";
 
 export class LLMValidationError extends Error {
-  constructor(
-    message: string,
-    public readonly raw: unknown,
-  ) {
-    super(message);
-    this.name = "LLMValidationError";
-  }
+  constructor(message: string, public readonly raw: unknown) { super(message); this.name = "LLMValidationError"; }
 }
 
-function toJsonSchema(schema: z.ZodType) {
+function enforceStrict(node: unknown): unknown {
+  if (Array.isArray(node)) return node.map(enforceStrict);
+  if (node === null || typeof node !== "object") return node;
+  const obj = { ...(node as Record<string, unknown>) };
+  for (const key of Object.keys(obj)) obj[key] = enforceStrict(obj[key]);
+  if (obj.type === "object" && obj.properties && typeof obj.properties === "object") {
+    obj.additionalProperties = false;
+    obj.required = Object.keys(obj.properties as Record<string, unknown>);
+  }
+  return obj;
+}
+
+function toGroqJsonSchema(schema: z.ZodType) {
   const { $schema, ...rest } = zodToJsonSchema(schema, { target: "openApi3" }) as Record<string, unknown>;
   return rest;
 }
+function toOpenAIJsonSchema(schema: z.ZodType) {
+  const { $schema, ...rest } = zodToJsonSchema(schema, { target: "jsonSchema7" }) as Record<string, unknown>;
+  return enforceStrict(rest) as Record<string, unknown>;
+}
 
-/**
- * Chama a Groq em modo JSON (mais confiável que tool-calling forçado nos
- * modelos abertos hospedados lá) e valida a saída contra `schema` em
- * runtime. Se a validação falhar (ou o JSON vier quebrado), devolve o erro
- * pro modelo e tenta mais uma vez antes de desistir — nunca aceita um
- * payload que não bate com o schema esperado.
- */
-export async function callStructured<T>(params: {
-  schema: z.ZodType<T>;
-  system: string;
-  prompt: string;
-  toolName: string;
-  model?: string;
-  maxAttempts?: number;
-}): Promise<T> {
+function isGroqFallbackError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { status?: number; code?: string; error?: { code?: string; type?: string; message?: string }; message?: string };
+  const status = candidate.status;
+  const code = String(candidate.code ?? candidate.error?.code ?? "").toLowerCase();
+  const type = String(candidate.error?.type ?? "").toLowerCase();
+  const message = String(candidate.message ?? candidate.error?.message ?? "").toLowerCase();
+  if (status === 429 || status === 500 || status === 502 || status === 503 || status === 504) return true;
+  const signals = ["rate_limit_exceeded", "rate limit", "rate-limit", "quota", "insufficient_quota", "tokens exhausted", "token limit", "tokens limit", "too many requests", "credits exhausted", "credit limit", "billing limit"];
+  return [code, type, message].some(value => signals.some(signal => value.includes(signal)));
+}
+
+async function callOpenAIFallback<T>(params: { schema: z.ZodType<T>; system: string; prompt: string; toolName: string; model: string }): Promise<T> {
+  const { schema, system, prompt, toolName, model } = params;
+  const response = await getOpenAIClient().chat.completions.create({
+    model,
+    messages: [{ role: "system", content: system }, { role: "user", content: prompt }],
+    response_format: { type: "json_schema", json_schema: { name: toolName, schema: toOpenAIJsonSchema(schema), strict: true } },
+  });
+  recordUsage({ provider: "openai", tool: `${toolName}:fallback`, promptTokens: response.usage?.prompt_tokens ?? 0, completionTokens: response.usage?.completion_tokens ?? 0 });
+  const content = response.choices[0]?.message?.content;
+  if (!content) throw new LLMValidationError(`OpenAI fallback não retornou conteúdo para ${toolName}`, response);
+  let parsedJson: unknown;
+  try { parsedJson = JSON.parse(content); } catch { throw new LLMValidationError(`OpenAI fallback retornou JSON inválido para ${toolName}`, content); }
+  const parsed = schema.safeParse(parsedJson);
+  if (!parsed.success) throw new LLMValidationError(`OpenAI fallback retornou saída incompatível com o schema de ${toolName}: ${parsed.error.message}`, parsedJson);
+  return parsed.data;
+}
+
+export async function callStructured<T>(params: { schema: z.ZodType<T>; system: string; prompt: string; toolName: string; model?: string; maxAttempts?: number }): Promise<T> {
   const { schema, system, prompt, toolName, model = DEFAULT_MODEL, maxAttempts = 2 } = params;
-
-  const schemaDescription = JSON.stringify(toJsonSchema(schema));
-  const systemWithSchema = `${system}
-
-Responda APENAS com um objeto JSON válido para "${toolName}", sem markdown, sem texto fora do
-JSON, correspondendo exatamente a este schema:
-${schemaDescription}`;
-
-  const messages: Groq.Chat.Completions.ChatCompletionMessageParam[] = [
-    { role: "system", content: systemWithSchema },
-    { role: "user", content: prompt },
-  ];
-
+  const schemaDescription = JSON.stringify(toGroqJsonSchema(schema));
+  const systemWithSchema = `${system}\n\nResponda APENAS com um objeto JSON válido para "${toolName}", sem markdown, sem texto fora do\nJSON, correspondendo exatamente a este schema:\n${schemaDescription}`;
+  const messages: Groq.Chat.Completions.ChatCompletionMessageParam[] = [{ role: "system", content: systemWithSchema }, { role: "user", content: prompt }];
   let lastRaw: unknown = null;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const response = await getClient().chat.completions.create({
-      model,
-      messages,
-      response_format: { type: "json_object" },
-    });
-
-    recordUsage({
-      provider: "groq",
-      tool: toolName,
-      promptTokens: response.usage?.prompt_tokens ?? 0,
-      completionTokens: response.usage?.completion_tokens ?? 0,
-    });
-
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new LLMValidationError(`Modelo não retornou conteúdo para ${toolName}`, response);
-    }
-
-    let parsedJson: unknown;
     try {
-      parsedJson = JSON.parse(content);
-    } catch {
-      lastRaw = content;
-      if (attempt < maxAttempts) {
-        messages.push(
-          { role: "assistant", content },
-          { role: "user", content: `Isso não é JSON válido. Responda de novo, só o objeto JSON de ${toolName}.` },
-        );
-        continue;
+      const response = await getGroqClient().chat.completions.create({ model, messages, response_format: { type: "json_object" } });
+      recordUsage({ provider: "groq", tool: toolName, promptTokens: response.usage?.prompt_tokens ?? 0, completionTokens: response.usage?.completion_tokens ?? 0 });
+      const content = response.choices[0]?.message?.content;
+      if (!content) throw new LLMValidationError(`Modelo não retornou conteúdo para ${toolName}`, response);
+      let parsedJson: unknown;
+      try { parsedJson = JSON.parse(content); } catch {
+        lastRaw = content;
+        if (attempt < maxAttempts) { messages.push({ role: "assistant", content }, { role: "user", content: `Isso não é JSON válido. Responda de novo, só o objeto JSON de ${toolName}.` }); continue; }
+        throw new LLMValidationError(`JSON inválido para ${toolName} após ${maxAttempts} tentativas`, content);
       }
-      throw new LLMValidationError(`JSON inválido para ${toolName} após ${maxAttempts} tentativas`, content);
-    }
-
-    lastRaw = parsedJson;
-    const parsed = schema.safeParse(parsedJson);
-    if (parsed.success) return parsed.data;
-
-    if (attempt < maxAttempts) {
-      messages.push(
-        { role: "assistant", content },
-        {
-          role: "user",
-          content: `A saída não bateu com o schema esperado: ${parsed.error.message}. Corrija e responda de novo, só o objeto JSON de ${toolName}.`,
-        },
-      );
+      lastRaw = parsedJson;
+      const parsed = schema.safeParse(parsedJson);
+      if (parsed.success) return parsed.data;
+      if (attempt < maxAttempts) messages.push({ role: "assistant", content }, { role: "user", content: `A saída não bateu com o schema esperado: ${parsed.error.message}. Corrija e responda de novo, só o objeto JSON de ${toolName}.` });
+    } catch (error) {
+      if (isGroqFallbackError(error)) return callOpenAIFallback({ schema, system, prompt, toolName, model: FALLBACK_OPENAI_MODEL });
+      throw error;
     }
   }
-
   throw new LLMValidationError(`Falha de validação para ${toolName} após ${maxAttempts} tentativas`, lastRaw);
 }
