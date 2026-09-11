@@ -27,7 +27,9 @@ Quando modo === "tiktok_shop", o CTA final precisa apontar pra ação real de co
 próprio app (ex: "toque no carrinho amarelo", "clique no link de compra na tela") — nunca um CTA
 genérico de e-commerce ("acesse nosso site", "link na bio") que adiciona fricção que o TikTok
 Shop não tem. Em modo "organico", o CTA é de engajamento (comentar, seguir, salvar), nunca venda
-direta.
+direta — quando fizer sentido pro tema, prefira uma pergunta genuína e específica do assunto
+(não uma genérica tipo "e você, o que acha?") que a pessoa realmente queira responder nos
+comentários; não force pergunta em todo roteiro, só quando o tema comportar uma de verdade.
 
 Retorne o roteiro completo revisado, no mesmo formato de entrada.`;
 

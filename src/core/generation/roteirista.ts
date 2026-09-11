@@ -49,6 +49,13 @@ Cenário concreto e reconhecível → tensão/complicação específica → mome
 que entrega o objetivo emocional. Isso vale por CIMA da estrutura hook/problema/agitação/solução/
 cta das cenas — a estrutura de cena é o esqueleto técnico, o arco emocional é o que dá alma a ele.
 
+REGRA DE OFÍCIO — retenção até o final, não só no hook:
+O algoritmo do TikTok pesa muito o tempo de visualização completo, não só quem parou pra ver o
+início — então o gancho não pode ser a única cena com tensão. Mantenha pelo menos uma pergunta ou
+curiosidade em aberto além do hook inicial (ex: o hook levanta uma dúvida que só é respondida na
+cena de solução, não antes) — se o espectador já sabe onde o vídeo vai dar aos 5s, não tem motivo
+pra assistir até o fim. Nunca entregue o "final" (a resolução/CTA) antes da última cena.
+
 Antes de finalizar, se autoavalie: o hook tem um momento real de tensão/curiosidade (não só uma
 pergunta genérica)? Existe pelo menos um "momento quotável" (uma frase que alguém repetiria)? A
 cena central tem um pico emocional real, não só informação neutra? Se a resposta for não pra
