@@ -91,6 +91,30 @@ a {
   height: 26px;
 }
 
+.brand-back {
+  background: none;
+  border: none;
+  color: oklch(0.85 0.006 285);
+  cursor: pointer;
+  padding: 4px;
+  margin-right: 2px;
+  display: flex;
+}
+
+.brand-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: oklch(0.22 0.018 285);
+  border: none;
+  color: oklch(0.75 0.015 285);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 .brand-word {
   font-family: "Sora", sans-serif;
   font-weight: 800;

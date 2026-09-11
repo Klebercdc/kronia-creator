@@ -36,14 +36,24 @@ type Step = "form" | "loading" | "resultado" | "roteiro" | "manual" | "error";
 
 const CONFIDENCE_LABEL: Record<string, string> = { alta: "Alta", media: "Média", baixa: "Baixa" };
 
-function BrandRow() {
+function BrandRow({ onBack, onProfile }: { onBack?: () => void; onProfile?: () => void } = {}) {
   return (
     <div className="brand-row">
+      {onBack && (
+        <button type="button" onClick={onBack} className="brand-back" aria-label="Voltar">
+          <IconChevronLeft />
+        </button>
+      )}
       <img src={logoIcon} alt="" style={{ height: 34, width: "auto" }} />
-      <div>
+      <div style={{ flex: 1 }}>
         <div className="brand-word">KRONIA</div>
         <div className="brand-sub">Criador Inteligente</div>
       </div>
+      {onProfile && (
+        <button type="button" onClick={onProfile} className="brand-avatar" aria-label="Perfil">
+          <IconUser />
+        </button>
+      )}
     </div>
   );
 }
@@ -126,6 +136,14 @@ function IconUser() {
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
       <circle cx="10" cy="7.2" r="3.2" />
       <path d="M3.8 17c0-3.4 2.8-5.7 6.2-5.7s6.2 2.3 6.2 5.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconChevronLeft() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M12.5 4.5 6.5 10l6 5.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -378,7 +396,7 @@ function CriadorApp() {
   const [tab, setTab] = useState<AppTab>("criar");
   return (
     <>
-      {tab === "criar" && <CriarFlow />}
+      {tab === "criar" && <CriarFlow onOpenProfile={() => setTab("perfil")} />}
       {tab === "historico" && <HistoricoTab />}
       {tab === "explorar" && (
         <PlaceholderTab
@@ -394,7 +412,7 @@ function CriadorApp() {
   );
 }
 
-function CriarFlow() {
+function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
   const runPipelineFn = useServerFn(runContentPipeline);
   const analyzeActorPhotoFn = useServerFn(analyzeActorPhoto);
   const listSavedThemesRpc = useServerFn(listSavedThemesFn);
@@ -555,7 +573,7 @@ function CriarFlow() {
   if (step === "error") {
     return (
       <div className="app">
-        <BrandRow />
+        <BrandRow onBack={reset} />
         <div className="reject-card">
           <div className="h1-sub">Algo deu errado: {errorMessage}</div>
         </div>
@@ -567,7 +585,14 @@ function CriarFlow() {
   }
 
   if (step === "resultado" && result) {
-    return <ResultadoView output={result.output} onContinue={() => setStep("roteiro")} onReset={reset} />;
+    return (
+      <ResultadoView
+        output={result.output}
+        onContinue={() => setStep("roteiro")}
+        onBack={reset}
+        onReset={reset}
+      />
+    );
   }
 
   if (step === "roteiro" && result) {
@@ -575,6 +600,7 @@ function CriarFlow() {
       <RoteiroView
         output={result.output}
         approved={result.status === "aprovado"}
+        onBack={() => setStep("resultado")}
         onReset={reset}
         onSegmentVideoPromptChange={updateSegmentVideoPrompt}
         onGenerationUpdate={updateGeneration}
@@ -583,12 +609,12 @@ function CriarFlow() {
   }
 
   if (step === "manual" && result) {
-    return <ManualView output={result.output} onReset={reset} />;
+    return <ManualView output={result.output} onBack={reset} onReset={reset} />;
   }
 
   return (
     <div className="app">
-      <BrandRow />
+      <BrandRow onProfile={onOpenProfile} />
       <StageIndicator current={0} />
       <div>
         <h1 className="h1">Criar</h1>
@@ -866,17 +892,18 @@ function CriarFlow() {
 function ResultadoView({
   output,
   onContinue,
+  onBack,
   onReset,
 }: {
   output: PipelineOutput;
   onContinue: () => void;
+  onBack: () => void;
   onReset: () => void;
 }) {
   const { recommendation, generation } = output;
   return (
     <div className="app">
-      <BrandRow />
-      <StageIndicator current={2} />
+      <BrandRow onBack={onBack} />
       <h1 className="h1" style={{ fontSize: 20 }}>
         Resultado da análise
       </h1>
@@ -884,7 +911,16 @@ function ResultadoView({
       <div className="rec-card">
         <div className="rec-eyebrow">FORMATO RECOMENDADO</div>
         <div className="rec-head">
-          <div className="rec-name">{formatLabel(recommendation.format)}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {output.request.productPhotoUrl && (
+              <img
+                src={output.request.productPhotoUrl}
+                alt=""
+                style={{ width: 40, height: 40, borderRadius: 10, objectFit: "cover", flexShrink: 0 }}
+              />
+            )}
+            <div className="rec-name">{formatLabel(recommendation.format)}</div>
+          </div>
           <div className="conf-badge">
             <div className="conf-label">CONFIANÇA</div>
             <div className="conf-val">{CONFIDENCE_LABEL[recommendation.confidence]}</div>
@@ -1086,25 +1122,35 @@ function SeoSection({ output, onSeoResult }: { output: PipelineOutput; onSeoResu
   );
 }
 
+const ROLE_LABEL: Record<string, string> = {
+  hook: "Gancho",
+  problema: "Apresentação do problema",
+  agitacao: "Agitação",
+  solucao: "Demonstração prática",
+  cta: "Chamada para ação",
+};
+
 function RoteiroView({
   output,
   approved,
+  onBack,
   onReset,
   onSegmentVideoPromptChange,
   onGenerationUpdate,
 }: {
   output: PipelineOutput;
   approved: boolean;
+  onBack: () => void;
   onReset: () => void;
   onSegmentVideoPromptChange: (segmentIndex: number, videoPrompt: string) => void;
   onGenerationUpdate: (generation: GenerationResult) => void;
 }) {
   const { generation, compliance } = output;
+  const productPhoto = output.request.productPhotoUrl;
 
   return (
     <div className="app">
-      <BrandRow />
-      <StageIndicator current={2} />
+      <BrandRow onBack={onBack} />
       <h1 className="h1" style={{ fontSize: 20 }}>
         {approved ? "Roteiro aprovado ✓" : "Roteiro (compliance pendente)"}
       </h1>
@@ -1117,7 +1163,55 @@ function RoteiroView({
       </div>
 
       <div>
-        <div className="section-label">Blocos de 10s — prompts prontos pro Flow</div>
+        <div className="section-label">Roteiro</div>
+        <div className="card" style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 14 }}>
+          {generation.scenes.map((s, i) => (
+            <div key={s.index}>
+              Cena {i + 1} – {ROLE_LABEL[s.role] ?? s.role}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div className="section-label">Cenas</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {generation.scenes.map((s, i) => (
+            <div key={s.index} className="card" style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+              {productPhoto ? (
+                <img
+                  src={productPhoto}
+                  alt=""
+                  style={{ width: 52, height: 52, borderRadius: 10, objectFit: "cover", flexShrink: 0 }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: 10,
+                    background: "oklch(0.2 0.018 285)",
+                    flexShrink: 0,
+                  }}
+                />
+              )}
+              <div style={{ fontSize: 13.5 }}>
+                <div style={{ fontWeight: 700, marginBottom: 2 }}>
+                  Cena {String(i + 1).padStart(2, "0")}
+                </div>
+                <div style={{ color: "oklch(0.65 0.02 285)" }}>Câmera: {s.camera}</div>
+                <div style={{ color: "oklch(0.65 0.02 285)" }}>Ação: {s.action}</div>
+                <div style={{ color: "oklch(0.65 0.02 285)" }}>
+                  Duração: {Math.round(s.endSeconds - s.startSeconds)}s
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div className="section-label">Prompt de vídeo — blocos de 10s pro Flow</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {generation.flowSegments.map((segment) => (
             <FlowSegmentCard
@@ -1177,10 +1271,18 @@ function RoteiroView({
   );
 }
 
-function ManualView({ output, onReset }: { output: PipelineOutput; onReset: () => void }) {
+function ManualView({
+  output,
+  onBack,
+  onReset,
+}: {
+  output: PipelineOutput;
+  onBack: () => void;
+  onReset: () => void;
+}) {
   return (
     <div className="app">
-      <BrandRow />
+      <BrandRow onBack={onBack} />
       <h1 className="h1" style={{ fontSize: 20 }}>
         Correção necessária
       </h1>
