@@ -128,6 +128,16 @@ tentativas.
 
 ## Pendências / dívida técnica conhecida
 
+- **[Auditoria — não corrigido] Ingestão (Caminho A) provavelmente quebrada em
+  produção**: `download.ts`, `frames.ts` e `whisper.ts` chamam os binários
+  externos `yt-dlp`, `ffmpeg` e `ffprobe` via `execFile`. Nenhum dos três é
+  instalado por padrão no runtime serverless do Vercel, e não há vendoring
+  configurado (sem `vercel.json`, sem binário vendorizado no repo). Alto grau
+  de confiança de que colar um vídeo de referência falha em produção com
+  ENOENT — não confirmado ao vivo (sandbox sem acesso à internet pública, e
+  testar custaria uma chamada real de visão na OpenAI). Precisa de decisão:
+  vendorizar binário pra Linux x64, trocar por uma API de extração em nuvem,
+  ou mover a Ingestão pra outro runtime.
 - Cost-tracker não sobrevive a deploy serverless e subestima o custo do
   fallback OpenAI (ver acima).
 - Nenhum aviso na UI quando uma geração usa o fallback pago (Groq
@@ -135,3 +145,21 @@ tentativas.
 - Explorar e Perfil são placeholders sem funcionalidade real.
 - Reaproveitar um item do Histórico pra gerar variações do mesmo tema
   ainda não foi construído (ideia levantada, não implementada).
+
+## Auditoria (histórico)
+
+- **[Corrigido, commit `807c0df`]** `src/lib/openai.ts` convertia os schemas
+  Zod pra JSON Schema com `target: "openApi3"`, que gera
+  `"exclusiveMinimum": true` (booleano, estilo draft-04) em campos
+  `.positive()` como `FlowSegmentSchema.endSeconds` e
+  `VideoAnalysisSchema.durationSeconds`. A OpenAI em modo strict rejeita isso
+  com `400 Invalid schema: True is not of type 'number'`. Como
+  **Psicologia de Compra roda em toda geração, sem checar `project`**
+  (`generate.ts`), isso provavelmente derrubava toda chamada real (não
+  mockada) ao pipeline — mascarado pelo smoke-test offline, que usa um
+  servidor mock que não faz a validação de schema que a OpenAI real faz.
+  Mesma causa raiz do bug que os commits do usuário já haviam corrigido em
+  `src/lib/llm.ts` (o caminho de fallback), só que num arquivo diferente.
+  Trocado pra `target: "jsonSchema7"`, confirmado sem `exclusiveMinimum`
+  booleano restante em `GenerationResultSchema`, `ContentRequestSchema`,
+  `VideoAnalysisSchema` e `ComplianceResultSchema`.
