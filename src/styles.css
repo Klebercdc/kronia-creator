@@ -30,6 +30,10 @@ a {
   gap: 20px;
 }
 
+.app:has(form) {
+  min-height: calc(100dvh - 60px);
+}
+
 .brand-row {
   position: sticky;
   top: 0;

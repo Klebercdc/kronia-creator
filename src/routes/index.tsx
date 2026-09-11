@@ -236,7 +236,7 @@ function CriadorApp() {
     setErrorMessage(null);
   }
 
-  const FORM_STEPS = ["projeto", "tema", "objetivo", "modo", "duracao", "referencia", "ator"] as const;
+  const FORM_STEPS = ["projeto", "tema", "detalhes", "referencia", "ator"] as const;
   const isLastFormStep = formStep === FORM_STEPS.length - 1;
 
   function goNextStep() {
@@ -319,14 +319,21 @@ function CriadorApp() {
         <div className="h1-sub">Envie seu produto e defina o objetivo.</div>
       </div>
 
-      <form onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <form
+        onSubmit={(e) => e.preventDefault()}
+        style={{ display: "flex", flexDirection: "column", gap: 20, flex: 1 }}
+      >
         <div className="step-progress">
           {FORM_STEPS.map((s, i) => (
             <div key={s} className={`step-dot ${i <= formStep ? "active" : ""}`} />
           ))}
         </div>
 
-        <div key={formStep} className="step-enter" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div
+          key={formStep}
+          className="step-enter"
+          style={{ display: "flex", flexDirection: "column", gap: 20, flex: 1, justifyContent: "center" }}
+        >
           {formStep === 0 && (
             <div>
               <div className="section-label">
@@ -385,74 +392,72 @@ function CriadorApp() {
           )}
 
           {formStep === 2 && (
-            <div>
-              <div className="section-label">Objetivo</div>
-              <div className="pill-row">
-                {(["vender", "engajar", "educar", "outros"] as const).map((o) => (
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              <div>
+                <div className="section-label">Objetivo</div>
+                <div className="pill-row">
+                  {(["vender", "engajar", "educar", "outros"] as const).map((o) => (
+                    <button
+                      key={o}
+                      type="button"
+                      className={`pill ${objective === o ? "active" : ""}`}
+                      onClick={() => setObjective(o)}
+                    >
+                      {o[0].toUpperCase() + o.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="section-label">Modo</div>
+                <div className="pill-row">
                   <button
-                    key={o}
                     type="button"
-                    className={`pill ${objective === o ? "active" : ""}`}
-                    onClick={() => setObjective(o)}
+                    className={`pill ${mode === "tiktok_shop" ? "active" : ""}`}
+                    onClick={() => setMode("tiktok_shop")}
                   >
-                    {o[0].toUpperCase() + o.slice(1)}
+                    TikTok Shop
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    className={`pill ${mode === "organico" ? "active" : ""}`}
+                    onClick={() => setMode("organico")}
+                  >
+                    Orgânico
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <div className="section-label">Duração (blocos de 10s no Flow)</div>
+                <div className="pill-row">
+                  <button
+                    type="button"
+                    className={`pill ${targetDurationSeconds === null ? "active" : ""}`}
+                    onClick={() => setTargetDurationSeconds(null)}
+                  >
+                    Automático
+                  </button>
+                  {[10, 20, 30, 40, 50, 60].map((seconds) => (
+                    <button
+                      key={seconds}
+                      type="button"
+                      className={`pill ${targetDurationSeconds === seconds ? "active" : ""}`}
+                      onClick={() => setTargetDurationSeconds(seconds)}
+                    >
+                      {seconds}s
+                    </button>
+                  ))}
+                </div>
+                <div className="hint">
+                  Cada 10s vira uma submissão separada no Flow — 50s = 5 blocos de prompt pra colar um por vez.
+                </div>
               </div>
             </div>
           )}
 
           {formStep === 3 && (
-            <div>
-              <div className="section-label">Modo</div>
-              <div className="pill-row">
-                <button
-                  type="button"
-                  className={`pill ${mode === "tiktok_shop" ? "active" : ""}`}
-                  onClick={() => setMode("tiktok_shop")}
-                >
-                  TikTok Shop
-                </button>
-                <button
-                  type="button"
-                  className={`pill ${mode === "organico" ? "active" : ""}`}
-                  onClick={() => setMode("organico")}
-                >
-                  Orgânico
-                </button>
-              </div>
-            </div>
-          )}
-
-          {formStep === 4 && (
-            <div>
-              <div className="section-label">Duração (blocos de 10s no Flow)</div>
-              <div className="pill-row">
-                <button
-                  type="button"
-                  className={`pill ${targetDurationSeconds === null ? "active" : ""}`}
-                  onClick={() => setTargetDurationSeconds(null)}
-                >
-                  Automático
-                </button>
-                {[10, 20, 30, 40, 50, 60].map((seconds) => (
-                  <button
-                    key={seconds}
-                    type="button"
-                    className={`pill ${targetDurationSeconds === seconds ? "active" : ""}`}
-                    onClick={() => setTargetDurationSeconds(seconds)}
-                  >
-                    {seconds}s
-                  </button>
-                ))}
-              </div>
-              <div className="hint">
-                Cada 10s vira uma submissão separada no Flow — 50s = 5 blocos de prompt pra colar um por vez.
-              </div>
-            </div>
-          )}
-
-          {formStep === 5 && (
             <div>
               <div className="section-label" style={{ display: "flex", justifyContent: "space-between" }}>
                 <span>Vídeo de referência</span>
@@ -468,7 +473,7 @@ function CriadorApp() {
             </div>
           )}
 
-          {formStep === 6 && (
+          {formStep === 4 && (
             <div>
               <div className="section-label" style={{ display: "flex", justifyContent: "space-between" }}>
                 <span>Ator principal</span>
