@@ -4,6 +4,7 @@ import { useState, useEffect, type FormEvent } from "react";
 import {
   runContentPipeline,
   analyzeActorPhoto,
+  analyzeProductPhoto,
   refineScene,
   generateSeoPackage,
   listSavedThemesFn,
@@ -415,6 +416,7 @@ function CriadorApp() {
 function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
   const runPipelineFn = useServerFn(runContentPipeline);
   const analyzeActorPhotoFn = useServerFn(analyzeActorPhoto);
+  const analyzeProductPhotoFn = useServerFn(analyzeProductPhoto);
   const listSavedThemesRpc = useServerFn(listSavedThemesFn);
   const addSavedThemeRpc = useServerFn(addSavedThemeFn);
   const removeSavedThemeRpc = useServerFn(removeSavedThemeFn);
@@ -429,6 +431,8 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
   const [mode, setMode] = useState<ContentRequest["mode"]>("tiktok_shop");
   const [productInfoText, setProductInfoText] = useState("");
   const [productPhotoDataUrl, setProductPhotoDataUrl] = useState<string | null>(null);
+  const [productPhotoDescription, setProductPhotoDescription] = useState<string | null>(null);
+  const [analyzingProductPhoto, setAnalyzingProductPhoto] = useState(false);
   const [targetDurationSeconds, setTargetDurationSeconds] = useState<number | null>(null);
   const [savedThemes, setSavedThemes] = useState<SavedTheme[]>([]);
   const [referenceVideoUrl, setReferenceVideoUrl] = useState("");
@@ -486,6 +490,15 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
     if (!file) return;
     const dataUrl = await readFileAsDataUrl(file);
     setProductPhotoDataUrl(dataUrl);
+    setAnalyzingProductPhoto(true);
+    try {
+      const { visualDescription } = await analyzeProductPhotoFn({ data: { imageDataUrl: dataUrl } });
+      setProductPhotoDescription(visualDescription);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Erro ao analisar a foto do produto");
+    } finally {
+      setAnalyzingProductPhoto(false);
+    }
   }
 
   async function handleSubmit(e?: FormEvent) {
@@ -495,14 +508,20 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
 
     const hasActor = actorName.trim() && actorVoice.trim() && actorAppearance.trim();
 
+    const productInfo: ContentRequest["productInfo"] = [];
+    if (productInfoText.trim()) {
+      productInfo.push({ text: productInfoText.trim(), kind: "fato", source: "campo de informações" });
+    }
+    if (productPhotoDescription) {
+      productInfo.push({ text: productPhotoDescription, kind: "inferencia", source: "foto do produto" });
+    }
+
     const request: ContentRequest = {
       project,
       objective,
       mode,
       productPhotoUrl: productPhotoDataUrl,
-      productInfo: productInfoText.trim()
-        ? [{ text: productInfoText.trim(), kind: "fato", source: "campo de informações" }]
-        : [],
+      productInfo,
       referenceVideoUrl: referenceVideoUrl.trim() || null,
       actorProfile: hasActor
         ? {
@@ -519,13 +538,20 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
       setResult(res);
       setStep(res.status === "aprovado" ? "resultado" : "manual");
       try {
+        // Nunca persiste a foto (base64, MBs) no Histórico — ela já cumpriu
+        // seu papel (virou claim via visão) antes de chegar aqui; guardar o
+        // blob de novo em toda geração só infla o banco sem necessidade.
+        const outputForHistory: PipelineOutput = {
+          ...res.output,
+          request: { ...res.output.request, productPhotoUrl: null },
+        };
         await addHistoryEntryRpc({
           data: {
             project: res.output.request.project,
             format: res.output.recommendation.format,
             theme: productInfoText.trim(),
             selectedHook: res.output.generation.selectedHook,
-            output: res.output,
+            output: outputForHistory,
           },
         });
       } catch {
@@ -669,10 +695,13 @@ function CriarFlow({ onOpenProfile }: { onOpenProfile: () => void }) {
                 }}
               >
                 <IconCamera />
-                {productPhotoDataUrl ? "Trocar foto" : "Adicionar foto"}
+                {analyzingProductPhoto ? "Analisando..." : productPhotoDataUrl ? "Trocar foto" : "Adicionar foto"}
                 <input type="file" accept="image/*" onChange={handleProductPhoto} style={{ display: "none" }} />
               </label>
             </div>
+            {productPhotoDescription && (
+              <div className="hint">Da foto: {productPhotoDescription}</div>
+            )}
             <textarea
               className="field-textarea"
               placeholder={

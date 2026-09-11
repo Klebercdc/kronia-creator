@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { runPipeline, ManualEditRequiredError } from "../core/pipeline";
 import { analyzeActorImage } from "../core/generation/actor-vision";
+import { analyzeProductImage } from "../core/generation/product-vision";
 import { refineScenePrompt } from "../core/generation/refine-scene";
 import { seo } from "../core/generation/seo";
 import { checkFabricatedNumbers } from "../core/compliance/numeric-guard";
@@ -59,6 +60,18 @@ export const analyzeActorPhoto = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<{ appearanceDescription: string }> => {
     const appearanceDescription = await analyzeActorImage(data.imageDataUrl);
     return { appearanceDescription };
+  });
+
+/**
+ * RPC que lê a foto do produto e devolve uma descrição visual real extraída
+ * da imagem — vira EvidencedClaim (kind "inferencia") somada ao que o
+ * usuário escreveu, em vez de a foto ficar só decorativa na tela.
+ */
+export const analyzeProductPhoto = createServerFn({ method: "POST" })
+  .validator((data: unknown) => z.object({ imageDataUrl: z.string() }).parse(data))
+  .handler(async ({ data }): Promise<{ visualDescription: string }> => {
+    const visualDescription = await analyzeProductImage(data.imageDataUrl);
+    return { visualDescription };
   });
 
 /**
