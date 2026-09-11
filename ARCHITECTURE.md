@@ -128,16 +128,40 @@ tentativas.
 
 ## Pendências / dívida técnica conhecida
 
-- **[Auditoria — não corrigido] Ingestão (Caminho A) provavelmente quebrada em
-  produção**: `download.ts`, `frames.ts` e `whisper.ts` chamam os binários
+- **[Auditoria — Ingestão (Caminho A) desligada na UI até resolver de
+  verdade]** `download.ts`, `frames.ts` e `whisper.ts` chamam os binários
   externos `yt-dlp`, `ffmpeg` e `ffprobe` via `execFile`. Nenhum dos três é
-  instalado por padrão no runtime serverless do Vercel, e não há vendoring
-  configurado (sem `vercel.json`, sem binário vendorizado no repo). Alto grau
-  de confiança de que colar um vídeo de referência falha em produção com
-  ENOENT — não confirmado ao vivo (sandbox sem acesso à internet pública, e
-  testar custaria uma chamada real de visão na OpenAI). Precisa de decisão:
-  vendorizar binário pra Linux x64, trocar por uma API de extração em nuvem,
-  ou mover a Ingestão pra outro runtime.
+  instalado por padrão no runtime serverless do Vercel, e não havia vendoring
+  configurado.
+
+  Investiguei as 3 saídas antes de decidir:
+  - **Vendorizar binário**: `ffmpeg-static`/`@ffprobe-installer/ffprobe` são
+    pacotes maduros, amplamente usados em Vercel — confiança alta que
+    funcionariam. Já `yt-dlp` não tem pacote npm equivalente confiável: testei
+    `youtube-dl-exec` e o install falhou no meio do teste por rate limit da
+    API do GitHub (`npm error API rate limit exceeded` — falha real,
+    reproduzida, não hipotética) — o mesmo tipo de falha intermitente
+    aconteceria num build do Vercel. Vendorizar o binário standalone do
+    yt-dlp direto no repo funciona tecnicamente (testei o download, ~40MB),
+    mas ele + ffmpeg + ffprobe (~80MB cada, build estático) somados arriscam
+    estourar o limite de tamanho de function do Vercel, e eu não tenho como
+    testar contra o runtime real do Vercel a partir daqui pra confirmar que
+    cabe e roda dentro do tempo de execução permitido.
+  - **API de extração em nuvem**: troca a dependência de binário por uma
+    dependência de outro serviço pago — não avaliei fornecedor nenhum ainda,
+    é a opção que precisa mais decisão de produto (qual serviço, custo).
+  - **Desligar até resolver (opção escolhida agora)**: campo "Vídeo de
+    referência" desabilitado na UI (`routes/index.tsx`) com texto explicando
+    o motivo, e uma trava correspondente no servidor
+    (`server/pipeline.functions.ts` — `runContentPipeline` rejeita com
+    mensagem clara se `referenceVideoUrl` vier preenchido, em vez de deixar
+    estourar erro cru de binário ausente). O Caminho B (produto/foto/texto,
+    sem vídeo de referência) não é afetado — é o caminho que já estava sendo
+    testado e funciona.
+
+  Nenhuma das 3 saídas foi implementada de verdade ainda — decisão de qual
+  seguir (vendorizar mesmo assim, usar serviço em nuvem, ou manter desligado)
+  é do usuário.
 - Cost-tracker não sobrevive a deploy serverless e subestima o custo do
   fallback OpenAI (ver acima).
 - Nenhum aviso na UI quando uma geração usa o fallback pago (Groq
