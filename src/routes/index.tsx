@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import {
   runContentPipeline,
   analyzeActorPhoto,
@@ -50,6 +50,87 @@ function BrandRow() {
   );
 }
 
+function SavedThemesDrawer({
+  savedThemes,
+  currentText,
+  onSave,
+  onPick,
+  onRemove,
+}: {
+  savedThemes: string[];
+  currentText: string;
+  onSave: () => void;
+  onPick: (text: string) => void;
+  onRemove: (text: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div style={{ marginTop: 6 }}>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          type="button"
+          className="btn-secondary"
+          style={{ padding: "6px 10px", fontSize: 11 }}
+          onClick={() => setOpen((v) => !v)}
+        >
+          {open ? "▾" : "▸"} Temas salvos {savedThemes.length > 0 ? `(${savedThemes.length})` : ""}
+        </button>
+        {currentText.trim() && (
+          <button
+            type="button"
+            className="btn-secondary"
+            style={{ padding: "6px 10px", fontSize: 11 }}
+            onClick={onSave}
+          >
+            + Salvar este
+          </button>
+        )}
+      </div>
+      {open && (
+        <div
+          style={{
+            marginTop: 8,
+            padding: 10,
+            border: "1px solid oklch(0.24 0.018 285)",
+            borderRadius: 10,
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+            maxHeight: 180,
+            overflowY: "auto",
+          }}
+        >
+          {savedThemes.length === 0 ? (
+            <div style={{ fontSize: 11.5, color: "oklch(0.6 0.02 285)" }}>Nada salvo ainda.</div>
+          ) : (
+            savedThemes.map((theme) => (
+              <div key={theme} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ flex: 1, textAlign: "left", padding: "6px 10px", fontSize: 11.5 }}
+                  onClick={() => onPick(theme)}
+                >
+                  {theme}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onRemove(theme)}
+                  style={{ background: "none", border: "none", color: "oklch(0.6 0.02 285)", cursor: "pointer", fontSize: 14, padding: "0 6px" }}
+                  aria-label="Remover"
+                >
+                  ×
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CriadorApp() {
   const runPipelineFn = useServerFn(runContentPipeline);
   const analyzeActorPhotoFn = useServerFn(analyzeActorPhoto);
@@ -62,11 +143,43 @@ function CriadorApp() {
   const [objective, setObjective] = useState<ContentRequest["objective"]>("vender");
   const [mode, setMode] = useState<ContentRequest["mode"]>("tiktok_shop");
   const [productInfoText, setProductInfoText] = useState("");
+  const [savedThemes, setSavedThemes] = useState<string[]>([]);
   const [referenceVideoUrl, setReferenceVideoUrl] = useState("");
   const [actorName, setActorName] = useState("");
   const [actorVoice, setActorVoice] = useState("");
   const [actorAppearance, setActorAppearance] = useState("");
   const [analyzingPhoto, setAnalyzingPhoto] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("kronia-saved-themes");
+      if (raw) setSavedThemes(JSON.parse(raw));
+    } catch {
+      // localStorage indisponível (modo privado, etc.) — segue sem lista salva
+    }
+  }, []);
+
+  function saveCurrentTheme() {
+    const text = productInfoText.trim();
+    if (!text || savedThemes.includes(text)) return;
+    const next = [text, ...savedThemes].slice(0, 30);
+    setSavedThemes(next);
+    try {
+      localStorage.setItem("kronia-saved-themes", JSON.stringify(next));
+    } catch {
+      // best-effort
+    }
+  }
+
+  function removeSavedTheme(text: string) {
+    const next = savedThemes.filter((t) => t !== text);
+    setSavedThemes(next);
+    try {
+      localStorage.setItem("kronia-saved-themes", JSON.stringify(next));
+    } catch {
+      // best-effort
+    }
+  }
 
   async function handleActorPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -233,6 +346,13 @@ function CriadorApp() {
           ) : (
             <div className="hint">Usado apenas o que você informar aqui — nada é inventado sobre o produto.</div>
           )}
+          <SavedThemesDrawer
+            savedThemes={savedThemes}
+            currentText={productInfoText}
+            onSave={saveCurrentTheme}
+            onPick={setProductInfoText}
+            onRemove={removeSavedTheme}
+          />
         </div>
 
         <div>
