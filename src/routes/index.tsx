@@ -14,7 +14,7 @@ import {
 import { ACTOR_PRESETS } from "../core/generation/actor-presets";
 import type { SavedTheme } from "../lib/supabase";
 import type { ContentRequest, GenerationResult, PipelineOutput } from "../types/pipeline";
-import logo from "../assets/logo.png";
+import logoIcon from "../assets/logo-icon.png";
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -36,7 +36,11 @@ const CONFIDENCE_LABEL: Record<string, string> = { alta: "Alta", media: "Média"
 function BrandRow() {
   return (
     <div className="brand-row">
-      <img src={logo} alt="KRONIA Criador Inteligente" style={{ height: 40, width: "auto" }} />
+      <img src={logoIcon} alt="" style={{ height: 34, width: "auto" }} />
+      <div>
+        <div className="brand-word">KRONIA</div>
+        <div className="brand-sub">Criador Inteligente</div>
+      </div>
     </div>
   );
 }
@@ -130,6 +134,7 @@ function CriadorApp() {
   const removeSavedThemeRpc = useServerFn(removeSavedThemeFn);
 
   const [step, setStep] = useState<Step>("form");
+  const [formStep, setFormStep] = useState(0);
   const [result, setResult] = useState<RunPipelineResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -188,8 +193,8 @@ function CriadorApp() {
     }
   }
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(e?: FormEvent) {
+    e?.preventDefault();
     setStep("loading");
     setErrorMessage(null);
 
@@ -226,8 +231,24 @@ function CriadorApp() {
 
   function reset() {
     setStep("form");
+    setFormStep(0);
     setResult(null);
     setErrorMessage(null);
+  }
+
+  const FORM_STEPS = ["projeto", "tema", "objetivo", "modo", "duracao", "referencia", "ator"] as const;
+  const isLastFormStep = formStep === FORM_STEPS.length - 1;
+
+  function goNextStep() {
+    if (isLastFormStep) {
+      handleSubmit();
+    } else {
+      setFormStep((s) => s + 1);
+    }
+  }
+
+  function goPrevStep() {
+    setFormStep((s) => Math.max(0, s - 1));
   }
 
   function updateSegmentVideoPrompt(segmentIndex: number, videoPrompt: string) {
@@ -298,195 +319,227 @@ function CriadorApp() {
         <div className="h1-sub">Envie seu produto e defina o objetivo.</div>
       </div>
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-        <div>
-          <div className="section-label">
-            Projeto <span style={{ fontWeight: 500, color: "oklch(0.5 0.02 285)" }}>(decide se o Teólogo entra)</span>
-          </div>
-          <div className="pill-row">
-            <button
-              type="button"
-              className={`pill ${project === "comercial" ? "active" : ""}`}
-              onClick={() => setProject("comercial")}
-            >
-              Comercial
-            </button>
-            <button
-              type="button"
-              className={`pill ${project === "jeova_fala" ? "active" : ""}`}
-              onClick={() => setProject("jeova_fala")}
-            >
-              Jeová Fala
-            </button>
-          </div>
+      <form onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div className="step-progress">
+          {FORM_STEPS.map((s, i) => (
+            <div key={s} className={`step-dot ${i <= formStep ? "active" : ""}`} />
+          ))}
         </div>
 
-        <div>
-          <div className="section-label">{project === "jeova_fala" ? "Tema" : "Informações do produto"}</div>
-          <textarea
-            className="field-textarea"
-            placeholder={
-              project === "jeova_fala"
-                ? "Ex: mensagem de deus pra você hoje forte, salmo 27, medo e confiança..."
-                : "Nome, material, benefícios conhecidos..."
-            }
-            value={productInfoText}
-            onChange={(e) => setProductInfoText(e.target.value)}
-          />
-          {project === "jeova_fala" ? (
-            <div className="hint">
-              Dica: no app do TikTok, em "Informações de pesquisas para criadores", tem assuntos reais
-              em alta (com % de crescimento de verdade) — cole um aqui em vez de inventar um tema do zero.
-            </div>
-          ) : (
-            <div className="hint">Usado apenas o que você informar aqui — nada é inventado sobre o produto.</div>
-          )}
-          <SavedThemesDrawer
-            savedThemes={savedThemes}
-            currentText={productInfoText}
-            onSave={saveCurrentTheme}
-            onPick={setProductInfoText}
-            onRemove={removeSavedTheme}
-          />
-        </div>
-
-        <div>
-          <div className="section-label">Objetivo</div>
-          <div className="pill-row">
-            {(["vender", "engajar", "educar", "outros"] as const).map((o) => (
-              <button
-                key={o}
-                type="button"
-                className={`pill ${objective === o ? "active" : ""}`}
-                onClick={() => setObjective(o)}
-              >
-                {o[0].toUpperCase() + o.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <div className="section-label">Modo</div>
-          <div className="pill-row">
-            <button
-              type="button"
-              className={`pill ${mode === "tiktok_shop" ? "active" : ""}`}
-              onClick={() => setMode("tiktok_shop")}
-            >
-              TikTok Shop
-            </button>
-            <button
-              type="button"
-              className={`pill ${mode === "organico" ? "active" : ""}`}
-              onClick={() => setMode("organico")}
-            >
-              Orgânico
-            </button>
-          </div>
-        </div>
-
-        <div>
-          <div className="section-label">Duração (blocos de 10s no Flow)</div>
-          <div className="pill-row">
-            <button
-              type="button"
-              className={`pill ${targetDurationSeconds === null ? "active" : ""}`}
-              onClick={() => setTargetDurationSeconds(null)}
-            >
-              Automático
-            </button>
-            {[10, 20, 30, 40, 50, 60].map((seconds) => (
-              <button
-                key={seconds}
-                type="button"
-                className={`pill ${targetDurationSeconds === seconds ? "active" : ""}`}
-                onClick={() => setTargetDurationSeconds(seconds)}
-              >
-                {seconds}s
-              </button>
-            ))}
-          </div>
-          <div className="hint">
-            Cada 10s vira uma submissão separada no Flow — 50s = 5 blocos de prompt pra colar um por vez.
-          </div>
-        </div>
-
-        <div>
-          <div className="section-label" style={{ display: "flex", justifyContent: "space-between" }}>
-            <span>Vídeo de referência</span>
-            <span style={{ fontWeight: 500, color: "oklch(0.5 0.02 285)" }}>Opcional</span>
-          </div>
-          <input
-            className="field-input"
-            placeholder="Link do vídeo (TikTok, YouTube...)"
-            value={referenceVideoUrl}
-            onChange={(e) => setReferenceVideoUrl(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <div className="section-label" style={{ display: "flex", justifyContent: "space-between" }}>
-            <span>Ator principal</span>
-            <span style={{ fontWeight: 500, color: "oklch(0.5 0.02 285)" }}>Opcional</span>
-          </div>
-
-          {ACTOR_PRESETS.length > 0 && (
-            <div className="pill-row" style={{ marginBottom: 8 }}>
-              {ACTOR_PRESETS.map((preset) => (
+        <div key={formStep} className="step-enter" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {formStep === 0 && (
+            <div>
+              <div className="section-label">
+                Projeto{" "}
+                <span style={{ fontWeight: 500, color: "oklch(0.5 0.02 285)" }}>(decide se o Teólogo entra)</span>
+              </div>
+              <div className="pill-row">
                 <button
-                  key={preset.name}
                   type="button"
-                  className="pill"
-                  onClick={() => {
-                    setActorName(preset.name);
-                    setActorVoice(preset.voiceDescription);
-                    setActorAppearance(preset.appearanceDescription);
-                  }}
+                  className={`pill ${project === "comercial" ? "active" : ""}`}
+                  onClick={() => setProject("comercial")}
                 >
-                  Usar preset: {preset.name}
+                  Comercial
                 </button>
-              ))}
+                <button
+                  type="button"
+                  className={`pill ${project === "jeova_fala" ? "active" : ""}`}
+                  onClick={() => setProject("jeova_fala")}
+                >
+                  Jeová Fala
+                </button>
+              </div>
             </div>
           )}
 
-          <input
-            className="field-input"
-            placeholder="Nome (ex: Jesus)"
-            value={actorName}
-            onChange={(e) => setActorName(e.target.value)}
-            style={{ marginBottom: 8 }}
-          />
-          <input
-            className="field-input"
-            placeholder="Voz (ex: grave, calma, tom acolhedor)"
-            value={actorVoice}
-            onChange={(e) => setActorVoice(e.target.value)}
-            style={{ marginBottom: 8 }}
-          />
+          {formStep === 1 && (
+            <div>
+              <div className="section-label">{project === "jeova_fala" ? "Tema" : "Informações do produto"}</div>
+              <textarea
+                className="field-textarea"
+                placeholder={
+                  project === "jeova_fala"
+                    ? "Ex: mensagem de deus pra você hoje forte, salmo 27, medo e confiança..."
+                    : "Nome, material, benefícios conhecidos..."
+                }
+                value={productInfoText}
+                onChange={(e) => setProductInfoText(e.target.value)}
+                autoFocus
+              />
+              {project === "jeova_fala" ? (
+                <div className="hint">
+                  Dica: no app do TikTok, em "Informações de pesquisas para criadores", tem assuntos reais
+                  em alta (com % de crescimento de verdade) — cole um aqui em vez de inventar um tema do zero.
+                </div>
+              ) : (
+                <div className="hint">Usado apenas o que você informar aqui — nada é inventado sobre o produto.</div>
+              )}
+              <SavedThemesDrawer
+                savedThemes={savedThemes}
+                currentText={productInfoText}
+                onSave={saveCurrentTheme}
+                onPick={setProductInfoText}
+                onRemove={removeSavedTheme}
+              />
+            </div>
+          )}
 
-          <label className="btn-secondary" style={{ display: "block", textAlign: "center", marginBottom: 8, cursor: "pointer" }}>
-            {analyzingPhoto ? "Analisando foto..." : "📷 Enviar foto de referência (opcional)"}
-            <input type="file" accept="image/*" onChange={handleActorPhoto} disabled={analyzingPhoto} style={{ display: "none" }} />
-          </label>
+          {formStep === 2 && (
+            <div>
+              <div className="section-label">Objetivo</div>
+              <div className="pill-row">
+                {(["vender", "engajar", "educar", "outros"] as const).map((o) => (
+                  <button
+                    key={o}
+                    type="button"
+                    className={`pill ${objective === o ? "active" : ""}`}
+                    onClick={() => setObjective(o)}
+                  >
+                    {o[0].toUpperCase() + o.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
-          <textarea
-            className="field-textarea"
-            placeholder="Aparência (ex: túnica branca, cabelo castanho, barba) — ou envie uma foto acima que a IA descreve pra você"
-            value={actorAppearance}
-            onChange={(e) => setActorAppearance(e.target.value)}
-            style={{ minHeight: 50 }}
-          />
-          <div className="hint">
-            Enviando foto, a aparência é extraída da imagem real (não inventada) e travada em
-            todas as cenas junto com a voz. Preenchendo os 3 campos, o Cinematográfico mantém
-            essas características sem variar de cena pra cena.
-          </div>
+          {formStep === 3 && (
+            <div>
+              <div className="section-label">Modo</div>
+              <div className="pill-row">
+                <button
+                  type="button"
+                  className={`pill ${mode === "tiktok_shop" ? "active" : ""}`}
+                  onClick={() => setMode("tiktok_shop")}
+                >
+                  TikTok Shop
+                </button>
+                <button
+                  type="button"
+                  className={`pill ${mode === "organico" ? "active" : ""}`}
+                  onClick={() => setMode("organico")}
+                >
+                  Orgânico
+                </button>
+              </div>
+            </div>
+          )}
+
+          {formStep === 4 && (
+            <div>
+              <div className="section-label">Duração (blocos de 10s no Flow)</div>
+              <div className="pill-row">
+                <button
+                  type="button"
+                  className={`pill ${targetDurationSeconds === null ? "active" : ""}`}
+                  onClick={() => setTargetDurationSeconds(null)}
+                >
+                  Automático
+                </button>
+                {[10, 20, 30, 40, 50, 60].map((seconds) => (
+                  <button
+                    key={seconds}
+                    type="button"
+                    className={`pill ${targetDurationSeconds === seconds ? "active" : ""}`}
+                    onClick={() => setTargetDurationSeconds(seconds)}
+                  >
+                    {seconds}s
+                  </button>
+                ))}
+              </div>
+              <div className="hint">
+                Cada 10s vira uma submissão separada no Flow — 50s = 5 blocos de prompt pra colar um por vez.
+              </div>
+            </div>
+          )}
+
+          {formStep === 5 && (
+            <div>
+              <div className="section-label" style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>Vídeo de referência</span>
+                <span style={{ fontWeight: 500, color: "oklch(0.5 0.02 285)" }}>Opcional</span>
+              </div>
+              <input
+                className="field-input"
+                placeholder="Link do vídeo (TikTok, YouTube...)"
+                value={referenceVideoUrl}
+                onChange={(e) => setReferenceVideoUrl(e.target.value)}
+                autoFocus
+              />
+            </div>
+          )}
+
+          {formStep === 6 && (
+            <div>
+              <div className="section-label" style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>Ator principal</span>
+                <span style={{ fontWeight: 500, color: "oklch(0.5 0.02 285)" }}>Opcional</span>
+              </div>
+
+              {ACTOR_PRESETS.length > 0 && (
+                <div className="pill-row" style={{ marginBottom: 8 }}>
+                  {ACTOR_PRESETS.map((preset) => (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      className="pill"
+                      onClick={() => {
+                        setActorName(preset.name);
+                        setActorVoice(preset.voiceDescription);
+                        setActorAppearance(preset.appearanceDescription);
+                      }}
+                    >
+                      Usar preset: {preset.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <input
+                className="field-input"
+                placeholder="Nome (ex: Jesus)"
+                value={actorName}
+                onChange={(e) => setActorName(e.target.value)}
+                style={{ marginBottom: 8 }}
+              />
+              <input
+                className="field-input"
+                placeholder="Voz (ex: grave, calma, tom acolhedor)"
+                value={actorVoice}
+                onChange={(e) => setActorVoice(e.target.value)}
+                style={{ marginBottom: 8 }}
+              />
+
+              <label className="btn-secondary" style={{ display: "block", textAlign: "center", marginBottom: 8, cursor: "pointer" }}>
+                {analyzingPhoto ? "Analisando foto..." : "📷 Enviar foto de referência (opcional)"}
+                <input type="file" accept="image/*" onChange={handleActorPhoto} disabled={analyzingPhoto} style={{ display: "none" }} />
+              </label>
+
+              <textarea
+                className="field-textarea"
+                placeholder="Aparência (ex: túnica branca, cabelo castanho, barba) — ou envie uma foto acima que a IA descreve pra você"
+                value={actorAppearance}
+                onChange={(e) => setActorAppearance(e.target.value)}
+                style={{ minHeight: 50 }}
+              />
+              <div className="hint">
+                Enviando foto, a aparência é extraída da imagem real (não inventada) e travada em
+                todas as cenas junto com a voz. Preenchendo os 3 campos, o Cinematográfico mantém
+                essas características sem variar de cena pra cena.
+              </div>
+            </div>
+          )}
         </div>
 
-        <button type="submit" className="btn-primary">
-          Analisar →
-        </button>
+        <div className="btn-row">
+          {formStep > 0 && (
+            <button type="button" className="btn-secondary" onClick={goPrevStep}>
+              ← Voltar
+            </button>
+          )}
+          <button type="button" className="btn-primary" style={{ flex: formStep > 0 ? 1.4 : 1 }} onClick={goNextStep}>
+            {isLastFormStep ? "Analisar →" : "Continuar →"}
+          </button>
+        </div>
       </form>
     </div>
   );
