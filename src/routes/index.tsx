@@ -2,9 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState, useEffect, type FormEvent } from "react";
 import {
-  runContentPipeline,
   enqueueReferenceIngestion,
   advanceIngestionJob,
+  enqueueContentGeneration,
+  advanceContentGenerationJob,
   analyzeActorPhoto,
   analyzeProductPhoto,
   refineScene,
@@ -1069,9 +1070,10 @@ function CriarFlow({
   pendingOpportunity: PendingOpportunitySeed | null;
   onConsumePendingOpportunity: () => void;
 }) {
-  const runPipelineFn = useServerFn(runContentPipeline);
   const enqueueReferenceIngestionFn = useServerFn(enqueueReferenceIngestion);
   const advanceIngestionJobFn = useServerFn(advanceIngestionJob);
+  const enqueueContentGenerationFn = useServerFn(enqueueContentGeneration);
+  const advanceContentGenerationJobFn = useServerFn(advanceContentGenerationJob);
   const analyzeActorPhotoFn = useServerFn(analyzeActorPhoto);
   const analyzeProductPhotoFn = useServerFn(analyzeProductPhoto);
   const listSavedThemesRpc = useServerFn(listSavedThemesFn);
@@ -1163,6 +1165,18 @@ function CriarFlow({
     vision: "Analisando a mecânica do vídeo...",
   };
 
+  const CONTENT_GENERATION_STEP_LABELS: Record<string, string> = {
+    recommend: "Recomendando o melhor formato...",
+    roteirista: "Escrevendo o roteiro e os hooks...",
+    marketing: "Ajustando o ângulo de marketing...",
+    teologo: "Revisando a mensagem teológica...",
+    psicologia: "Aplicando gatilhos de decisão de compra...",
+    persuasao: "Refinando a persuasão...",
+    cinematografico: "Montando a direção cinematográfica...",
+    compliance_validate: "Validando conformidade...",
+    compliance_correct: "Corrigindo pontos de conformidade...",
+  };
+
   /** Enfileira a Ingestão e faz polling até o job terminar — cada chamada
    * de advanceIngestionJobFn roda só um step no servidor (cabe nos 60s),
    * essa aba fechar no meio, um worker de verdade (pg_cron do Supabase,
@@ -1186,6 +1200,40 @@ function CriarFlow({
           setIngestionStep(null);
           setIngestionProgressPercent(null);
           throw new Error(job.error ?? "Falha ao analisar o vídeo de referência.");
+        }
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+  }
+
+  /** Recomendação → Geração → Compliance como job assíncrono — mesmo
+   * padrão de `runIngestionJob` acima, mesmo motivo: a cadeia de 6
+   * agentes + até 2 rodadas de Compliance estourava o timeout de 60s
+   * numa chamada síncrona só (confirmado em produção). Reaproveita o
+   * MESMO estado de progresso (`ingestionStep`/`ingestionProgressPercent`)
+   * da tela de "Analisando...", só troca o mapa de rótulos. */
+  async function runContentGenerationJob(
+    request: ContentRequest,
+    precomputedAnalysis?: ReferenceAnalysis,
+  ): Promise<RunPipelineResult> {
+    const { jobId } = await enqueueContentGenerationFn({ data: { request, precomputedAnalysis } });
+    setIngestionStep("recommend");
+
+    for (;;) {
+      const job = await advanceContentGenerationJobFn({ data: { jobId } });
+      if (job) {
+        setIngestionStep(job.step);
+        setIngestionProgressPercent(job.progressPercent);
+        if (job.status === "succeeded") {
+          setIngestionStep(null);
+          setIngestionProgressPercent(null);
+          if (!job.result) throw new Error("Job de geração terminou sem resultado.");
+          return job.result;
+        }
+        if (job.status === "failed") {
+          setIngestionStep(null);
+          setIngestionProgressPercent(null);
+          throw new Error(job.error ?? "Falha ao gerar o conteúdo.");
         }
       }
       await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -1283,7 +1331,7 @@ function CriarFlow({
         ? await runIngestionJob(request)
         : (opportunityAnalysis ?? undefined);
       if (opportunityAnalysis) setOpportunityAnalysis(null); // consumido — não reaproveitar numa próxima geração manual
-      const res = await runPipelineFn({ data: { request, precomputedAnalysis } });
+      const res = await runContentGenerationJob(request, precomputedAnalysis);
       setResult(res);
       setStep(res.status === "aprovado" ? "resultado" : "manual");
       try {
@@ -1341,7 +1389,7 @@ function CriarFlow({
           <div className="spinner" />
           <div className="h1-sub">
             {ingestionStep
-              ? (INGESTION_STEP_LABELS[ingestionStep] ?? "Analisando vídeo de referência...")
+              ? (INGESTION_STEP_LABELS[ingestionStep] ?? CONTENT_GENERATION_STEP_LABELS[ingestionStep] ?? "Processando...")
               : "Analisando produto, recomendando formato e gerando roteiro..."}
             {ingestionStep && ingestionProgressPercent != null ? ` — ${ingestionProgressPercent}%` : ""}
           </div>

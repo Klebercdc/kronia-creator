@@ -1,5 +1,6 @@
 import { claimJob, claimNextJob, getJob, failJobStep, type JobRow } from "../../lib/supabase";
 import { referenceIngestionHandlers } from "./reference-ingestion";
+import { contentGenerationHandlers } from "./content-generation";
 
 export interface JobKindHandlers {
   steps: Record<string, (job: JobRow) => Promise<void>>;
@@ -12,15 +13,24 @@ export interface JobKindHandlers {
 /**
  * Registro de handlers por `kind` — mecanismo genérico do Job Engine
  * (claim/lease/retry/cleanup, em lib/supabase.ts) nunca muda quando um
- * kind novo é adicionado; só se registra aqui. Hoje só
- * `ingest_reference_video` existe — Trend Interpreter e Opportunity
- * Engine são síncronos (createServerFn comum), não passam pela fila,
- * porque são 1 chamada LLM rápida, não trabalho pesado que estoura o
- * timeout de uma function (ver ARCHITECTURE.md).
+ * kind novo é adicionado; só se registra aqui. `ingest_reference_video`
+ * (download+frames/transcript/visão) e `generate_content` (Recomendação→
+ * Geração→Compliance, ver content-generation.ts) passam pela fila porque
+ * são cadeias longas de LLM que estouram o timeout de uma function.
+ * Trend Interpreter e Opportunity Engine continuam síncronos
+ * (createServerFn comum), porque são 1 chamada LLM rápida só (ver
+ * ARCHITECTURE.md).
  */
 const registry: Record<string, JobKindHandlers> = {
   ingest_reference_video: referenceIngestionHandlers,
+  generate_content: contentGenerationHandlers,
 };
+
+/** Kinds registrados — usado pelo worker independente do navegador
+ * (`/api/jobs/worker`) pra avançar o job mais antigo pendente de CADA
+ * kind numa mesma invocação do pg_cron, sem precisar saber os nomes de
+ * antemão nem duplicar a lista. */
+export const JOB_KINDS = Object.keys(registry);
 
 async function runStep(job: JobRow): Promise<void> {
   const handlers = registry[job.kind];

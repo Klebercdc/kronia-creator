@@ -158,6 +158,66 @@ export const runContentPipeline = createServerFn({ method: "POST" })
     }
   });
 
+export interface ContentGenerationJobStatusResult {
+  id: string;
+  status: JobStatus;
+  step: string;
+  progressPercent: number;
+  error: string | null;
+  result: RunPipelineResult | null;
+}
+
+const CONTENT_GENERATION_STEP_PROGRESS_PERCENT: Record<string, number> = {
+  recommend: 10,
+  roteirista: 25,
+  marketing: 40,
+  teologo: 50,
+  psicologia: 60,
+  persuasao: 70,
+  cinematografico: 80,
+  compliance_validate: 90,
+  compliance_correct: 90,
+};
+
+/**
+ * Geração de conteúdo (Recomendação → Geração → Compliance) como job
+ * assíncrono — mesmo padrão/motivo da Ingestão de vídeo acima (ver
+ * core/jobs/content-generation.ts): a cadeia de 6 agentes + até 2
+ * rodadas de Compliance é de 6 a 11 chamadas de LLM em sequência, e
+ * estourava o timeout de 60s da function numa chamada síncrona só
+ * (`runContentPipeline`, mantida abaixo — ainda usada por scripts/
+ * smoke tests que chamam `runPipeline` direto, sem passar pelo Job
+ * Engine).
+ */
+export const enqueueContentGeneration = createServerFn({ method: "POST" })
+  .validator((data: unknown) =>
+    z
+      .object({
+        request: ContentRequestSchema,
+        precomputedAnalysis: ReferenceAnalysisSchema.optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data }): Promise<{ jobId: string }> => {
+    const job = await createJob("generate_content", "recommend", data);
+    return { jobId: job.id };
+  });
+
+export const advanceContentGenerationJob = createServerFn({ method: "POST" })
+  .validator((data: unknown) => z.object({ jobId: z.string().min(1) }).parse(data))
+  .handler(async ({ data }): Promise<ContentGenerationJobStatusResult | null> => {
+    const job = await advanceIngestionJobCore(data.jobId);
+    if (!job) return null;
+    return {
+      id: job.id,
+      status: job.status,
+      step: job.step,
+      progressPercent: job.status === "succeeded" ? 100 : (CONTENT_GENERATION_STEP_PROGRESS_PERCENT[job.step] ?? 0),
+      error: job.error,
+      result: job.status === "succeeded" ? (job.result as unknown as RunPipelineResult) : null,
+    };
+  });
+
 /**
  * RPC que lê a foto de referência do ator principal e devolve a descrição
  * de aparência extraída da imagem — o usuário revisa/ajusta antes de travar.
