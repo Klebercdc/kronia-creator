@@ -4,7 +4,7 @@ import { evaluateCreativeSpec } from "./evaluation";
 import { resolveTarget } from "./target-resolver";
 import { resolveSpecialist } from "./target-specialists";
 import { compilePrompt } from "./compiler";
-import { runPromptQc } from "./qc";
+import { runFullQc } from "./semantic-qc";
 import { repairCreativeSpec } from "./repair";
 import { CREATIVE_QC_MAX_ATTEMPTS, type CreativeEvaluation, type CreativeSpec, type PromptArtifact } from "./schemas";
 
@@ -21,9 +21,16 @@ export interface BuildCreativePromptResult {
 /**
  * Orquestra o fluxo completo:
  *   Creative Reasoning -> Creative Evaluation -> Target Resolver ->
- *   Target Specialist -> Prompt Compiler -> Prompt QC -> Repair (até
- *   CREATIVE_QC_MAX_ATTEMPTS) -> Creative Evaluation de novo -> ... ->
- *   resultado final.
+ *   Target Specialist -> Prompt Compiler -> QC (determinístico +
+ *   semântico, ver semantic-qc.ts) -> Repair (até CREATIVE_QC_MAX_ATTEMPTS)
+ *   -> Creative Evaluation de novo -> ... -> resultado final.
+ *
+ * Fase 2: `runFullQc` (semantic-qc.ts) compõe o QC determinístico
+ * existente (qc.ts, inalterado, continua zero-LLM) com uma segunda
+ * passada semântica (semantic-truth.ts, 1 chamada LLM) que só roda quando
+ * o determinístico não rejeitou de cara E existe característica
+ * `unknown` — controle de custo: não gasta a chamada semântica quando o
+ * determinístico já é suficiente pra decidir.
  *
  * Se a Creative Evaluation reprovar (verdict "fail" — product truth
  * violado), o fluxo PARA antes de compilar: `artifact` vem null e a
@@ -56,7 +63,7 @@ export async function buildCreativePrompt(input: BuildCreativePromptInput): Prom
   for (;;) {
     const targetSpecific = specialist(currentSpec, profile);
     const compiled = compilePrompt(targetSpecific);
-    const qc = runPromptQc(compiled, currentSpec, profile);
+    const qc = await runFullQc(compiled, currentSpec, profile);
 
     if (qc.state === "pass" || qc.state === "warning") {
       return {

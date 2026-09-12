@@ -225,6 +225,27 @@ export const CreativeEvaluationSchema = z.object({
 });
 export type CreativeEvaluation = z.infer<typeof CreativeEvaluationSchema>;
 
+/**
+ * Semantic Product Truth Validation (Fase 2) — julgamento de LLM sobre se
+ * o conteúdo visual (ações dos shots + direção + diálogo) DEMONSTRA uma
+ * característica marcada `unknown`, mesmo sem citar o termo literal
+ * (paráfrase, eufemismo, ação que implica o resultado). Complementa —
+ * NUNCA substitui — o QC determinístico (qc.ts): roda DEPOIS dele, só
+ * quando `productTruth.unknown` não está vazio e o determinístico já não
+ * rejeitou (controle de custo, ver semantic-truth.ts). O LLM aqui só
+ * JULGA; ele nunca decide/altera `productTruth` — isso continua 100% em
+ * código, construído a partir de `EvidencedClaim[]` antes desta chamada
+ * (`buildProductCapabilityMap`), nunca depois.
+ */
+export const SemanticTruthCheckSchema = z.object({
+  violatesProductTruth: z.boolean(),
+  /** Quais das características de `productTruth.unknown` o conteúdo
+   * demonstra — subconjunto do array original, nunca um termo novo. */
+  violatedProperties: z.array(z.string()),
+  explanation: z.string(),
+});
+export type SemanticTruthCheck = z.infer<typeof SemanticTruthCheckSchema>;
+
 /** Teto de repair automático — mesma semântica de MAX_AUTO_COMPLIANCE_ATTEMPTS
  * em types/compliance.ts: depois disso, revisão manual explícita, nunca um
  * "pass" mascarado. */
