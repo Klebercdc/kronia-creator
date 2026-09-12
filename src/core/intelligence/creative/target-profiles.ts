@@ -13,9 +13,13 @@ import type { TargetProfile } from "./schemas";
  * PLATAFORMA construída sobre Veo 3.1 + Imagen 4 + Gemini, com camadas
  * próprias (SceneBuilder: timeline multi-clipe; extensão de vídeo;
  * upscaling 2K/4K) que um prompt direto pro Veo não tem. Por isso Flow
- * tem kind:"platform" e basedOn:["veo"], herdando as capabilities do Veo
- * e declarando as suas próprias por cima — nunca tratado como um segundo
- * "model" equivalente.
+ * tem kind:"platform" e basedOn:["veo"] — mas `basedOn` é só metadado
+ * arquitetural nesta fase, NÃO herança automática: não existe nenhum
+ * código que copie/mescle as capabilities do Veo pro dict do Flow (item
+ * 6/11 do pedido de Fase 2 — herança implícita de capability deve ser
+ * tratada como problema, não implementada silenciosamente). O dict de
+ * capabilities do Flow abaixo é escrito à mão, por completo, com sua
+ * própria fonte — nunca tratado como um segundo "model" equivalente.
  */
 export const TARGET_PROFILES: TargetProfile[] = [
   {

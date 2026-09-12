@@ -18,7 +18,6 @@ export interface FormatKnowledge {
   pacing: "lento" | "medio" | "rapido";
   minShots: number;
   maxShots: number;
-  incompatibleWith: ContentFormat[];
 }
 
 export const FORMAT_KNOWLEDGE: Partial<Record<ContentFormat, FormatKnowledge>> = {
@@ -29,7 +28,6 @@ export const FORMAT_KNOWLEDGE: Partial<Record<ContentFormat, FormatKnowledge>> =
     pacing: "medio",
     minShots: 3,
     maxShots: 6,
-    incompatibleWith: ["antes_e_depois"],
   },
   ugc: {
     purpose: "Simular conteúdo autêntico de criador/usuário real, baixa produção aparente.",
@@ -38,7 +36,6 @@ export const FORMAT_KNOWLEDGE: Partial<Record<ContentFormat, FormatKnowledge>> =
     pacing: "rapido",
     minShots: 2,
     maxShots: 5,
-    incompatibleWith: [],
   },
   pov: {
     purpose: "Câmera na perspectiva do usuário — imersão na experiência de uso.",
@@ -47,7 +44,6 @@ export const FORMAT_KNOWLEDGE: Partial<Record<ContentFormat, FormatKnowledge>> =
     pacing: "medio",
     minShots: 1,
     maxShots: 4,
-    incompatibleWith: [],
   },
   tutorial: {
     purpose: "Ensinar passo a passo como usar o produto.",
@@ -56,7 +52,6 @@ export const FORMAT_KNOWLEDGE: Partial<Record<ContentFormat, FormatKnowledge>> =
     pacing: "medio",
     minShots: 3,
     maxShots: 8,
-    incompatibleWith: [],
   },
   demonstracao: {
     purpose: "Provar a função do produto em ação.",
@@ -65,7 +60,6 @@ export const FORMAT_KNOWLEDGE: Partial<Record<ContentFormat, FormatKnowledge>> =
     pacing: "medio",
     minShots: 2,
     maxShots: 6,
-    incompatibleWith: [],
   },
   antes_e_depois: {
     purpose: "Contrastar estado inicial e resultado, sem prometer resultado não evidenciado.",
@@ -74,7 +68,6 @@ export const FORMAT_KNOWLEDGE: Partial<Record<ContentFormat, FormatKnowledge>> =
     pacing: "medio",
     minShots: 2,
     maxShots: 4,
-    incompatibleWith: ["unboxing"],
   },
   review: {
     purpose: "Opinião/avaliação sobre o produto, tom de recomendação pessoal.",
@@ -83,7 +76,6 @@ export const FORMAT_KNOWLEDGE: Partial<Record<ContentFormat, FormatKnowledge>> =
     pacing: "medio",
     minShots: 2,
     maxShots: 5,
-    incompatibleWith: [],
   },
   comparacao: {
     purpose: "Comparar o produto com alternativa(s), sem inventar dado do concorrente.",
@@ -92,7 +84,6 @@ export const FORMAT_KNOWLEDGE: Partial<Record<ContentFormat, FormatKnowledge>> =
     pacing: "medio",
     minShots: 2,
     maxShots: 5,
-    incompatibleWith: [],
   },
   produto_em_uso: {
     purpose: "Produto sendo usado em contexto real, sem discurso de venda explícito.",
@@ -101,7 +92,6 @@ export const FORMAT_KNOWLEDGE: Partial<Record<ContentFormat, FormatKnowledge>> =
     pacing: "medio",
     minShots: 2,
     maxShots: 5,
-    incompatibleWith: [],
   },
   teste: {
     purpose: "Submeter o produto a um teste visível e verificável.",
@@ -110,7 +100,6 @@ export const FORMAT_KNOWLEDGE: Partial<Record<ContentFormat, FormatKnowledge>> =
     pacing: "rapido",
     minShots: 2,
     maxShots: 5,
-    incompatibleWith: [],
   },
   storytelling: {
     purpose: "Narrativa emocional em torno do produto, não um catálogo de features.",
@@ -119,7 +108,6 @@ export const FORMAT_KNOWLEDGE: Partial<Record<ContentFormat, FormatKnowledge>> =
     pacing: "lento",
     minShots: 3,
     maxShots: 7,
-    incompatibleWith: [],
   },
   produto_360: {
     purpose: "Rotação/visão completa do produto — foco em design/acabamento.",
@@ -128,7 +116,6 @@ export const FORMAT_KNOWLEDGE: Partial<Record<ContentFormat, FormatKnowledge>> =
     pacing: "lento",
     minShots: 1,
     maxShots: 3,
-    incompatibleWith: [],
   },
   apresentacao_por_modelo: {
     purpose: "Modelo/pessoa apresentando o produto diretamente à câmera.",
@@ -137,7 +124,6 @@ export const FORMAT_KNOWLEDGE: Partial<Record<ContentFormat, FormatKnowledge>> =
     pacing: "medio",
     minShots: 2,
     maxShots: 5,
-    incompatibleWith: [],
   },
   cinematografico: {
     purpose: "Produção de alta direção visual, estética elevada acima de demonstração literal.",
@@ -146,7 +132,6 @@ export const FORMAT_KNOWLEDGE: Partial<Record<ContentFormat, FormatKnowledge>> =
     pacing: "lento",
     minShots: 2,
     maxShots: 6,
-    incompatibleWith: [],
   },
   product_showcase: {
     purpose: "Vitrine do produto, foco visual puro sem narrativa de uso.",
@@ -155,6 +140,5 @@ export const FORMAT_KNOWLEDGE: Partial<Record<ContentFormat, FormatKnowledge>> =
     pacing: "medio",
     minShots: 1,
     maxShots: 4,
-    incompatibleWith: [],
   },
 };

@@ -15,10 +15,12 @@ const BuildCreativePromptInputSchema = z.object({
 /**
  * RPC único do módulo Prompt Intelligence — orquestra Creative Reasoning ->
  * Creative Evaluation -> Target Resolver/Specialist -> Prompt Compiler ->
- * Prompt QC -> Repair (ver core/intelligence/creative/orchestrator.ts).
- * Síncrono, mesmo perfil de custo/latência do `findOpportunities`: no
- * máximo 1-3 chamadas LLM rápidas (reasoning + até 2 repairs), não passa
- * pelo Job Engine.
+ * QC (determinístico + semântico, ver semantic-qc.ts) -> Repair (ver
+ * core/intelligence/creative/orchestrator.ts). Síncrono, não passa pelo
+ * Job Engine: no máximo 1 chamada LLM (reasoning) + até 2 repairs + até 1
+ * chamada semântica por cada uma das até 3 passadas de QC (só quando há
+ * característica `productTruth.unknown` e o QC determinístico não rejeitou
+ * antes) — até 6 chamadas no pior caso, não "1-3" como antes da Fase 2A.
  *
  * NÃO persiste nada em tabela nova — o PromptArtifact é devolvido ao
  * cliente (mesmo padrão do Opportunity Engine hoje, que também não

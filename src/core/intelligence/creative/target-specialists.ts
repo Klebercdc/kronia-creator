@@ -27,11 +27,13 @@ function genericModelSpecialist(spec: CreativeSpec, profile: TargetProfile): Tar
 }
 
 /**
- * Flow specialist: além das constraints genéricas do model subjacente
- * (herdadas via basedOn no compiler), adiciona a nota de que Flow monta a
- * cena numa timeline (SceneBuilder) — relevante quando o Shot Pattern tem
- * mais de 1 shot, já que Flow permite encadear clipes de um jeito que um
- * prompt cru pro Veo não descreve sozinho.
+ * Flow specialist: gera as constraints genéricas a partir do PRÓPRIO dict
+ * de capabilities do Flow em target-profiles.ts (não existe herança
+ * automática via `basedOn` em lugar nenhum do código — `basedOn` é só
+ * metadado arquitetural), e adiciona a nota de que Flow monta a cena numa
+ * timeline (SceneBuilder) — relevante quando o Shot Pattern tem mais de 1
+ * shot, já que Flow permite encadear clipes de um jeito que um prompt cru
+ * pro Veo não descreve sozinho.
  */
 function flowSpecialist(spec: CreativeSpec, profile: TargetProfile): TargetSpecificSpec {
   const { targetConstraints } = genericModelSpecialist(spec, profile);
