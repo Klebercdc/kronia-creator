@@ -11,6 +11,7 @@ import { teologo } from "./teologo";
 import { psicologiaDeCompra } from "./psicologia-compra";
 import { persuasao } from "./persuasao";
 import { cinematografico } from "./cinematografico";
+import { judgeQuality, reviseForQuality } from "./quality-judge";
 
 /**
  * Etapa 4 — Geração. Cadeia fixa de sub-agentes:
@@ -43,6 +44,15 @@ export async function generate(
   draft = await psicologiaDeCompra(draft);
   draft = await persuasao(draft);
   draft = await cinematografico(draft, request.actorProfile, ingestion);
+
+  // Quality Judge — eixo de qualidade criativa (específico/natural/
+  // persuasivo/aderente ao produto), separado do Compliance (que julga
+  // risco legal/política). 1 revisão direcionada no máximo — nunca um
+  // loop (o Compliance já tem o dele logo depois).
+  const judgment = await judgeQuality(draft);
+  if (judgment.verdict === "needs_revision") {
+    draft = await reviseForQuality(draft, judgment.revisionInstruction);
+  }
 
   return draft;
 }

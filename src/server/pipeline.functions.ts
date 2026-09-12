@@ -174,9 +174,11 @@ const CONTENT_GENERATION_STEP_PROGRESS_PERCENT: Record<string, number> = {
   teologo: 50,
   psicologia: 60,
   persuasao: 70,
-  cinematografico: 80,
-  compliance_validate: 90,
-  compliance_correct: 90,
+  cinematografico: 75,
+  quality_judge: 82,
+  quality_revise: 85,
+  compliance_validate: 92,
+  compliance_correct: 92,
 };
 
 /**

@@ -6,6 +6,7 @@ import {
   type FormatRecommendation,
   type GenerationResult,
 } from "../../types/pipeline";
+import { CREATIVE_QUALITY_BAR } from "./quality-bar";
 
 const SYSTEM = `Você é o Roteirista do KRONIA. Cria conceito, roteiro e 5 opções de hook para um vídeo
 curto, seguindo o formato recomendado.
@@ -109,7 +110,9 @@ cena de acordo com o tom dela, não use a mesma cadência do início ao fim do r
 
 "caption" e "hashtags" são preenchidos só pelo agente de SEO, no fim da cadeia — nesta etapa
 deixe "caption" como string vazia "" e "hashtags" como array vazio [].
-"flowSegments" é preenchido só pelo Cinematográfico — nesta etapa deixe como array vazio [].`;
+"flowSegments" é preenchido só pelo Cinematográfico — nesta etapa deixe como array vazio [].
+
+${CREATIVE_QUALITY_BAR}`;
 
 /** Sub-agente 1 de 4 da Geração. */
 export async function roteirista(

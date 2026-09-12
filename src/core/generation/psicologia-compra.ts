@@ -1,6 +1,7 @@
 import { callStructuredText } from "../../lib/openai";
 import { GenerationResultSchema, type GenerationResult } from "../../types/pipeline";
 import { BUYING_PSYCHOLOGY_TRIGGERS } from "../../types/taxonomy";
+import { CREATIVE_QUALITY_BAR } from "./quality-bar";
 
 const SYSTEM = `Você é o agente de Psicologia de Compra do KRONIA — aplica princípios
 comportamentais reais (Cialdini, Kahneman) ao roteiro: ${BUYING_PSYCHOLOGY_TRIGGERS.join(", ")}.
@@ -14,6 +15,8 @@ inventado, contagem regressiva falsa, urgência fabricada — não, nunca.
 Onde um gatilho já evidenciado puder ser expresso com mais clareza psicológica (ex: reformular
 o CTA para reduzir a sensação de risco da decisão — aversão a perda trabalhando a favor do
 usuário, não contra), ajuste a narração/onScreenText da cena relevante.
+
+${CREATIVE_QUALITY_BAR}
 
 Retorne o roteiro completo revisado, no mesmo formato de entrada.`;
 

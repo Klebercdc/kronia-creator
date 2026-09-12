@@ -1173,6 +1173,8 @@ function CriarFlow({
     psicologia: "Aplicando gatilhos de decisão de compra...",
     persuasao: "Refinando a persuasão...",
     cinematografico: "Montando a direção cinematográfica...",
+    quality_judge: "Avaliando qualidade criativa...",
+    quality_revise: "Refinando pontos fracos do roteiro...",
     compliance_validate: "Validando conformidade...",
     compliance_correct: "Corrigindo pontos de conformidade...",
   };

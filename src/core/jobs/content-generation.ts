@@ -6,6 +6,7 @@ import { teologo } from "../generation/teologo";
 import { psicologiaDeCompra } from "../generation/psicologia-compra";
 import { persuasao } from "../generation/persuasao";
 import { cinematografico } from "../generation/cinematografico";
+import { judgeQuality, reviseForQuality } from "../generation/quality-judge";
 import { validateCompliance } from "../compliance/validate";
 import { correctForCompliance } from "../compliance/correct";
 import { MAX_AUTO_COMPLIANCE_ATTEMPTS } from "../../types/compliance";
@@ -33,6 +34,7 @@ interface Progress {
   draft: GenerationResult | null;
   attempt: number;
   violations: ComplianceViolation[];
+  qualityInstruction: string | null;
   [key: string]: unknown;
 }
 
@@ -66,6 +68,8 @@ export const contentGenerationHandlers: JobKindHandlers = {
     psicologia: stepPsicologia,
     persuasao: stepPersuasao,
     cinematografico: stepCinematografico,
+    quality_judge: stepQualityJudge,
+    quality_revise: stepQualityRevise,
     compliance_validate: stepComplianceValidate,
     compliance_correct: stepComplianceCorrect,
   },
@@ -86,7 +90,15 @@ async function stepRecommend(job: JobRow): Promise<void> {
     ? precomputedAnalysis
     : { ingestion: null, classification: null, recommendation: await recommend(request, null) };
 
-  const progress: Progress = { ingestion, classification, recommendation, draft: null, attempt: 0, violations: [] };
+  const progress: Progress = {
+    ingestion,
+    classification,
+    recommendation,
+    draft: null,
+    attempt: 0,
+    violations: [],
+    qualityInstruction: null,
+  };
   await advanceJobStep(job.id, "roteirista", progress);
 }
 
@@ -127,6 +139,28 @@ async function stepCinematografico(job: JobRow): Promise<void> {
   const { request } = payloadOf(job);
   const progress = progressOf(job);
   const draft = await cinematografico(progress.draft!, request.actorProfile, progress.ingestion);
+  await advanceJobStep(job.id, "quality_judge", { ...progress, draft });
+}
+
+/** Quality Judge — eixo de qualidade criativa (específico/natural/
+ * persuasivo/aderente ao produto), separado do Compliance (risco legal/
+ * política) logo depois. 1 revisão direcionada no máximo, nunca um
+ * loop — o Compliance já tem o dele. */
+async function stepQualityJudge(job: JobRow): Promise<void> {
+  const progress = progressOf(job);
+  const judgment = await judgeQuality(progress.draft!);
+
+  if (judgment.verdict === "pass") {
+    await advanceJobStep(job.id, "compliance_validate", { ...progress, attempt: 0 });
+    return;
+  }
+
+  await advanceJobStep(job.id, "quality_revise", { ...progress, qualityInstruction: judgment.revisionInstruction });
+}
+
+async function stepQualityRevise(job: JobRow): Promise<void> {
+  const progress = progressOf(job);
+  const draft = await reviseForQuality(progress.draft!, progress.qualityInstruction!);
   await advanceJobStep(job.id, "compliance_validate", { ...progress, draft, attempt: 0 });
 }
 

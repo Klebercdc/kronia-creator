@@ -1,6 +1,7 @@
 import { callStructuredText } from "../../lib/openai";
 import { GenerationResultSchema, type GenerationResult } from "../../types/pipeline";
 import { PERSUASION_MECHANISMS } from "../../types/taxonomy";
+import { CREATIVE_QUALITY_BAR } from "./quality-bar";
 
 const SYSTEM = `Você é o agente de Persuasão do KRONIA. Reforça o roteiro com mecanismos legítimos:
 ${PERSUASION_MECHANISMS.join(", ")}.
@@ -13,6 +14,8 @@ Reforçar persuasão NUNCA significa adicionar números, testes ou fontes que n�
 roteiro original — isso piora o compliance, não melhora a persuasão. Se quiser reforçar uma
 claim, use as palavras exatas da claim "fato" correspondente, não uma versão "mais impressionante"
 inventada.
+
+${CREATIVE_QUALITY_BAR}
 
 Retorne o roteiro completo revisado, no mesmo formato de entrada.`;
 

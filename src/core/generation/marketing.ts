@@ -5,6 +5,7 @@ import {
   type FormatRecommendation,
   type GenerationResult,
 } from "../../types/pipeline";
+import { CREATIVE_QUALITY_BAR } from "./quality-bar";
 
 const SYSTEM = `Você é o agente de Marketing do KRONIA. Revisa um rascunho de roteiro pela lente
 estratégica: o hook e o ângulo realmente encaixam no público e no objetivo declarados? O CTA
@@ -30,6 +31,8 @@ Shop não tem. Em modo "organico", o CTA é de engajamento (comentar, seguir, sa
 direta — quando fizer sentido pro tema, prefira uma pergunta genuína e específica do assunto
 (não uma genérica tipo "e você, o que acha?") que a pessoa realmente queira responder nos
 comentários; não force pergunta em todo roteiro, só quando o tema comportar uma de verdade.
+
+${CREATIVE_QUALITY_BAR}
 
 Retorne o roteiro completo revisado, no mesmo formato de entrada.`;
 
