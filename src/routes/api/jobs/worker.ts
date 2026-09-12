@@ -22,28 +22,8 @@ export const Route = createFileRoute("/api/jobs/worker")({
           return new Response("Unauthorized", { status: 401 });
         }
 
-        try {
-          const job = await advanceNextPendingJob("ingest_reference_video");
-          return Response.json({ processed: !!job, jobId: job?.id ?? null, status: job?.status ?? null });
-        } catch (err) {
-          // Diagnóstico temporário (investigação de env var em produção) —
-          // só presença/ausência, NUNCA o valor. Protegido pelo mesmo
-          // CRON_SECRET já validado acima, não é endpoint público novo.
-          // Remover depois de confirmar a causa raiz (ver conversa/relatório).
-          return Response.json(
-            {
-              error: err instanceof Error ? err.message : String(err),
-              diagnostic: {
-                SUPABASE_URL_PRESENT: Boolean(process.env.SUPABASE_URL),
-                SUPABASE_ANON_KEY_PRESENT: Boolean(process.env.SUPABASE_ANON_KEY),
-                CRON_SECRET_PRESENT: Boolean(process.env.CRON_SECRET),
-                VERCEL_ENV: process.env.VERCEL_ENV ?? null,
-                VERCEL_URL: process.env.VERCEL_URL ?? null,
-              },
-            },
-            { status: 500 },
-          );
-        }
+        const job = await advanceNextPendingJob("ingest_reference_video");
+        return Response.json({ processed: !!job, jobId: job?.id ?? null, status: job?.status ?? null });
       },
     },
   },
