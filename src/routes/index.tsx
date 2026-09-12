@@ -1463,7 +1463,16 @@ function CriarFlow({
   }
 
   if (step === "manual" && result) {
-    return <ManualView output={result.output} onBack={reset} onReset={reset} />;
+    return (
+      <RoteiroView
+        output={result.output}
+        approved={false}
+        onBack={reset}
+        onReset={reset}
+        onSegmentVideoPromptChange={updateSegmentVideoPrompt}
+        onGenerationUpdate={updateGeneration}
+      />
+    );
   }
 
   return (
@@ -2262,11 +2271,16 @@ function RoteiroView({
       ) : (
         <div className="reject-card">
           <div style={{ fontWeight: 700, fontSize: 15 }}>Correção necessária</div>
+          <div style={{ color: "#9A9A9A", fontSize: 12.5, marginBottom: 4 }}>
+            O compliance reprovou depois de {compliance.attempt} tentativas automáticas. Revise o roteiro abaixo
+            antes de gerar o vídeo.
+          </div>
           {compliance.violations.map((v, i) => (
             <div key={i} className="violation-item">
               <div style={{ fontWeight: 700 }}>{v.group}</div>
               <div>"{v.flaggedText}"</div>
               <div style={{ color: "#9A9A9A" }}>{v.reason}</div>
+              <div style={{ color: "#FF6A1A", marginTop: 4 }}>Sugestão: {v.suggestion}</div>
             </div>
           ))}
         </div>
@@ -2300,41 +2314,6 @@ function RoteiroView({
   );
 }
 
-function ManualView({
-  output,
-  onBack,
-  onReset,
-}: {
-  output: PipelineOutput;
-  onBack: () => void;
-  onReset: () => void;
-}) {
-  return (
-    <div className="app">
-      <BrandRow onBack={onBack} />
-      <h1 className="h1" style={{ fontSize: 20 }}>
-        Correção necessária
-      </h1>
-      <div className="h1-sub">
-        O compliance reprovou depois de {output.compliance.attempt} tentativas automáticas. Revise manualmente antes
-        de gerar o vídeo.
-      </div>
-      <div className="reject-card">
-        {output.compliance.violations.map((v, i) => (
-          <div key={i} className="violation-item">
-            <div style={{ fontWeight: 700 }}>{v.group}</div>
-            <div>"{v.flaggedText}"</div>
-            <div style={{ color: "#9A9A9A" }}>{v.reason}</div>
-            <div style={{ color: "#FF6A1A", marginTop: 4 }}>Sugestão: {v.suggestion}</div>
-          </div>
-        ))}
-      </div>
-      <button className="btn-primary" onClick={onReset}>
-        Começar de novo
-      </button>
-    </div>
-  );
-}
 
 function formatLabel(format: string): string {
   return format
