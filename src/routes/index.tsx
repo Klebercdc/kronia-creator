@@ -759,6 +759,11 @@ function PromptTab() {
           // "" = Padrão (DEFAULT_TARGET) — nunca apresentado como "melhor modelo",
           // é só o fallback fixo da Fase 1 (ver ARCHITECTURE/plano desta feature).
           targetId: targetId || null,
+          // Reference Intelligence (Fase 2B): motor já aceita gramática de
+          // referência (ver server/creative.functions.ts), mas a UI pra
+          // escolher/ingerir um vídeo de referência dentro desta aba ainda
+          // não existe — fica null até essa entrada de UI ser construída.
+          referenceAnalysis: null,
         },
       });
       setResult(res);

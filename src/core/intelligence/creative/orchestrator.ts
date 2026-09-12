@@ -6,10 +6,17 @@ import { resolveSpecialist } from "./target-specialists";
 import { compilePrompt } from "./compiler";
 import { runFullQc } from "./semantic-qc";
 import { repairCreativeSpec } from "./repair";
+import { buildReferenceGrammar } from "./reference-grammar";
 import { CREATIVE_QC_MAX_ATTEMPTS, type CreativeEvaluation, type CreativeSpec, type PromptArtifact } from "./schemas";
+import type { VideoAnalysis } from "../../../types/video-analysis";
 
-export interface BuildCreativePromptInput extends CreativeReasoningInput {
+export interface BuildCreativePromptInput extends Omit<CreativeReasoningInput, "referenceGrammar"> {
   targetId: string | null;
+  /** Fase 2B — análise (já pronta, vinda do Job Engine) de um vídeo de
+   * referência opcional. A conversão pra gramática criativa (texto,
+   * nunca fala/identidade literal) acontece aqui, em código — ver
+   * reference-grammar.ts. */
+  referenceAnalysis: VideoAnalysis | null;
 }
 
 export interface BuildCreativePromptResult {
@@ -48,7 +55,8 @@ export interface BuildCreativePromptResult {
  * do Compliance existente).
  */
 export async function buildCreativePrompt(input: BuildCreativePromptInput): Promise<BuildCreativePromptResult> {
-  const spec = await generateCreativeSpec(input);
+  const referenceGrammar = input.referenceAnalysis ? buildReferenceGrammar(input.referenceAnalysis) : null;
+  const spec = await generateCreativeSpec({ ...input, referenceGrammar });
   let evaluation = evaluateCreativeSpec(spec);
 
   if (evaluation.verdict === "fail") {

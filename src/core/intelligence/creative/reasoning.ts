@@ -61,7 +61,16 @@ CHARACTER/BRAND: characterConsistency e brandConstraints ficam null nesta fase, 
 entrada informe algo explícito sobre isso.
 
 REASONING: explique em 1-2 frases por que esse padrão+mecânica+direção fazem sentido pro produto e
-pro objetivo — cite a evidência confirmada que embasa a escolha.`;
+pro objetivo — cite a evidência confirmada que embasa a escolha.
+
+REFERENCE GRAMMAR (se vier preenchida): é a GRAMÁTICA de uma peça de referência (formato, tipo de
+hook, câmera, ritmo de corte, mecanismos de persuasão, estrutura de cenas em rótulos) — NUNCA a
+fala/legenda literal dela, isso nunca é enviado a você. Isso é "como essa peça funciona", não "o
+que ela diz". Use como INSPIRAÇÃO de técnica (ex.: se o ritmo é rápido com muitos cortes, considere
+uma mecânica que sustente isso; se o hook é de um tipo específico, considere algo equivalente pro
+seu produto) — nunca copie estrutura de forma idêntica quando não fizer sentido pro produto, e
+NUNCA replique conteúdo/fala/identidade de terceiros (você não recebeu essa informação de propósito).
+Se não vier referência, ignore esta seção e raciocine só a partir do produto/ideia/objetivo.`;
 
 export interface CreativeReasoningInput {
   media: "image" | "video";
@@ -69,6 +78,11 @@ export interface CreativeReasoningInput {
   idea: string | null;
   opportunityContext: string | null;
   objective: string;
+  /** Reference Intelligence (Fase 2B) — gramática criativa (formato/hook/
+   * câmera/ritmo/persuasão/estrutura) extraída de um vídeo de referência já
+   * ingerido pelo Job Engine (ver reference-grammar.ts). Nunca contém fala/
+   * legenda literal do vídeo — só técnica, nunca identidade/conteúdo. */
+  referenceGrammar: string | null;
 }
 
 /** Creative Reasoning — 1 chamada LLM (OpenAI, callStructuredText), síncrona,
@@ -89,6 +103,7 @@ Confirmado: ${JSON.stringify(productTruth.confirmed.map((c) => c.text))}
 Inferido: ${JSON.stringify(productTruth.inferred.map((c) => c.text))}
 Sugerido: ${JSON.stringify(productTruth.recommended)}
 Desconhecido (NUNCA afirmar nem sugerir mecânica que dependa disso): ${JSON.stringify(productTruth.unknown)}
+${input.referenceGrammar ? `\nReference Grammar (técnica de uma peça de referência, NUNCA conteúdo/fala dela):\n${input.referenceGrammar}` : ""}
 
 Gere a execução visual completa (formato, padrão, mecânica, shot pattern se vídeo, direção).`;
 
