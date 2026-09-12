@@ -433,6 +433,7 @@ function OportunidadesTab({ onCreateContent }: { onCreateContent: (seed: Pending
       `Ângulo: ${opportunity.angle}.`,
       `Hook sugerido: "${opportunity.hookText}".`,
       `CTA sugerido: ${opportunity.cta}.`,
+      `Atenção/risco a evitar nesta criação: ${opportunity.risk}.`,
     ]
       .filter(Boolean)
       .join(" ");
