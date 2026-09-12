@@ -1186,8 +1186,22 @@ function CriarFlow({
     const { jobId } = await enqueueReferenceIngestionFn({ data: request });
     setIngestionStep("download");
 
+    let consecutiveNetworkFailures = 0;
     for (;;) {
-      const job = await advanceIngestionJobFn({ data: { jobId } });
+      let job: Awaited<ReturnType<typeof advanceIngestionJobFn>>;
+      try {
+        job = await advanceIngestionJobFn({ data: { jobId } });
+        consecutiveNetworkFailures = 0;
+      } catch (err) {
+        // Blip de rede no poll não deve derrubar o fluxo — o job continua
+        // são no servidor (e o worker do pg_cron continua avançando ele
+        // sozinho de qualquer forma). Só desiste depois de várias falhas
+        // seguidas, sinal de que não é só uma soneca de conexão.
+        consecutiveNetworkFailures += 1;
+        if (consecutiveNetworkFailures > 8) throw err;
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        continue;
+      }
       if (job) {
         setIngestionStep(job.step);
         setIngestionProgressPercent(job.progressPercent);
@@ -1219,8 +1233,20 @@ function CriarFlow({
     const { jobId } = await enqueueContentGenerationFn({ data: { request, precomputedAnalysis } });
     setIngestionStep("recommend");
 
+    let consecutiveNetworkFailures = 0;
     for (;;) {
-      const job = await advanceContentGenerationJobFn({ data: { jobId } });
+      let job: Awaited<ReturnType<typeof advanceContentGenerationJobFn>>;
+      try {
+        job = await advanceContentGenerationJobFn({ data: { jobId } });
+        consecutiveNetworkFailures = 0;
+      } catch (err) {
+        // Mesmo raciocínio de runIngestionJob acima: blip de rede no poll
+        // não derruba o fluxo — o job continua são no servidor.
+        consecutiveNetworkFailures += 1;
+        if (consecutiveNetworkFailures > 8) throw err;
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        continue;
+      }
       if (job) {
         setIngestionStep(job.step);
         setIngestionProgressPercent(job.progressPercent);
