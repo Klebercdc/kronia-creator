@@ -5,7 +5,8 @@ import { classify } from "./classification/classify";
 import { recommend } from "./recommendation/recommend";
 import { generate } from "./generation/generate";
 import { validateCompliance } from "./compliance/validate";
-import { correctForCompliance } from "./compliance/correct";
+import { correctForComplianceStructured } from "./compliance/correct";
+import { judgeQuality, reviseForQuality } from "./generation/quality-judge";
 
 export class ManualEditRequiredError extends Error {
   constructor(public readonly output: PipelineOutput) {
@@ -58,8 +59,24 @@ export async function runPipeline(
 
   while (!compliance.approved && attempt < MAX_AUTO_COMPLIANCE_ATTEMPTS) {
     attempt += 1;
-    generation = await correctForCompliance(generation, compliance.violations);
+    generation = await correctForComplianceStructured(generation, compliance.violations);
     compliance = await validateCompliance(request, generation, attempt);
+  }
+
+  // Quality Judge Final — avalia o roteiro que REALMENTE vai ser
+  // entregue, depois de toda correção de Compliance (que pode melhorar
+  // segurança e degradar copy/persuasão/naturalidade ao mesmo tempo).
+  // Mesma régua do Judge inicial (generate.ts), 1 revisão no máximo, com
+  // reauditoria de Compliance pra nunca trocar segurança por copy melhor.
+  const finalJudgment = await judgeQuality(generation);
+  if (finalJudgment.verdict === "needs_revision") {
+    const revised = await reviseForQuality(generation, finalJudgment.revisionInstruction);
+    const recheck = await validateCompliance(request, revised, attempt);
+    const safeToUseRevision = compliance.approved ? recheck.approved : true;
+    if (safeToUseRevision) {
+      generation = revised;
+      compliance = recheck;
+    }
   }
 
   const output: PipelineOutput = {

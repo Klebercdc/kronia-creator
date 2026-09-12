@@ -8,7 +8,7 @@ import { persuasao } from "../generation/persuasao";
 import { cinematografico } from "../generation/cinematografico";
 import { judgeQuality, reviseForQuality } from "../generation/quality-judge";
 import { validateCompliance } from "../compliance/validate";
-import { correctForCompliance } from "../compliance/correct";
+import { correctForComplianceStructured } from "../compliance/correct";
 import { MAX_AUTO_COMPLIANCE_ATTEMPTS } from "../../types/compliance";
 import type {
   ClassificationResult,
@@ -18,7 +18,7 @@ import type {
   PipelineOutput,
   ReferenceAnalysis,
 } from "../../types/pipeline";
-import type { ComplianceViolation } from "../../types/compliance";
+import type { ComplianceResult, ComplianceViolation } from "../../types/compliance";
 import type { VideoAnalysis } from "../../types/video-analysis";
 import type { JobKindHandlers } from "./dispatcher";
 
@@ -35,6 +35,7 @@ interface Progress {
   attempt: number;
   violations: ComplianceViolation[];
   qualityInstruction: string | null;
+  complianceResult: ComplianceResult | null;
   [key: string]: unknown;
 }
 
@@ -72,6 +73,8 @@ export const contentGenerationHandlers: JobKindHandlers = {
     quality_revise: stepQualityRevise,
     compliance_validate: stepComplianceValidate,
     compliance_correct: stepComplianceCorrect,
+    quality_judge_final: stepQualityJudgeFinal,
+    quality_revise_final: stepQualityReviseFinal,
   },
 };
 
@@ -98,6 +101,7 @@ async function stepRecommend(job: JobRow): Promise<void> {
     attempt: 0,
     violations: [],
     qualityInstruction: null,
+    complianceResult: null,
   };
   await advanceJobStep(job.id, "roteirista", progress);
 }
@@ -170,15 +174,11 @@ async function stepComplianceValidate(job: JobRow): Promise<void> {
   const compliance = await validateCompliance(request, progress.draft!, progress.attempt);
 
   if (compliance.approved || progress.attempt >= MAX_AUTO_COMPLIANCE_ATTEMPTS) {
-    const output: PipelineOutput = {
-      request,
-      ingestion: progress.ingestion,
-      classification: progress.classification,
-      recommendation: progress.recommendation!,
-      generation: progress.draft!,
-      compliance,
-    };
-    await completeJob(job.id, { status: compliance.approved ? "aprovado" : "manual", output });
+    // Não entrega ainda — o Compliance pode ter melhorado segurança e
+    // degradado copy/persuasão/naturalidade ao mesmo tempo. O Quality
+    // Judge Final avalia exatamente o texto que vai ser entregue de
+    // verdade, depois de toda correção de Compliance já aplicada.
+    await advanceJobStep(job.id, "quality_judge_final", { ...progress, complianceResult: compliance });
     return;
   }
 
@@ -187,6 +187,55 @@ async function stepComplianceValidate(job: JobRow): Promise<void> {
 
 async function stepComplianceCorrect(job: JobRow): Promise<void> {
   const progress = progressOf(job);
-  const draft = await correctForCompliance(progress.draft!, progress.violations);
+  const draft = await correctForComplianceStructured(progress.draft!, progress.violations);
   await advanceJobStep(job.id, "compliance_validate", { ...progress, draft, attempt: progress.attempt + 1 });
+}
+
+function toOutput(request: ContentRequest, progress: Progress, compliance: ComplianceResult): PipelineOutput {
+  return {
+    request,
+    ingestion: progress.ingestion,
+    classification: progress.classification,
+    recommendation: progress.recommendation!,
+    generation: progress.draft!,
+    compliance,
+  };
+}
+
+/** Quality Judge Final — mesma régua do Judge inicial (quality-judge.ts),
+ * mas avaliando o roteiro que REALMENTE vai ser entregue (depois de toda
+ * correção de Compliance), não uma versão anterior. */
+async function stepQualityJudgeFinal(job: JobRow): Promise<void> {
+  const { request } = payloadOf(job);
+  const progress = progressOf(job);
+  const compliance = progress.complianceResult!;
+  const judgment = await judgeQuality(progress.draft!);
+
+  if (judgment.verdict === "pass") {
+    const output = toOutput(request, progress, compliance);
+    await completeJob(job.id, { status: compliance.approved ? "aprovado" : "manual", output });
+    return;
+  }
+
+  await advanceJobStep(job.id, "quality_revise_final", { ...progress, qualityInstruction: judgment.revisionInstruction });
+}
+
+/** Revisão de qualidade sobre o resultado final — nunca reabre o loop de
+ * Compliance inteiro, só 1 reauditoria pra garantir que a revisão de
+ * qualidade não reintroduziu um problema que o Compliance já tinha
+ * resolvido. Se reintroduzir, descarta a revisão e entrega a versão
+ * segura anterior (nunca troca segurança por copy melhor). */
+async function stepQualityReviseFinal(job: JobRow): Promise<void> {
+  const { request } = payloadOf(job);
+  const progress = progressOf(job);
+  const previousCompliance = progress.complianceResult!;
+  const revisedDraft = await reviseForQuality(progress.draft!, progress.qualityInstruction!);
+  const recheck = await validateCompliance(request, revisedDraft, previousCompliance.attempt);
+
+  const safeToUseRevision = previousCompliance.approved ? recheck.approved : true;
+  const finalDraft = safeToUseRevision ? revisedDraft : progress.draft!;
+  const finalCompliance = safeToUseRevision ? recheck : previousCompliance;
+
+  const output = toOutput(request, { ...progress, draft: finalDraft }, finalCompliance);
+  await completeJob(job.id, { status: finalCompliance.approved ? "aprovado" : "manual", output });
 }

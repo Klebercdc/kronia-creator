@@ -1177,6 +1177,8 @@ function CriarFlow({
     quality_revise: "Refinando pontos fracos do roteiro...",
     compliance_validate: "Validando conformidade...",
     compliance_correct: "Corrigindo pontos de conformidade...",
+    quality_judge_final: "Avaliação final de qualidade...",
+    quality_revise_final: "Ajuste final do roteiro...",
   };
 
   /** Enfileira a Ingestão e faz polling até o job terminar — cada chamada

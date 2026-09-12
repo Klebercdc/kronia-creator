@@ -43,3 +43,50 @@ export async function correctForCompliance(
     toolName: "generation_result",
   });
 }
+
+function textOf(generation: GenerationResult): string {
+  return [
+    ...generation.scenes.flatMap((s) => [s.narration, s.onScreenText ?? ""]),
+    ...generation.claims.map((c) => c.text),
+  ]
+    .join(" \n ")
+    .toLowerCase();
+}
+
+/** Verificação DETERMINÍSTICA (código, não confiança na LLM) de que cada
+ * "flaggedText" realmente sumiu do roteiro corrigido — substring
+ * case-insensitive no texto que vai pro usuário (narração/onScreenText/
+ * claims). Isso é o que detecta o bug real já visto na prática: a LLM
+ * "corrige" colando a sugestão do lado da frase original em vez de
+ * substituir, e a frase original continua lá. */
+export function findStillPresentViolations(
+  generation: GenerationResult,
+  violations: ComplianceViolation[],
+): ComplianceViolation[] {
+  const haystack = textOf(generation);
+  return violations.filter((v) => v.flaggedText.trim().length > 0 && haystack.includes(v.flaggedText.toLowerCase()));
+}
+
+/**
+ * Correção como operação ESTRUTURADA: substituição → validação
+ * determinística de que o original sumiu → reauditoria (1 nova
+ * chamada, só das violações que sobreviveram, nunca um loop
+ * ilimitado). Ponto único de entrada pro Job Engine e pro pipeline
+ * síncrono — os dois usam a mesma régua.
+ */
+export async function correctForComplianceStructured(
+  generation: GenerationResult,
+  violations: ComplianceViolation[],
+): Promise<GenerationResult> {
+  let corrected = await correctForCompliance(generation, violations);
+
+  const stillPresent = findStillPresentViolations(corrected, violations);
+  if (stillPresent.length > 0) {
+    // Reauditoria: 1 nova tentativa, só nas violações que sobreviveram —
+    // o validateCompliance seguinte continua sendo a rede de segurança
+    // final se mesmo assim algo escapar.
+    corrected = await correctForCompliance(corrected, stillPresent);
+  }
+
+  return corrected;
+}
