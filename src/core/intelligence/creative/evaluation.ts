@@ -22,11 +22,12 @@ export function evaluateCreativeSpec(spec: CreativeSpec): CreativeEvaluation {
   }
 
   let shotSequenceFeasible = true;
-  if (spec.media === "video") {
-    if (knowledge && (spec.shotPattern.shots.length < knowledge.minShots || spec.shotPattern.shots.length > knowledge.maxShots)) {
+  if (spec.media === "video" && spec.shotPattern) {
+    const shotCount = spec.shotPattern.shots.length;
+    if (knowledge && (shotCount < knowledge.minShots || shotCount > knowledge.maxShots)) {
       shotSequenceFeasible = false;
       notes.push(
-        `Formato "${spec.format}" costuma ter entre ${knowledge?.minShots} e ${knowledge?.maxShots} shots; spec tem ${spec.shotPattern.shots.length}.`,
+        `Formato "${spec.format}" costuma ter entre ${knowledge?.minShots} e ${knowledge?.maxShots} shots; spec tem ${shotCount}.`,
       );
     }
   }

@@ -431,6 +431,14 @@ const QC_STATE_LABEL: Record<string, string> = {
   repair_required: "Correção necessária",
 };
 
+/** Nunca "automático inteligente" — default_target é só o fallback fixo,
+ * automatic_target_selection é o único caso com ranking real de capability. */
+const TARGET_SELECTION_LABEL: Record<string, string> = {
+  user_selected: "escolhido por você",
+  automatic_target_selection: "escolhido automaticamente por compatibilidade",
+  default_target: "padrão",
+};
+
 function OportunidadesTab({ onCreateContent }: { onCreateContent: (seed: PendingOpportunitySeed) => void }) {
   const findOpportunitiesFn = useServerFn(findOpportunities);
 
@@ -857,6 +865,10 @@ function PromptTab() {
                 {result.artifact.status === "ready" ? "Pronto" : "Requer revisão manual"} ·{" "}
                 {QC_STATE_LABEL[result.artifact.qc.state] ?? result.artifact.qc.state}
               </div>
+            </div>
+            <div style={{ fontSize: 12, color: "#8A8A8A" }}>
+              Target: {result.artifact.targetId} (
+              {TARGET_SELECTION_LABEL[result.artifact.targetSelectionMode] ?? result.artifact.targetSelectionMode})
             </div>
             <pre style={{ whiteSpace: "pre-wrap", fontSize: 13, fontFamily: "inherit", margin: 0 }}>{result.artifact.promptText}</pre>
             {result.artifact.negativePrompt && (

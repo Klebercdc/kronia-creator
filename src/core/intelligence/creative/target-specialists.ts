@@ -1,10 +1,14 @@
-import type { CreativeSpec, SpecialistImplementation, TargetProfile } from "./schemas";
+import type { CreativeSpec, SpecialistImplementation, TargetKind, TargetProfile } from "./schemas";
 
 /** Creative Spec + ajustes/constraints específicos do target resolvido —
- * o Prompt Compiler consome isso, não o CreativeSpec puro. */
+ * o Prompt Compiler consome isso, não o CreativeSpec puro. `targetId`/
+ * `targetKind` deixam o Compiler formatar de forma diferente por target
+ * (Fase 2 — ver compiler.ts) sem precisar do TargetProfile inteiro. */
 export interface TargetSpecificSpec {
   spec: CreativeSpec;
   targetConstraints: string[];
+  targetId: string;
+  targetKind: TargetKind;
 }
 
 export type TargetSpecialist = (spec: CreativeSpec, profile: TargetProfile) => TargetSpecificSpec;
@@ -23,7 +27,7 @@ function genericModelSpecialist(spec: CreativeSpec, profile: TargetProfile): Tar
       constraints.push(`Capability "${capability}" não verificada para ${profile.name} — não assumir suporte.`);
     }
   }
-  return { spec, targetConstraints: constraints };
+  return { spec, targetConstraints: constraints, targetId: profile.id, targetKind: profile.kind };
 }
 
 /**
@@ -37,12 +41,12 @@ function genericModelSpecialist(spec: CreativeSpec, profile: TargetProfile): Tar
  */
 function flowSpecialist(spec: CreativeSpec, profile: TargetProfile): TargetSpecificSpec {
   const { targetConstraints } = genericModelSpecialist(spec, profile);
-  if (spec.shotPattern.shots.length > 1) {
+  if (spec.shotPattern && spec.shotPattern.shots.length > 1) {
     targetConstraints.push(
       "Múltiplos shots: montar como clipes conectados na timeline do Flow (SceneBuilder), não como um único prompt monolítico.",
     );
   }
-  return { spec, targetConstraints };
+  return { spec, targetConstraints, targetId: profile.id, targetKind: profile.kind };
 }
 
 const SPECIALISTS: Record<string, TargetSpecialist> = {

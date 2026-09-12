@@ -46,10 +46,13 @@ Nunca use uma categoria fora dessas listas.
 Conhecimento por formato (propósito e padrões/mecânicas tipicamente compatíveis — use como guia, não
 como regra rígida): ${JSON.stringify(FORMAT_KNOWLEDGE)}.
 
-SHOT PATTERN (só quando media="video"): gere entre 1 e 6 shots. Cada shot precisa de function
-(hook/demo/reação/cta/etc — texto livre curto), durationSeconds, camera e action. A soma das
-durações dos shots deve bater com totalDurationSeconds. NÃO sobrecarregue um shot curto com várias
-ações — um shot de 2-3s deve ter só 1 ação central.
+SHOT PATTERN: shots são um conceito de VÍDEO (sequência temporal), imagem não tem "duração de
+shot". Quando media="video", gere entre 1 e 6 shots — cada shot precisa de function (hook/demo/
+reação/cta/etc — texto livre curto), durationSeconds, camera e action. A soma das durações dos
+shots deve bater com totalDurationSeconds. NÃO sobrecarregue um shot curto com várias ações — um
+shot de 2-3s deve ter só 1 ação central. Quando media="image", shotPattern DEVE ser null — nunca
+invente um shot fake com duração arbitrária só pra preencher o campo; toda a composição da imagem
+vai em imageSpec.
 
 DIRECTOR SPEC: preencha só o que fizer sentido pra esta execução — campos sem informação real devem
 ficar null, nunca invente detalhe técnico só pra preencher.

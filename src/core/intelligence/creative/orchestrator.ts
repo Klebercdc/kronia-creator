@@ -55,7 +55,7 @@ export async function buildCreativePrompt(input: BuildCreativePromptInput): Prom
     return { spec, evaluation, artifact: null };
   }
 
-  const { profile } = resolveTarget(input.targetId);
+  const { profile, selectionMode } = resolveTarget(input.targetId, spec);
   const specialist = resolveSpecialist(profile.id);
 
   let currentSpec = spec;
@@ -75,6 +75,7 @@ export async function buildCreativePrompt(input: BuildCreativePromptInput): Prom
           specVersion: "v1",
           targetId: profile.id,
           targetKind: profile.kind,
+          targetSelectionMode: selectionMode,
           promptText: compiled.promptText,
           negativePrompt: compiled.negativePrompt,
           qc,
@@ -93,6 +94,7 @@ export async function buildCreativePrompt(input: BuildCreativePromptInput): Prom
           specVersion: "v1",
           targetId: profile.id,
           targetKind: profile.kind,
+          targetSelectionMode: selectionMode,
           promptText: compiled.promptText,
           negativePrompt: compiled.negativePrompt,
           qc,

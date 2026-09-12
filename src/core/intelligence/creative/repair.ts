@@ -25,7 +25,8 @@ Problemas típicos e como corrigir:
 - capability não suportada pelo target (ex. diálogo pedido mas target não suporta áudio nativo):
   remova o diálogo ou marque hasDialogue:false.
 
-Mantenha tudo o mais igual possível ao original.`;
+Mantenha tudo o mais igual possível ao original. IMPORTANTE: se media="image", shotPattern deve
+continuar null — nunca invente um shot fake pra imagem só porque o campo existe no schema.`;
 
 /**
  * Repair — reasoning direcionado (1 chamada LLM), teto de tentativas

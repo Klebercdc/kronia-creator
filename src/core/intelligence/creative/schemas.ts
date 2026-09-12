@@ -156,7 +156,13 @@ export const CreativeSpecSchema = z.object({
   format: z.enum(CONTENT_FORMATS),
   pattern: CreativePatternSchema,
   mechanic: VisualMechanicSchema,
-  shotPattern: ShotPatternSchema,
+  /** Nullable — shots são um conceito de VÍDEO (sequência temporal).
+   * Imagem não tem "duração de shot"; forçar a LLM a inventar um sempre
+   * produzia lixo real (ex.: durationSeconds:0.03, "camera: static" sem
+   * sentido pra uma foto estática) — achado de auditoria, corrigido
+   * tornando o campo null quando media==="image", mesmo padrão já usado
+   * em imageSpec/videoSpec/dialogueSpec. */
+  shotPattern: ShotPatternSchema.nullable(),
   directorSpec: DirectorSpecSchema,
   productTruth: ProductCapabilityMapSchema,
   imageSpec: ImageSpecSchema.nullable(),
@@ -205,9 +211,20 @@ export const TargetProfileSchema = z.object({
 });
 export type TargetProfile = z.infer<typeof TargetProfileSchema>;
 
-/** Como o target foi escolhido — nunca chamar o fallback de "automático
- * inteligente" (item 3 do adendo final). */
-export const TargetSelectionModeSchema = z.enum(["user_selected", "default_target"]);
+/**
+ * Como o target foi escolhido:
+ *   - user_selected: usuário escolheu um targetId explícito.
+ *   - automatic_target_selection: ranking real por capability matching
+ *     (Fase 2 — ver target-resolver.ts) escolheu um target diferente do
+ *     default porque ele tem uma capability VERIFICADA ("supported") que
+ *     o spec exige e o default não tem confirmada. Nunca disparado só
+ *     porque "parece melhor" — só quando há diferenciação real de
+ *     capability comprovada por fonte (TargetProfile.source/lastVerified).
+ *   - default_target: fallback fixo quando não há seleção do usuário NEM
+ *     diferenciação real de capability — nunca apresentado como
+ *     "automático inteligente" na UI/copy quando é só o fallback puro.
+ */
+export const TargetSelectionModeSchema = z.enum(["user_selected", "automatic_target_selection", "default_target"]);
 export type TargetSelectionMode = z.infer<typeof TargetSelectionModeSchema>;
 
 /** Creative Evaluation avalia a CreativeSpec (a intenção) — ANTES do
@@ -268,6 +285,9 @@ export const PromptArtifactSchema = z.object({
   specVersion: z.literal("v1"),
   targetId: z.string(),
   targetKind: TargetKindSchema,
+  /** Transparência honesta de como o target foi escolhido — a UI nunca
+   * pode rotular `default_target` como "automático inteligente". */
+  targetSelectionMode: TargetSelectionModeSchema,
   promptText: z.string(),
   negativePrompt: z.string().nullable(),
   qc: QcResultSchema,

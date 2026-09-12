@@ -45,7 +45,7 @@ export async function checkSemanticProductTruth(spec: CreativeSpec): Promise<Sem
   }
 
   const narratedContent = [
-    ...spec.shotPattern.shots.map((s, i) => `Shot ${i + 1} [${s.durationSeconds}s]: ${s.action} (câmera: ${s.camera})`),
+    ...(spec.shotPattern?.shots.map((s, i) => `Shot ${i + 1} [${s.durationSeconds}s]: ${s.action} (câmera: ${s.camera})`) ?? []),
     spec.directorSpec.framing ? `Enquadramento: ${spec.directorSpec.framing}` : null,
     spec.directorSpec.environment ? `Ambiente: ${spec.directorSpec.environment}` : null,
     spec.directorSpec.continuityNotes ? `Continuidade: ${spec.directorSpec.continuityNotes}` : null,

@@ -106,7 +106,7 @@ function detectPropertyDemonstration(text: string): string[] {
 export function runPromptQc(compiled: CompiledPrompt, spec: CreativeSpec, profile: TargetProfile): QcResult {
   const issues: string[] = [];
 
-  if (spec.media === "video") {
+  if (spec.media === "video" && spec.shotPattern) {
     const sumShots = spec.shotPattern.shots.reduce((acc, s) => acc + s.durationSeconds, 0);
     if (Math.abs(sumShots - spec.shotPattern.totalDurationSeconds) > 0.5) {
       issues.push(
@@ -159,7 +159,7 @@ export function runPromptQc(compiled: CompiledPrompt, spec: CreativeSpec, profil
   // cita o próprio termo desconhecido por design).
   if (spec.productTruth.unknown.length > 0) {
     const narratedText = [
-      ...spec.shotPattern.shots.map((s) => s.action),
+      ...(spec.shotPattern?.shots.map((s) => s.action) ?? []),
       spec.directorSpec.framing,
       spec.directorSpec.cameraMovement,
       spec.directorSpec.environment,
