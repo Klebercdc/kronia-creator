@@ -27,6 +27,7 @@ import { recommendationBadge } from "../core/intelligence/opportunities/schemas"
 import { buildCreativePromptFn } from "../server/creative.functions";
 import type { BuildCreativePromptResult } from "../core/intelligence/creative/orchestrator";
 import { TARGET_PROFILES } from "../core/intelligence/creative/target-profiles";
+import type { VideoAnalysis } from "../types/video-analysis";
 import logoIcon from "../assets/logo-icon.png";
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -730,8 +731,19 @@ function HistoricoTab() {
  * partir de imagem/vídeo" e "melhorar meu prompt" ficam pra uma fase
  * futura de Reference Intelligence.
  */
+/** Rótulos de progresso da Ingestão reaproveitados no fluxo de Reference
+ * Intelligence do Prompt Tab — mesmo vocabulário já usado em CriarFlow
+ * (INGESTION_STEP_LABELS), sem duplicar a lista. */
+const PROMPT_REFERENCE_STEP_LABELS: Record<string, string> = {
+  download: "Baixando e extraindo frames do vídeo...",
+  transcript: "Transcrevendo o áudio...",
+  vision: "Analisando a mecânica do vídeo...",
+};
+
 function PromptTab() {
   const buildCreativePromptRpc = useServerFn(buildCreativePromptFn);
+  const enqueueReferenceIngestionRpc = useServerFn(enqueueReferenceIngestion);
+  const advanceIngestionJobRpc = useServerFn(advanceIngestionJob);
 
   const [idea, setIdea] = useState("");
   const [productInfoText, setProductInfoText] = useState("");
@@ -741,6 +753,88 @@ function PromptTab() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [result, setResult] = useState<BuildCreativePromptResult | null>(null);
+
+  // Reference Intelligence (Fase 2B) — vídeo de referência opcional.
+  // Reaproveita o MESMO Job Engine (ingest_reference_video) já usado em
+  // CriarFlow, nenhuma ingestão paralela: só consome `.ingestion`
+  // (VideoAnalysis) do resultado, que é exatamente a gramática técnica que
+  // reference-grammar.ts sabe traduzir — classification/recommendation do
+  // job (que servem o pipeline de conteúdo, não a Creative Intelligence)
+  // são descartados aqui.
+  const [referenceVideoFile, setReferenceVideoFile] = useState<{ name: string; storagePath: string } | null>(null);
+  const [referenceAnalysis, setReferenceAnalysis] = useState<VideoAnalysis | null>(null);
+  const [referenceStep, setReferenceStep] = useState<string | null>(null);
+  const [referenceError, setReferenceError] = useState<string | null>(null);
+  const [uploadingReference, setUploadingReference] = useState(false);
+
+  async function runReferenceIngestion(storagePath: string) {
+    setReferenceStep("download");
+    setReferenceError(null);
+    try {
+      const { jobId } = await enqueueReferenceIngestionRpc({
+        data: {
+          // Campos exigidos pelo contrato ContentRequest do Job Engine
+          // (reaproveitado, não duplicado) mas irrelevantes pra Creative
+          // Intelligence — classification/recommendation resultantes são
+          // descartados abaixo, só `.ingestion` (VideoAnalysis) é usado.
+          project: "comercial",
+          objective: "vender",
+          mode: "tiktok_shop",
+          productPhotoUrls: [],
+          productInfo: productInfoText.trim() ? [{ text: productInfoText.trim(), kind: "fato" as const, source: "campo de informações" }] : [],
+          referenceVideoUrl: null,
+          referenceVideoStoragePath: storagePath,
+          actorProfile: null,
+          targetDurationSeconds: null,
+        },
+      });
+
+      for (;;) {
+        const job = await advanceIngestionJobRpc({ data: { jobId } });
+        if (job) {
+          setReferenceStep(job.step);
+          if (job.status === "succeeded") {
+            setReferenceStep(null);
+            setReferenceAnalysis(job.result?.ingestion ?? null);
+            return;
+          }
+          if (job.status === "failed") {
+            setReferenceStep(null);
+            throw new Error(job.error ?? "Falha ao analisar o vídeo de referência.");
+          }
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+    } catch (err) {
+      setReferenceStep(null);
+      setReferenceError(err instanceof Error ? err.message : "Erro ao analisar o vídeo de referência");
+    }
+  }
+
+  async function handleReferenceVideoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploadingReference(true);
+    setReferenceError(null);
+    setReferenceAnalysis(null);
+    try {
+      const storagePath = await uploadReferenceVideo(file);
+      setReferenceVideoFile({ name: file.name, storagePath });
+      await runReferenceIngestion(storagePath);
+    } catch (err) {
+      setReferenceError(err instanceof Error ? err.message : "Erro ao enviar o vídeo");
+    } finally {
+      setUploadingReference(false);
+    }
+  }
+
+  function removeReferenceVideo() {
+    setReferenceVideoFile(null);
+    setReferenceAnalysis(null);
+    setReferenceError(null);
+    setReferenceStep(null);
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -759,11 +853,9 @@ function PromptTab() {
           // "" = Padrão (DEFAULT_TARGET) — nunca apresentado como "melhor modelo",
           // é só o fallback fixo da Fase 1 (ver ARCHITECTURE/plano desta feature).
           targetId: targetId || null,
-          // Reference Intelligence (Fase 2B): motor já aceita gramática de
-          // referência (ver server/creative.functions.ts), mas a UI pra
-          // escolher/ingerir um vídeo de referência dentro desta aba ainda
-          // não existe — fica null até essa entrada de UI ser construída.
-          referenceAnalysis: null,
+          // Reference Intelligence (Fase 2B) — null se nenhum vídeo foi
+          // enviado/analisado ainda; motor trata os dois casos.
+          referenceAnalysis,
         },
       });
       setResult(res);
@@ -814,6 +906,41 @@ function PromptTab() {
             value={idea}
             onChange={(e) => setIdea(e.target.value)}
           />
+        </div>
+        <div>
+          <div className="section-label">Vídeo de referência (opcional)</div>
+          <div className="hint" style={{ marginBottom: 6 }}>
+            Analisamos a TÉCNICA do vídeo (câmera, ritmo, estrutura) pra inspirar a execução — nunca copiamos fala ou identidade dele.
+          </div>
+          {!referenceVideoFile ? (
+            <label className="btn-secondary" style={{ display: "inline-block", cursor: "pointer" }}>
+              {uploadingReference ? "Enviando..." : "Enviar vídeo"}
+              <input type="file" accept="video/*" onChange={handleReferenceVideoFile} disabled={uploadingReference} style={{ display: "none" }} />
+            </label>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 13 }}>{referenceVideoFile.name}</span>
+              <button type="button" className="btn-secondary" onClick={removeReferenceVideo}>
+                Remover
+              </button>
+            </div>
+          )}
+          {referenceStep && (
+            <div className="hint" style={{ marginTop: 6 }}>
+              {PROMPT_REFERENCE_STEP_LABELS[referenceStep] ?? "Processando..."}
+            </div>
+          )}
+          {referenceError && (
+            <div className="hint" style={{ marginTop: 6, color: "#E5484D" }}>
+              {referenceError}
+            </div>
+          )}
+          {referenceAnalysis && (
+            <div className="hint" style={{ marginTop: 6, color: "#22C55E" }}>
+              Referência analisada: formato "{referenceAnalysis.format.primary}", hook "{referenceAnalysis.hook.type}",{" "}
+              {referenceAnalysis.visual.cutsPerMinute.toFixed(0)} cortes/min.
+            </div>
+          )}
         </div>
         <div style={{ display: "flex", gap: 12 }}>
           <div style={{ flex: 1 }}>
