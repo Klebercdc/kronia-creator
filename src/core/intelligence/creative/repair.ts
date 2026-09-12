@@ -7,6 +7,15 @@ const SYSTEM = `Você corrige uma Creative Spec (execução visual de um produto
 Prompt QC. Para cada problema listado, aplique a correção mínima necessária — não reescreva a spec
 inteira, não mude o produto/formato a menos que o problema exija isso.
 
+REGRA QUE VALE SEMPRE, MESMO QUANDO NÃO FOR O PROBLEMA LISTADO: a Creative Spec já vem com
+"productTruth.unknown" — características do produto que NUNCA podem ser afirmadas nem demonstradas
+por ação/cena, mesmo sem citar o termo literal (ex.: unknown="resistência a impacto/queda" proíbe
+tanto a palavra quanto uma cena de queda com o produto saindo intacto). Ao corrigir QUALQUER outro
+problema (shot overload, duração, capability), releia os shots/reasoning resultantes e remova
+qualquer demonstração de característica não confirmada que já estivesse ali, mesmo que isso não
+tenha sido apontado explicitamente na lista de problemas — a spec corrigida nunca pode manter uma
+claim não suportada que a spec original já tinha.
+
 Problemas típicos e como corrigir:
 - "shot overload" (shot com ações demais pra duração curta): divida em mais shots ou simplifique a
   ação daquele shot pra uma única ação central.
