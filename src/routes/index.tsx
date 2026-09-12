@@ -1209,13 +1209,18 @@ function CriarFlow({
   }
 
   async function handleProductPhoto(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+    // `multiple` no input já entrega todos os arquivos marcados no seletor
+    // do dispositivo numa única abertura — FileList pode ter 1 ou várias
+    // entradas, o resto do fluxo (soma à lista, 1 chamada de análise) é o
+    // mesmo de antes, só processando o lote inteiro de uma vez em vez de
+    // 1 arquivo por vez.
+    const files = Array.from(e.target.files ?? []);
     e.target.value = "";
-    if (!file) return;
-    const dataUrl = await readFileAsDataUrl(file);
+    if (files.length === 0) return;
+    const newDataUrls = await Promise.all(files.map(readFileAsDataUrl));
     // Soma à lista em vez de substituir — várias fotos do mesmo produto
     // (frente, verso, rótulo) analisadas juntas numa chamada só.
-    const nextPhotos = [...productPhotoDataUrls, dataUrl];
+    const nextPhotos = [...productPhotoDataUrls, ...newDataUrls];
     setProductPhotoDataUrls(nextPhotos);
     setAnalyzingProductPhoto(true);
     try {
@@ -1488,7 +1493,7 @@ function CriarFlow({
                   </>
                 )}
               </span>
-              <input type="file" accept="image/*" onChange={handleProductPhoto} style={{ display: "none" }} />
+              <input type="file" accept="image/*" multiple onChange={handleProductPhoto} style={{ display: "none" }} />
             </label>
           </div>
           {productPhotoDescription && (
