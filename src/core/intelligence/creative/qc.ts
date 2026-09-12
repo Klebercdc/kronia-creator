@@ -45,26 +45,55 @@ const PROPERTY_DEMONSTRATION_SIGNALS = [
   /\bpurifica/i,
 ];
 
-const NEGATION_WINDOW_CHARS = 20;
-const NEGATION_WORDS = /\b(sem|não|nunca|jamais|evitando|evita|sem demonstrar)\b/i;
+const NEGATION_WORDS = /\b(sem|não|nunca|jamais|evitando|evita)\b/i;
 
-/** Ignora o sinal quando há uma negação nos ~20 caracteres antes do match
- * (ex.: "sem demonstração de queda", "evitando mostrar impacto") — achado
- * real em teste: sem isso, a própria explicação da LLM de que evitou a
- * claim virava falso positivo. Continua grosseiro de propósito (não é
- * negação sintática de verdade, só uma janela de texto), mas cobre o
- * padrão que apareceu na prática sem enfraquecer a detecção da claim real
- * (a claim real nunca vem precedida de negação, já que o objetivo dela é
- * afirmar, não negar). */
+/**
+ * Ignora uma OCORRÊNCIA quando a CLÁUSULA que a contém (texto dividido por
+ * `; , .`) tem uma palavra de negação em qualquer ponto da cláusula — ex.:
+ * "sem demonstrar queda ou impacto" é uma cláusula só, então tanto "queda"
+ * quanto "impacto" saem negados juntos, mesmo com uma palavra no meio
+ * ("ou") separando-os. Cláusula (não uma janela fixa de caracteres) porque
+ * um teste real mostrou a janela de caracteres falhando: com uma palavra
+ * extra entre a negação e o segundo termo, um char-window curto o
+ * suficiente pra não pegar negação de verdade em cláusulas longas também
+ * não alcançava a negação nesse caso — cláusula é o limite semântico
+ * certo, não um número mágico de caracteres.
+ *
+ * Correção de auditoria: cada padrão é escaneado em TODAS as ocorrências
+ * do texto (via `matchAll` com flag "g"), cada uma julgada pela própria
+ * cláusula — não só a primeira ocorrência. Bug real encontrado e
+ * corrigido: antes, `text.match(pattern)` sem "g" só olhava a primeira
+ * ocorrência; se essa primeira viesse negada ("sem demonstrar queda"), o
+ * termo inteiro era descartado e uma segunda ocorrência afirmativa mais
+ * adiante no mesmo texto, numa cláusula diferente ("...depois ocorre uma
+ * queda sobre o produto e ele permanece intacto"), passava batida.
+ */
 function detectPropertyDemonstration(text: string): string[] {
   const found = new Set<string>();
+  const clauseBoundaries: number[] = [0];
+  for (const match of text.matchAll(/[;,.]/g)) {
+    if (match.index !== undefined) clauseBoundaries.push(match.index + 1);
+  }
+  clauseBoundaries.push(text.length);
+
+  function clauseContaining(index: number): string {
+    for (let i = 0; i < clauseBoundaries.length - 1; i++) {
+      if (index >= clauseBoundaries[i] && index < clauseBoundaries[i + 1]) {
+        return text.slice(clauseBoundaries[i], clauseBoundaries[i + 1]);
+      }
+    }
+    return text;
+  }
+
   for (const pattern of PROPERTY_DEMONSTRATION_SIGNALS) {
-    const match = text.match(pattern);
-    if (!match || match.index === undefined) continue;
-    const windowStart = Math.max(0, match.index - NEGATION_WINDOW_CHARS);
-    const before = text.slice(windowStart, match.index);
-    if (NEGATION_WORDS.test(before)) continue;
-    found.add(match[0]);
+    const globalPattern = new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`);
+    for (const match of text.matchAll(globalPattern)) {
+      if (match.index === undefined) continue;
+      const clause = clauseContaining(match.index);
+      if (NEGATION_WORDS.test(clause)) continue;
+      found.add(match[0]);
+      break; // já achou 1 ocorrência afirmativa deste sinal — não precisa continuar procurando este padrão específico
+    }
   }
   return Array.from(found);
 }

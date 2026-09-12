@@ -22,12 +22,19 @@ export interface BuildCreativePromptResult {
  * Orquestra o fluxo completo:
  *   Creative Reasoning -> Creative Evaluation -> Target Resolver ->
  *   Target Specialist -> Prompt Compiler -> Prompt QC -> Repair (até
- *   CREATIVE_QC_MAX_ATTEMPTS) -> resultado final.
+ *   CREATIVE_QC_MAX_ATTEMPTS) -> Creative Evaluation de novo -> ... ->
+ *   resultado final.
  *
  * Se a Creative Evaluation reprovar (verdict "fail" — product truth
  * violado), o fluxo PARA antes de compilar: `artifact` vem null e a
  * evaluation carrega o motivo. Nunca gera um prompt em cima de uma
- * intenção que já falhou na avaliação.
+ * intenção que já falhou na avaliação. Isso vale tanto pra spec original
+ * quanto pra spec que saiu de um repair (correção de auditoria: repair é
+ * uma chamada LLM livre pra reescrever format/pattern/mechanic/shots/
+ * directorSpec — sem reavaliar depois, uma correção podia sair coerente
+ * o suficiente pro Prompt QC (que olha duração/overload/claims, não
+ * coerência formato↔padrão↔mecânica) mas incoerente pra Creative
+ * Evaluation, e isso nunca era pego).
  *
  * Se o Prompt QC não passar depois do teto de repair, `artifact.status`
  * vem "manual_review_required" — nunca "ready" mascarado (mesmo princípio
@@ -35,7 +42,7 @@ export interface BuildCreativePromptResult {
  */
 export async function buildCreativePrompt(input: BuildCreativePromptInput): Promise<BuildCreativePromptResult> {
   const spec = await generateCreativeSpec(input);
-  const evaluation = evaluateCreativeSpec(spec);
+  let evaluation = evaluateCreativeSpec(spec);
 
   if (evaluation.verdict === "fail") {
     return { spec, evaluation, artifact: null };
@@ -89,5 +96,20 @@ export async function buildCreativePrompt(input: BuildCreativePromptInput): Prom
 
     attempt += 1;
     currentSpec = await repairCreativeSpec(currentSpec, qc.issues);
+
+    // Revalidação determinística (evaluateCreativeSpec continua sem LLM —
+    // nenhuma chamada nova aqui) da spec que voltou do repair. O repair tem
+    // liberdade pra reescrever format/pattern/mechanic/shotPattern/
+    // directorSpec pra resolver o problema do QC; sem essa revalidação, uma
+    // correção podia introduzir uma incoerência que só a Creative
+    // Evaluation original checava (formato↔padrão↔mecânica, shot sequence,
+    // product truth) e nunca seria pega, já que o Prompt QC verifica outra
+    // coisa. Se falhar, é falha de integridade: nunca compila, nunca
+    // retorna ready — mesmo "comportamento seguro" do caminho de avaliação
+    // inicial.
+    evaluation = evaluateCreativeSpec(currentSpec);
+    if (evaluation.verdict === "fail") {
+      return { spec: currentSpec, evaluation, artifact: null };
+    }
   }
 }
