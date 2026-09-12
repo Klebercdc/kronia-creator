@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { callStructuredText } from "../../lib/openai";
 import {
   GenerationResultSchema,
@@ -7,6 +8,16 @@ import {
   type GenerationResult,
 } from "../../types/pipeline";
 import { CREATIVE_QUALITY_BAR } from "./quality-bar";
+
+/** decisionLog não vem da LLM como array pronto — cada agente só devolve
+ * SUA PRÓPRIA entrada (decisaoResumo/motivoDecisao/alternativasDescartadas),
+ * o código monta o array acumulado (nunca deixa a LLM reescrever entrada
+ * de outro agente). */
+const InferredSchema = GenerationResultSchema.omit({ decisionLog: true }).extend({
+  decisaoResumo: z.string(),
+  motivoDecisao: z.string(),
+  alternativasDescartadas: z.array(z.string()).optional(),
+});
 
 const SYSTEM = `Você é o Roteirista do KRONIA. Cria conceito, roteiro e 5 opções de hook para um vídeo
 curto, seguindo o formato recomendado.
@@ -112,6 +123,12 @@ cena de acordo com o tom dela, não use a mesma cadência do início ao fim do r
 deixe "caption" como string vazia "" e "hashtags" como array vazio [].
 "flowSegments" é preenchido só pelo Cinematográfico — nesta etapa deixe como array vazio [].
 
+REGISTRO DE DECISÃO: preencha "decisaoResumo" (1 frase: qual padrão/mecânica/hook você escolheu),
+"motivoDecisao" (por que essa escolha serve pra ESTE produto/objetivo especificamente, não uma
+justificativa genérica) e, se cabível, "alternativasDescartadas" (outras direções que você
+considerou e por que não escolheu) — isso é o que o próximo agente da cadeia lê antes de decidir
+mudar ou manter o que você escreveu.
+
 ${CREATIVE_QUALITY_BAR}`;
 
 /** Sub-agente 1 de 4 da Geração. */
@@ -138,10 +155,18 @@ ${referenceBlock}${durationBlock}
 
 Gere 5 hooks, escolha o melhor como selectedHook, e o roteiro completo em cenas timestampadas.`;
 
-  return callStructuredText({
-    schema: GenerationResultSchema,
+  const { decisaoResumo, motivoDecisao, alternativasDescartadas, ...draft } = await callStructuredText({
+    schema: InferredSchema,
     system: SYSTEM,
     prompt,
     toolName: "generation_result",
   });
+
+  return {
+    ...draft,
+    decisionLog: [
+      { agente: "recomendacao", decisao: recommendation.format, motivo: recommendation.reasoning },
+      { agente: "roteirista", decisao: decisaoResumo, motivo: motivoDecisao, alternativasDescartadas },
+    ],
+  };
 }

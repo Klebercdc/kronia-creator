@@ -1,11 +1,7 @@
 import { callStructuredText } from "../../lib/openai";
-import {
-  GenerationResultSchema,
-  type ContentRequest,
-  type FormatRecommendation,
-  type GenerationResult,
-} from "../../types/pipeline";
+import { type ContentRequest, type FormatRecommendation, type GenerationResult } from "../../types/pipeline";
 import { CREATIVE_QUALITY_BAR } from "./quality-bar";
+import { RevisionInferredSchema, DECISION_LOG_PROMPT_BLOCK, appendDecisionLog } from "./decision-log";
 
 const SYSTEM = `Você é o agente de Marketing do KRONIA. Revisa um rascunho de roteiro pela lente
 estratégica: o hook e o ângulo realmente encaixam no público e no objetivo declarados? O CTA
@@ -34,6 +30,8 @@ comentários; não force pergunta em todo roteiro, só quando o tema comportar u
 
 ${CREATIVE_QUALITY_BAR}
 
+${DECISION_LOG_PROMPT_BLOCK}
+
 Retorne o roteiro completo revisado, no mesmo formato de entrada.`;
 
 /** Sub-agente de Geração — posicionamento estratégico, entre o Roteirista e o resto da cadeia. */
@@ -47,10 +45,12 @@ Formato recomendado: ${recommendation.format} — ${recommendation.reasoning}
 
 Roteiro para revisão de posicionamento:\n${JSON.stringify(draft, null, 2)}`;
 
-  return callStructuredText({
-    schema: GenerationResultSchema,
+  const inferred = await callStructuredText({
+    schema: RevisionInferredSchema,
     system: SYSTEM,
     prompt,
     toolName: "generation_result",
   });
+
+  return appendDecisionLog(inferred, draft.decisionLog, "marketing");
 }

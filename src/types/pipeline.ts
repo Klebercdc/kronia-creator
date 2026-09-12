@@ -123,6 +123,21 @@ export const FlowSegmentSchema = z.object({
 });
 export type FlowSegment = z.infer<typeof FlowSegmentSchema>;
 
+/** Creative Context / DecisionLog — cada agente da cadeia ACRESCENTA 1
+ * entrada ao final, nunca apaga/reescreve entrada de outro agente. O
+ * "motivo" vem da PRÓPRIA chamada à OpenAI daquele agente (campo
+ * `motivoDecisao` pedido junto com o resultado principal, nunca um
+ * resumo escrito depois por fora) — é o que deixa o próximo agente da
+ * cadeia (ex: Marketing) ler POR QUE o anterior (ex: Roteirista) decidiu
+ * daquele jeito antes de decidir mudar ou manter. */
+export const DecisionLogEntrySchema = z.object({
+  agente: z.string(),
+  decisao: z.string(),
+  motivo: z.string(),
+  alternativasDescartadas: z.array(z.string()).optional(),
+});
+export type DecisionLogEntry = z.infer<typeof DecisionLogEntrySchema>;
+
 export const GenerationResultSchema = z.object({
   hooks: z.array(z.string()).length(5),
   selectedHook: z.string(),
@@ -136,6 +151,7 @@ export const GenerationResultSchema = z.object({
    * videoPrompt até o Cinematográfico). */
   caption: z.string(),
   hashtags: z.array(z.string()),
+  decisionLog: z.array(DecisionLogEntrySchema),
 });
 export type GenerationResult = z.infer<typeof GenerationResultSchema>;
 

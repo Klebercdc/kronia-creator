@@ -1,5 +1,6 @@
 import { callStructuredText } from "../../lib/openai";
-import { GenerationResultSchema, type GenerationResult } from "../../types/pipeline";
+import { type GenerationResult } from "../../types/pipeline";
+import { RevisionInferredSchema, DECISION_LOG_PROMPT_BLOCK, appendDecisionLog } from "./decision-log";
 
 const SYSTEM = `Você é o Teólogo do KRONIA, projeto Jeová Fala — e trabalha em cima do copywriting
 que o Roteirista e o Marketing já construíram, não substitui esse trabalho por um texto genérico.
@@ -38,18 +39,24 @@ significado espiritual real que ele carrega pra quem usa (fé, proteção, lembr
 com a mesma exigência de base bíblica real das outras regras acima, nunca um significado
 inventado só pra soar bonito.
 
+${DECISION_LOG_PROMPT_BLOCK}
+
 Retorne o roteiro revisado completo, no mesmo formato de entrada.`;
 
-/** Sub-agente da Geração — só roda quando request.project === "jeova_fala".
- * Roda na OpenAI (não na Groq): doutrina errada tem custo reputacional alto
- * demais pra arriscar num modelo mais barato. */
+/** Sub-agente da Geração — roda quando request.project === "jeova_fala" OU
+ * quando o produto tem referência religiosa explícita (ver roteamento em
+ * generate.ts / content-generation.ts). Roda na OpenAI (não na Groq):
+ * doutrina errada tem custo reputacional alto demais pra arriscar num
+ * modelo mais barato. */
 export async function teologo(draft: GenerationResult): Promise<GenerationResult> {
   const prompt = `Roteiro para debate e aprofundamento teológico:\n${JSON.stringify(draft, null, 2)}`;
 
-  return callStructuredText({
-    schema: GenerationResultSchema,
+  const inferred = await callStructuredText({
+    schema: RevisionInferredSchema,
     system: SYSTEM,
     prompt,
     toolName: "generation_result",
   });
+
+  return appendDecisionLog(inferred, draft.decisionLog, "teologo");
 }

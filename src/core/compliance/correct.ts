@@ -3,6 +3,11 @@ import { GenerationResultSchema, type GenerationResult } from "../../types/pipel
 import type { ComplianceViolation } from "../../types/compliance";
 import { CREATIVE_QUALITY_BAR } from "../generation/quality-bar";
 
+/** decisionLog nunca é pedido de volta aqui — correção de compliance não é
+ * um dos agentes que acrescenta entrada própria; o log acumulado é só
+ * preservado (ver types/pipeline.ts). */
+const CorrectInferredSchema = GenerationResultSchema.omit({ decisionLog: true });
+
 const SYSTEM = `Você corrige um roteiro que foi reprovado no compliance.
 
 Para cada violação listada:
@@ -36,12 +41,14 @@ export async function correctForCompliance(
 ): Promise<GenerationResult> {
   const prompt = `Roteiro atual:\n${JSON.stringify(generation, null, 2)}\n\nViolações a corrigir:\n${JSON.stringify(violations, null, 2)}`;
 
-  return callStructuredText({
-    schema: GenerationResultSchema,
+  const corrected = await callStructuredText({
+    schema: CorrectInferredSchema,
     system: SYSTEM,
     prompt,
     toolName: "generation_result",
   });
+
+  return { ...corrected, decisionLog: generation.decisionLog };
 }
 
 function textOf(generation: GenerationResult): string {

@@ -1,6 +1,7 @@
 import { callStructuredText } from "../../lib/openai";
-import { GenerationResultSchema, type ContentRequest, type GenerationResult } from "../../types/pipeline";
+import { type ContentRequest, type GenerationResult } from "../../types/pipeline";
 import type { VideoAnalysis } from "../../types/video-analysis";
+import { RevisionInferredSchema, DECISION_LOG_PROMPT_BLOCK, appendDecisionLog } from "./decision-log";
 
 const BASE_SYSTEM = `Você é o agente Cinematográfico do KRONIA. Transforma o roteiro aprovado em direção
 visual final, em duas camadas:
@@ -51,7 +52,9 @@ fórmula é reaproveitável entre categorias de produto, o conteúdo específico
 
 Retorne o roteiro completo, no mesmo formato de entrada, com "camera"/"action" das cenas mantidos
 como estavam, "videoPrompt" de cada cena preenchido, e "flowSegments" preenchido com os blocos de
-10s (cada um com "sceneIndexes" listando quais cenas ele cobre).`;
+10s (cada um com "sceneIndexes" listando quais cenas ele cobre).
+
+${DECISION_LOG_PROMPT_BLOCK}`;
 
 function buildSystem(actorProfile: ContentRequest["actorProfile"], ingestion: VideoAnalysis | null): string {
   let system = BASE_SYSTEM;
@@ -91,10 +94,12 @@ export async function cinematografico(
 Duração total: ${totalSeconds}s → gere exatamente ${expectedSegments} flowSegments de 10s cada
 (o último pode ser mais curto só se a duração total não for múltiplo de 10 — mas ela deveria ser).`;
 
-  return callStructuredText({
-    schema: GenerationResultSchema,
+  const inferred = await callStructuredText({
+    schema: RevisionInferredSchema,
     system: buildSystem(actorProfile, ingestion),
     prompt,
     toolName: "generation_result",
   });
+
+  return appendDecisionLog(inferred, draft.decisionLog, "cinematografico");
 }

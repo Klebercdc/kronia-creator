@@ -1,7 +1,8 @@
 import { callStructuredText } from "../../lib/openai";
-import { GenerationResultSchema, type GenerationResult } from "../../types/pipeline";
+import { type GenerationResult } from "../../types/pipeline";
 import { BUYING_PSYCHOLOGY_TRIGGERS } from "../../types/taxonomy";
 import { CREATIVE_QUALITY_BAR } from "./quality-bar";
+import { RevisionInferredSchema, DECISION_LOG_PROMPT_BLOCK, appendDecisionLog } from "./decision-log";
 
 const SYSTEM = `Você é o agente de Psicologia de Compra do KRONIA — aplica princípios
 comportamentais reais (Cialdini, Kahneman) ao roteiro: ${BUYING_PSYCHOLOGY_TRIGGERS.join(", ")}.
@@ -18,6 +19,8 @@ usuário, não contra), ajuste a narração/onScreenText da cena relevante.
 
 ${CREATIVE_QUALITY_BAR}
 
+${DECISION_LOG_PROMPT_BLOCK}
+
 Retorne o roteiro completo revisado, no mesmo formato de entrada.`;
 
 /** Sub-agente de Geração — roda na OpenAI: a linha entre gatilho legítimo e
@@ -25,10 +28,12 @@ Retorne o roteiro completo revisado, no mesmo formato de entrada.`;
 export async function psicologiaDeCompra(draft: GenerationResult): Promise<GenerationResult> {
   const prompt = `Roteiro para revisão de psicologia de compra:\n${JSON.stringify(draft, null, 2)}`;
 
-  return callStructuredText({
-    schema: GenerationResultSchema,
+  const inferred = await callStructuredText({
+    schema: RevisionInferredSchema,
     system: SYSTEM,
     prompt,
     toolName: "generation_result",
   });
+
+  return appendDecisionLog(inferred, draft.decisionLog, "psicologia_compra");
 }

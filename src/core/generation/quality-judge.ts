@@ -3,6 +3,12 @@ import { callStructuredText } from "../../lib/openai";
 import { GenerationResultSchema, type GenerationResult } from "../../types/pipeline";
 import { CREATIVE_QUALITY_BAR } from "./quality-bar";
 
+/** decisionLog nunca é pedido de volta aqui — reviseForQuality não é um dos
+ * agentes que acrescenta entrada própria (só Recomendação/Creative
+ * Director/Roteirista/Marketing/Teólogo/Persuasão-e-Psicologia/
+ * Cinematográfico fazem isso); o log acumulado é só preservado. */
+const ReviseInferredSchema = GenerationResultSchema.omit({ decisionLog: true });
+
 /**
  * Quality Judge — etapa nova entre o Cinematográfico e o Compliance.
  * Compliance julga risco legal/política (claim sem evidência, linguagem
@@ -91,10 +97,12 @@ Retorne o roteiro completo, no mesmo formato de entrada.`;
 export async function reviseForQuality(draft: GenerationResult, instruction: string): Promise<GenerationResult> {
   const prompt = `Roteiro atual:\n${JSON.stringify(draft, null, 2)}\n\nInstrução de revisão:\n${instruction}`;
 
-  return callStructuredText({
-    schema: GenerationResultSchema,
+  const revised = await callStructuredText({
+    schema: ReviseInferredSchema,
     system: REVISE_SYSTEM,
     prompt,
     toolName: "generation_result",
   });
+
+  return { ...revised, decisionLog: draft.decisionLog };
 }
