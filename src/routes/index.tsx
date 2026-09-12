@@ -24,6 +24,9 @@ import type { ContentRequest, GenerationResult, PipelineOutput, ReferenceAnalysi
 import { findOpportunities, type OpportunityWithScore, type FindOpportunitiesResult } from "../server/intelligence.functions";
 import { opportunityToPrecomputedAnalysis } from "../core/intelligence/opportunities/bridge";
 import { recommendationBadge } from "../core/intelligence/opportunities/schemas";
+import { buildCreativePromptFn } from "../server/creative.functions";
+import type { BuildCreativePromptResult } from "../core/intelligence/creative/orchestrator";
+import { TARGET_PROFILES } from "../core/intelligence/creative/target-profiles";
 import logoIcon from "../assets/logo-icon.png";
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -98,7 +101,7 @@ function StageIndicator({ current }: { current: 0 | 1 | 2 }) {
   );
 }
 
-type AppTab = "criar" | "historico" | "explorar" | "perfil";
+type AppTab = "criar" | "historico" | "explorar" | "prompt" | "perfil";
 
 /** Ícones — traçados copiados 1:1 do handoff de design (KroniaMockup.dc.html),
  * não reinventados, pra bater pixel a pixel com o mockup aprovado. */
@@ -134,6 +137,16 @@ function IconUser() {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <circle cx="12" cy="8" r="3.5" />
       <path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconWand() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 20L15 9" strokeLinecap="round" />
+      <path d="M15 4v3M20 9h-3M18.5 5.5l-2 2" strokeLinecap="round" />
+      <path d="M9 4v2M7 6h2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -228,6 +241,7 @@ const TAB_ITEMS: { id: AppTab; label: string; Icon: () => React.JSX.Element }[] 
   { id: "criar", label: "Criar", Icon: IconHome },
   { id: "historico", label: "Histórico", Icon: IconClock },
   { id: "explorar", label: "Explorar", Icon: IconCompass },
+  { id: "prompt", label: "Prompt", Icon: IconWand },
   { id: "perfil", label: "Perfil", Icon: IconUser },
 ];
 
@@ -377,6 +391,44 @@ const HOOK_TYPE_LABEL: Record<string, string> = {
   result_first: "Resultado primeiro",
   identity_call: "Chamada por identidade",
   number_stat: "Número/estatística",
+};
+
+const CREATIVE_PATTERN_LABEL: Record<string, string> = {
+  prove_the_product: "Provar o produto",
+  discovery: "Descoberta",
+  reveal: "Revelação",
+  transformation: "Transformação",
+  demonstration: "Demonstração",
+  problem_solution: "Problema → Solução",
+  curiosity: "Curiosidade",
+  comparison: "Comparação",
+  unboxing: "Unboxing",
+  first_use: "Primeiro uso",
+  reaction: "Reação",
+  social_proof: "Prova social",
+  before_after: "Antes e depois",
+};
+
+const VISUAL_MECHANIC_LABEL: Record<string, string> = {
+  unboxing: "Unboxing",
+  product_rotation: "Rotação do produto",
+  detail_reveal: "Revelação de detalhe",
+  functional_demo: "Demonstração funcional",
+  before_after: "Antes e depois",
+  pour: "Despejar",
+  open_close: "Abrir/fechar",
+  hand_feel: "Toque/textura na mão",
+  try_on: "Experimentar/vestir",
+  comparison: "Comparação",
+  pov_use: "Uso em primeira pessoa (POV)",
+  reaction: "Reação",
+};
+
+const QC_STATE_LABEL: Record<string, string> = {
+  pass: "Aprovado",
+  warning: "Aprovado com observações",
+  fail: "Reprovado",
+  repair_required: "Correção necessária",
 };
 
 function OportunidadesTab({ onCreateContent }: { onCreateContent: (seed: PendingOpportunitySeed) => void }) {
@@ -661,6 +713,169 @@ function HistoricoTab() {
   );
 }
 
+/**
+ * Prompt Intelligence — módulo independente, fora do pipeline de
+ * Roteirista/Marketing/Persuasão/Cinematográfico. Responde "como executar
+ * visualmente" uma ideia/produto, não "o que criar" (isso é Oportunidades)
+ * nem "como escrever o roteiro falado" (isso é Criar). Só os 2 modos que
+ * não dependem de análise de imagem/vídeo de referência (Fase 1) — "a
+ * partir de imagem/vídeo" e "melhorar meu prompt" ficam pra uma fase
+ * futura de Reference Intelligence.
+ */
+function PromptTab() {
+  const buildCreativePromptRpc = useServerFn(buildCreativePromptFn);
+
+  const [idea, setIdea] = useState("");
+  const [productInfoText, setProductInfoText] = useState("");
+  const [objective, setObjective] = useState("");
+  const [media, setMedia] = useState<"image" | "video">("video");
+  const [targetId, setTargetId] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [result, setResult] = useState<BuildCreativePromptResult | null>(null);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!productInfoText.trim() || !objective.trim()) return;
+    setLoading(true);
+    setErrorMessage(null);
+    setResult(null);
+    try {
+      const res = await buildCreativePromptRpc({
+        data: {
+          media,
+          productInfo: [{ text: productInfoText.trim(), kind: "fato", source: "campo de informações" }],
+          idea: idea.trim() || null,
+          opportunityContext: null,
+          objective: objective.trim(),
+          // "" = Padrão (DEFAULT_TARGET) — nunca apresentado como "melhor modelo",
+          // é só o fallback fixo da Fase 1 (ver ARCHITECTURE/plano desta feature).
+          targetId: targetId || null,
+        },
+      });
+      setResult(res);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Erro ao gerar o prompt");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="app">
+      <BrandRow />
+      <h1 className="h1" style={{ fontSize: 20, marginBottom: 4 }}>
+        Prompt
+      </h1>
+      <div className="hint" style={{ marginBottom: 16 }}>
+        Transforme um produto ou uma ideia numa direção visual pronta pra colar num gerador de imagem/vídeo.
+      </div>
+
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div>
+          <div className="section-label">Produto</div>
+          <textarea
+            className="input"
+            rows={2}
+            placeholder="Ex: mochila de nylon, compartimento para notebook, cor preta"
+            value={productInfoText}
+            onChange={(e) => setProductInfoText(e.target.value)}
+          />
+          <div className="hint">Descreva só o que você sabe de verdade — nada além disso é usado.</div>
+        </div>
+        <div>
+          <div className="section-label">Objetivo</div>
+          <input
+            className="input"
+            placeholder="Ex: vender, mostrar uso no dia a dia"
+            value={objective}
+            onChange={(e) => setObjective(e.target.value)}
+          />
+        </div>
+        <div>
+          <div className="section-label">Ideia (opcional)</div>
+          <textarea
+            className="input"
+            rows={2}
+            placeholder="Ex: quero mostrar o produto sendo usado no dia a dia"
+            value={idea}
+            onChange={(e) => setIdea(e.target.value)}
+          />
+        </div>
+        <div style={{ display: "flex", gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <div className="section-label">Mídia</div>
+            <select className="input" value={media} onChange={(e) => setMedia(e.target.value as "image" | "video")}>
+              <option value="video">Vídeo</option>
+              <option value="image">Imagem</option>
+            </select>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div className="section-label">Target</div>
+            <select className="input" value={targetId} onChange={(e) => setTargetId(e.target.value)}>
+              <option value="">Padrão</option>
+              {TARGET_PROFILES.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name} ({t.kind === "platform" ? "plataforma" : "modelo"})
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <button type="submit" className="btn-primary" disabled={loading}>
+          {loading ? "Gerando..." : "Gerar prompt"}
+        </button>
+      </form>
+
+      {errorMessage && (
+        <div className="card" style={{ marginTop: 16, color: "#E5484D" }}>
+          Algo deu errado: {errorMessage}
+        </div>
+      )}
+
+      {result && !result.artifact && (
+        <div className="card" style={{ marginTop: 16, color: "#E5484D" }}>
+          Não foi possível gerar uma execução visual coerente: {result.evaluation.notes.join(" ")}
+        </div>
+      )}
+
+      {result?.artifact && (
+        <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 12.5, color: "#8A8A8A" }}>
+              Padrão: {CREATIVE_PATTERN_LABEL[result.spec.pattern] ?? result.spec.pattern} · Mecânica:{" "}
+              {VISUAL_MECHANIC_LABEL[result.spec.mechanic] ?? result.spec.mechanic} · Formato:{" "}
+              {FORMAT_LABEL[result.spec.format] ?? result.spec.format}
+            </div>
+            <div style={{ fontSize: 13.5, color: "#B5B5B5" }}>{result.spec.reasoning}</div>
+          </div>
+
+          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontWeight: 700, fontSize: 14 }}>Prompt final</div>
+              <div style={{ fontSize: 12.5, color: result.artifact.status === "ready" ? "#22C55E" : "#F5A524" }}>
+                {result.artifact.status === "ready" ? "Pronto" : "Requer revisão manual"} ·{" "}
+                {QC_STATE_LABEL[result.artifact.qc.state] ?? result.artifact.qc.state}
+              </div>
+            </div>
+            <pre style={{ whiteSpace: "pre-wrap", fontSize: 13, fontFamily: "inherit", margin: 0 }}>{result.artifact.promptText}</pre>
+            {result.artifact.negativePrompt && (
+              <div style={{ fontSize: 12.5, color: "#8A8A8A" }}>
+                <strong style={{ color: "#B5B5B5" }}>Evitar:</strong> {result.artifact.negativePrompt}
+              </div>
+            )}
+            {result.artifact.qc.issues.length > 0 && (
+              <div style={{ fontSize: 12.5, color: "#8A8A8A" }}>
+                <strong style={{ color: "#B5B5B5" }}>Observações do QC:</strong> {result.artifact.qc.issues.join(" ")}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** O que a aba Oportunidades passa pra aba Criar quando o usuário clica
  * "Criar conteúdo" — pré-preenche o tema e já leva a classificação/
  * recomendação sintetizadas (bridge, sem chamada de servidor), pra
@@ -692,6 +907,7 @@ function CriadorApp() {
           }}
         />
       )}
+      {tab === "prompt" && <PromptTab />}
       {tab === "perfil" && (
         <PlaceholderTab title="Perfil" hint="Em breve: atores salvos, preferências e configurações da conta." />
       )}
