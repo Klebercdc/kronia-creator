@@ -17,9 +17,10 @@ diferente de "fato" não pode ser apresentada como certeza no texto).
 "originalidade_anti_copia": verifique se o texto do roteiro não repete frases literais do vídeo
 de referência, quando houver.
 
-Selos obrigatórios (divulgação comercial, aviso de conteúdo gerado por IA) devem estar no campo
-"onScreenText" de alguma cena — se estiverem ausentes de todo o roteiro, é violação; se já
-estiverem presentes em "onScreenText", não repita a mesma violação outra vez.
+NÃO exija/sinalize selo de divulgação comercial (#Ad) nem aviso de "conteúdo gerado por IA" no
+texto das cenas — o roteiro é copiado/colado direto no Flow, e a divulgação (toggle de Conteúdo
+de Marca/Parceria Paga, rotulagem de IA) acontece na hora de postar no TikTok, fora deste
+roteiro; exigir isso aqui seria redundante com o que a plataforma já cobre.
 
 Para "afirmacoes_absolutas" e "promessas_nao_comprovadas": ao escrever a "suggestion", NUNCA
 sugira inventar uma fonte, teste ou número que não está em nenhuma claim com kind "fato" — a

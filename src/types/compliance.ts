@@ -11,8 +11,6 @@ export const RULE_GROUPS = [
   "publicidade_comercial",
   "claims_produto",
   "conteudo_religioso",
-  "conteudo_gerado_por_ia",
-  "divulgacao_comercial",
   "linguagem_proibida",
   "afirmacoes_absolutas",
   "promessas_nao_comprovadas",
