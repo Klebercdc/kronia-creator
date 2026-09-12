@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { callStructured } from "../../lib/llm";
+import { callStructuredText } from "../../lib/openai";
 import type { ActorProfile, FlowSegment, ScriptScene } from "../../types/pipeline";
 
 const RefinedPromptSchema = z.object({ videoPrompt: z.string() });
@@ -53,7 +53,7 @@ Feedback do usuário sobre o que não ficou bom no Flow:
 
 Reescreva o videoPrompt incorporando esse feedback.`;
 
-  const result = await callStructured({
+  const result = await callStructuredText({
     schema: RefinedPromptSchema,
     system: SYSTEM,
     prompt,

@@ -1,4 +1,4 @@
-import { callStructured } from "../../../lib/llm";
+import { callStructuredText } from "../../../lib/openai";
 import { TrendAnalysisSchema, type TrendAnalysis, type TrendInput } from "./schemas";
 
 const SYSTEM = `Você interpreta uma tendência de conteúdo (assunto/tema que está crescendo em
@@ -14,7 +14,7 @@ julgando pela informação textual dada.
 Se a tendência não tiver relação nenhuma com o nicho do criador, diga isso claramente em vez
 de forçar uma conexão que não existe.`;
 
-/** Trend Interpreter — 1 chamada LLM (Groq), síncrona. Só roda quando o
+/** Trend Interpreter — 1 chamada LLM, síncrona. Só roda quando o
  * criador informou uma tendência (agora é contexto opcional — a entrada
  * principal virou o produto, ver TrendInputSchema); sem tendência, não há
  * o que interpretar, e o caller nem chama esta função (economiza uma
@@ -31,7 +31,7 @@ Produto que o criador quer vender: ${input.product}
 
 Interprete essa tendência — inclusive se ela tem relação real com esse produto específico, não só com o nicho em geral.`;
 
-  return callStructured({
+  return callStructuredText({
     schema: TrendAnalysisSchema,
     system: SYSTEM,
     prompt,

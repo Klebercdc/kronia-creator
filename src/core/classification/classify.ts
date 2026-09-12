@@ -1,4 +1,4 @@
-import { callStructured } from "../../lib/llm";
+import { callStructuredText } from "../../lib/openai";
 import { ClassificationResultSchema, type ClassificationResult } from "../../types/pipeline";
 import type { VideoAnalysis } from "../../types/video-analysis";
 import { CONTENT_FORMATS, HOOK_TYPES, PERSUASION_MECHANISMS } from "../../types/taxonomy";
@@ -17,7 +17,7 @@ const InferredSchema = ClassificationResultSchema.omit({ derivedFromReference: t
 export async function classify(video: VideoAnalysis): Promise<ClassificationResult> {
   const prompt = `Dados estruturados do vídeo de referência:\n${JSON.stringify(video, null, 2)}\n\nClassifique este vídeo.`;
 
-  const result = await callStructured({
+  const result = await callStructuredText({
     schema: InferredSchema,
     system: SYSTEM,
     prompt,

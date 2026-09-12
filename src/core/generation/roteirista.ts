@@ -1,4 +1,4 @@
-import { callStructured } from "../../lib/llm";
+import { callStructuredText } from "../../lib/openai";
 import {
   GenerationResultSchema,
   type ClassificationResult,
@@ -135,7 +135,7 @@ ${referenceBlock}${durationBlock}
 
 Gere 5 hooks, escolha o melhor como selectedHook, e o roteiro completo em cenas timestampadas.`;
 
-  return callStructured({
+  return callStructuredText({
     schema: GenerationResultSchema,
     system: SYSTEM,
     prompt,

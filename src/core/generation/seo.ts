@@ -1,4 +1,4 @@
-import { callStructured } from "../../lib/llm";
+import { callStructuredText } from "../../lib/openai";
 import { GenerationResultSchema, type ContentRequest, type GenerationResult } from "../../types/pipeline";
 
 const SYSTEM = `Você é o agente de Legenda do KRONIA. Escreve a "caption" do post a partir do roteiro
@@ -17,12 +17,12 @@ Retorne o roteiro completo, no mesmo formato de entrada, com "caption" preenchid
 como [], e todo o resto mantido exatamente como estava.`;
 
 /** Sub-agente final da Geração — só legenda, sem hashtag (sem dado real de
- * TikTok por trás pra confiar). Roda inteiro na Groq, grátis. */
+ * TikTok por trás pra confiar). */
 export async function seo(draft: GenerationResult, request: ContentRequest): Promise<GenerationResult> {
   const prompt = `Projeto: ${request.project}. Objetivo: ${request.objective}. Modo: ${request.mode}.
 Roteiro final aprovado:\n${JSON.stringify(draft, null, 2)}`;
 
-  return callStructured({
+  return callStructuredText({
     schema: GenerationResultSchema,
     system: SYSTEM,
     prompt,

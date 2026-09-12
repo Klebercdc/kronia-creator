@@ -50,9 +50,20 @@ function enforceStrict(node: unknown): unknown {
 function toJsonSchema(schema: z.ZodType) {
   // target "openApi3" gera "exclusiveMinimum": true (boolean, estilo draft-04) em campos
   // .positive()/.negative() — a OpenAI em modo strict rejeita isso com "400 Invalid schema:
-  // True is not of type 'number'". "jsonSchema7" gera o valor numérico correto. Mesmo bug
-  // (e mesmo fix) que já existia no fallback do lib/llm.ts.
-  const { $schema, ...rest } = zodToJsonSchema(schema, { target: "jsonSchema7" }) as Record<string, unknown>;
+  // True is not of type 'number'". "jsonSchema7" gera o valor numérico correto.
+  //
+  // $refStrategy "none" inlina todo schema reaproveitado (ex: um enum usado em mais de um
+  // campo, como RuleGroupSchema em ComplianceResultSchema) em vez de gerar $ref/definitions
+  // — a OpenAI em modo strict exige que todo $ref aponte pra uma definição no topo do schema,
+  // e o zod-to-json-schema não garante isso ao serializar um .omit() de um objeto que
+  // reaproveita a mesma instância de schema em mais de um lugar (bug real observado: "400
+  // Invalid schema for response_format 'compliance_result': ... reference can only point to
+  // definitions defined at the top level of the schema"). Schemas deste projeto não são
+  // recursivos, então inlinar tudo é seguro — só deixa o JSON um pouco maior.
+  const { $schema, ...rest } = zodToJsonSchema(schema, { target: "jsonSchema7", $refStrategy: "none" }) as Record<
+    string,
+    unknown
+  >;
   return enforceStrict(rest) as Record<string, unknown>;
 }
 
@@ -182,9 +193,11 @@ export async function callStructuredVisionFromDataUrls<T>(params: {
 }
 
 /**
- * Chamada só-texto com saída estruturada validada por Zod — reservada pros
- * agentes onde a nuance de julgamento importa mais que custo: Teólogo,
- * Psicologia de Compra, Copyright. O resto do texto roda na Groq (grátis).
+ * Chamada só-texto com saída estruturada validada por Zod — usada por todo
+ * o pipeline de texto (Roteirista, Marketing, Persuasão, Cinematográfico,
+ * SEO, Compliance, correção, Opportunity Engine, Trend Interpreter, Teólogo,
+ * Psicologia de Compra, Copyright). Provider único (OpenAI) desde a
+ * remoção do Groq.
  */
 export async function callStructuredText<T>(params: {
   schema: z.ZodType<T>;

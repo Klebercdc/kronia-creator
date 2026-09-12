@@ -1,4 +1,4 @@
-import { callStructured } from "../../lib/llm";
+import { callStructuredText } from "../../lib/openai";
 import { GenerationResultSchema, type GenerationResult } from "../../types/pipeline";
 import { PERSUASION_MECHANISMS } from "../../types/taxonomy";
 
@@ -20,7 +20,7 @@ Retorne o roteiro completo revisado, no mesmo formato de entrada.`;
 export async function persuasao(draft: GenerationResult): Promise<GenerationResult> {
   const prompt = `Roteiro para reforço de persuasão:\n${JSON.stringify(draft, null, 2)}`;
 
-  return callStructured({
+  return callStructuredText({
     schema: GenerationResultSchema,
     system: SYSTEM,
     prompt,

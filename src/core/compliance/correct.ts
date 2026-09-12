@@ -1,4 +1,4 @@
-import { callStructured } from "../../lib/llm";
+import { callStructuredText } from "../../lib/openai";
 import { GenerationResultSchema, type GenerationResult } from "../../types/pipeline";
 import type { ComplianceViolation } from "../../types/compliance";
 
@@ -22,7 +22,7 @@ export async function correctForCompliance(
 ): Promise<GenerationResult> {
   const prompt = `Roteiro atual:\n${JSON.stringify(generation, null, 2)}\n\nViolações a corrigir:\n${JSON.stringify(violations, null, 2)}`;
 
-  return callStructured({
+  return callStructuredText({
     schema: GenerationResultSchema,
     system: SYSTEM,
     prompt,

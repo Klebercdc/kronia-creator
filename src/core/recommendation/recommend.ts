@@ -1,4 +1,4 @@
-import { callStructured } from "../../lib/llm";
+import { callStructuredText } from "../../lib/openai";
 import {
   FormatRecommendationSchema,
   resolveRecommendationSource,
@@ -37,7 +37,7 @@ Informações do produto (única fonte de verdade): ${JSON.stringify(request.pro
 Objetivo: ${request.objective}. Modo: ${request.mode}.
 Informações do produto (única fonte de verdade): ${JSON.stringify(request.productInfo)}.`;
 
-  return callStructured({
+  return callStructuredText({
     schema: FormatRecommendationSchema,
     system: SYSTEM,
     prompt,

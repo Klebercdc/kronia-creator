@@ -1,4 +1,4 @@
-import { callStructured } from "../../lib/llm";
+import { callStructuredText } from "../../lib/openai";
 import { GenerationResultSchema, type ContentRequest, type GenerationResult } from "../../types/pipeline";
 import type { VideoAnalysis } from "../../types/video-analysis";
 
@@ -91,7 +91,7 @@ export async function cinematografico(
 Duração total: ${totalSeconds}s → gere exatamente ${expectedSegments} flowSegments de 10s cada
 (o último pode ser mais curto só se a duração total não for múltiplo de 10 — mas ela deveria ser).`;
 
-  return callStructured({
+  return callStructuredText({
     schema: GenerationResultSchema,
     system: buildSystem(actorProfile, ingestion),
     prompt,

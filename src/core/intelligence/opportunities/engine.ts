@@ -1,4 +1,4 @@
-import { callStructured } from "../../../lib/llm";
+import { callStructuredText } from "../../../lib/openai";
 import { CONTENT_FORMATS, HOOK_TYPES, PERSUASION_MECHANISMS } from "../../../types/taxonomy";
 import { creatorDnaToPromptText, type CreatorDna } from "../memory/creator-dna";
 import type { TrendAnalysis, TrendInput } from "../trends/schemas";
@@ -56,7 +56,7 @@ RISCO/LIMITAÇÃO: preencha "risk" sempre. Se houver claim que precisa ser evita
 soa forte demais, ou limitação real do produto/formato, diga explicitamente. Se não houver
 nenhuma, escreva algo como "nenhuma limitação relevante identificada" — nunca deixe implícito.`;
 
-/** Opportunity Engine — 1 chamada LLM (Groq), síncrona, mesmo motivo do
+/** Opportunity Engine — 1 chamada LLM, síncrona, mesmo motivo do
  * Trend Interpreter: não é trabalho pesado o suficiente pro Job Engine. */
 export async function generateOpportunities(params: {
   trendInput: TrendInput;
@@ -81,7 +81,7 @@ ${creatorDnaToPromptText(creatorDna)}
 
 Gere até ${count} oportunidades de conteúdo pra vender esse produto, diversificadas entre si, cada uma justificada.`;
 
-  const result = await callStructured({
+  const result = await callStructuredText({
     schema: OpportunityListSchema,
     system: SYSTEM,
     prompt,

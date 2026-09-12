@@ -130,7 +130,7 @@ function toJobStatusResult(job: NonNullable<Awaited<ReturnType<typeof advanceIng
 /**
  * RPC chamável do cliente — roda o núcleo inteiro no servidor (onde ficam
  * as chaves de API e as ferramentas de vídeo). O cliente nunca fala direto
- * com Groq/OpenAI/yt-dlp.
+ * com OpenAI/yt-dlp.
  *
  * `precomputedAnalysis` é o resultado de `analyzeReferenceVideo`, quando o
  * cliente já rodou essa etapa antes (Caminho A) — evita refazer a Ingestão.

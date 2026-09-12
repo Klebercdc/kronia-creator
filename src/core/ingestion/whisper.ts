@@ -1,4 +1,4 @@
-import Groq from "groq-sdk";
+import OpenAI from "openai";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { createReadStream } from "node:fs";
@@ -33,14 +33,14 @@ export async function extractAudio(videoPath: string, workDir: string): Promise<
   return audioPath;
 }
 
-/** Transcreve um arquivo de áudio já extraído via Whisper hospedado na Groq
- * (whisper-large-v3) — sem custo de API separada, mesma chave do resto do
- * pipeline. Só roda quando o vídeo não tem legenda nativa/automática. */
+/** Transcreve um arquivo de áudio já extraído via Whisper da OpenAI (mesma
+ * chave do resto do pipeline, provider único) — só roda quando o vídeo não
+ * tem legenda nativa/automática. */
 export async function transcribeAudioFile(audioPath: string): Promise<TranscriptSegment[]> {
-  const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, baseURL: process.env.OPENAI_BASE_URL });
   const transcription = await client.audio.transcriptions.create({
     file: createReadStream(audioPath),
-    model: "whisper-large-v3",
+    model: "whisper-1",
     response_format: "verbose_json",
   });
 

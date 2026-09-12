@@ -25,9 +25,8 @@ const MAX_FRAMES_FOR_VISION = 16;
 /**
  * Etapa 1 — Ingestão. Baseado no Video Analyzer:
  * download (yt-dlp ou upload) → frames (ffmpeg, fps auto-escalado) →
- * transcript (legendas ou Whisper via Groq, grátis) → análise visual
- * estruturada (OpenAI — a única peça paga do núcleo, reservada pra o que a
- * Groq não cobre).
+ * transcript (legendas ou Whisper) → análise visual estruturada — tudo na
+ * OpenAI, provider único do núcleo.
  */
 export async function ingest(source: ReferenceVideoSource): Promise<VideoAnalysis> {
   const download = source.kind === "url" ? await downloadVideo(source.url) : await downloadFromStorage(source.storagePath);

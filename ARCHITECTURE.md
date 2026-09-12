@@ -19,8 +19,8 @@ correção de compliance (até `MAX_AUTO_COMPLIANCE_ATTEMPTS`,
 - `probeVideo`/`extractFrames`/`sampleFrames` (`frames.ts`) — extrai até
   `MAX_FRAMES_FOR_VISION = 16` frames (linha 11)
 - `parseVtt` (`transcribe.ts`) — lê legenda embutida, se houver
-- `transcribeWithWhisper` (`whisper.ts`) — fallback via Whisper na Groq
-  (grátis) se não houver legenda
+- `transcribeWithWhisper` (`whisper.ts`) — fallback via Whisper na OpenAI
+  se não houver legenda
 - `analyzeFrames` (`analyze.ts`) — visão computacional na OpenAI (única peça
   paga da ingestão)
 - limpa os arquivos temporários no `finally` (linha 49-51), mesmo se der erro
@@ -85,7 +85,7 @@ usuário clica "Gerar legenda". Sem hashtag, de propósito.
   regex normalizado, sem IA
 - **`copyright-check.ts:6-45`** — agente dedicado de IP na OpenAI, roda em
   paralelo (`validate.ts:49-57`, `Promise.all`)
-- **check geral via IA** (Groq) — demais grupos de regra (`RULE_GROUPS`,
+- **check geral via IA** (OpenAI) — demais grupos de regra (`RULE_GROUPS`,
   `types/compliance.ts`)
 
 **`correct.ts`** — reescreve o roteiro quando reprovado, até o teto de
@@ -93,22 +93,22 @@ tentativas.
 
 ## Camadas de suporte
 
-- **`lib/llm.ts:76-104`** — `callStructured()`: chama Groq, valida contra o
-  schema Zod, retry automático em erro de schema (linha 97), fallback pra
-  OpenAI quando a Groq estoura cota/rate-limit (`isGroqFallbackError`,
-  linha 47-57)
 - **`lib/openai.ts`** — `callStructuredText`/`callStructuredVisionFromDataUrls`
-  — chamadas que rodam direto na OpenAI (visão, copyright, teólogo,
-  psicologia de compra)
-- **`lib/cost-tracker.ts:52-88`** — loga cada chamada em
-  `logs/usage.jsonl`, avisa no console em 80% da cota diária Groq
-  (linha 82-86).
-  **Limitações conhecidas, ainda não corrigidas**:
+  — provider único do pipeline: chama OpenAI, valida contra o schema Zod,
+  retry automático em erro de schema. Groq foi removido (ver
+  `RELATORIO-AUDITORIA.md` ou o commit da migração): a cota diária gratuita
+  se esgotava em uso normal de teste, e o fallback pra OpenAI que existia
+  pra cobrir isso tinha um bug próprio de serialização de schema (`$ref`
+  fora do topo, rejeitado pelo modo strict) — dois providers pra manter,
+  metade da confiabilidade. `toJsonSchema()` usa `$refStrategy: "none"`
+  pra nunca gerar `$ref` (schemas com enum/objeto reaproveitado em mais de
+  um campo, como `ComplianceResultSchema`, inlinam em vez de referenciar).
+- **`lib/cost-tracker.ts`** — loga cada chamada em `logs/usage.jsonl`
+  (provider único: OpenAI, preço estimado em `gpt-4o-mini` por milhão de
+  tokens).
+  **Limitação conhecida, ainda não corrigida**:
   - roda em disco local — no Vercel (serverless, filesystem efêmero) isso
-    não persiste entre invocações;
-  - o preço estimado da OpenAI está fixo em `gpt-4o-mini` (linha 19) mesmo
-    quando o fallback chama `gpt-5` (`FALLBACK_OPENAI_MODEL`, `llm.ts:20`)
-    — a estimativa de custo do fallback fica errada.
+    não persiste entre invocações.
 - **`lib/supabase.ts`** — `creator_saved_themes` e `creator_history`,
   isoladas por RLS no projeto Supabase compartilhado com o app de treino
   (`Klebercdc's Project`).
@@ -134,10 +134,10 @@ tentativas.
   fria (`src/lib/vendored-binary.ts`), em vez de depender do PATH do
   runtime ou de empacotar os binários no build. Campo "Vídeo de
   referência" reabilitado na UI.
-- Cost-tracker não sobrevive a deploy serverless e subestima o custo do
-  fallback OpenAI (ver acima).
-- Nenhum aviso na UI quando uma geração usa o fallback pago (Groq
-  estourou) — decisão consciente de adiar.
+- Cost-tracker não sobrevive a deploy serverless (ver acima).
+- ~~Nenhum aviso na UI quando uma geração usa o fallback pago (Groq
+  estourou)~~ — **[Resolvido pela remoção do Groq]** provider único agora,
+  não existe mais fallback pra avisar.
 - Explorar e Perfil são placeholders sem funcionalidade real.
 - Reaproveitar um item do Histórico pra gerar variações do mesmo tema
   ainda não foi construído (ideia levantada, não implementada).

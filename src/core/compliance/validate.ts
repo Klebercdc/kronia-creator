@@ -1,14 +1,14 @@
-import { callStructured } from "../../lib/llm";
+import { callStructuredText } from "../../lib/openai";
 import { ComplianceResultSchema, RULE_GROUPS, type ComplianceResult } from "../../types/compliance";
 import type { ContentRequest, GenerationResult } from "../../types/pipeline";
 import { checkCopyright } from "./copyright-check";
 import { checkFabricatedNumbers } from "./numeric-guard";
 import { checkBannedAbsoluteClaims } from "./absolute-claims-guard";
 
-const GROQ_RULE_GROUPS = RULE_GROUPS.filter((g) => g !== "propriedade_intelectual");
+const GENERAL_RULE_GROUPS = RULE_GROUPS.filter((g) => g !== "propriedade_intelectual");
 
 const SYSTEM = `Você é o gate de Compliance do KRONIA. Verifica um roteiro gerado contra os grupos de
-regra: ${GROQ_RULE_GROUPS.join(", ")}.
+regra: ${GENERAL_RULE_GROUPS.join(", ")}.
 
 (Propriedade intelectual é checada por um agente dedicado à parte — não avalie esse grupo aqui.)
 
@@ -33,8 +33,8 @@ sugestão de correção concreta (suggestion) — nunca uma reprovação genéri
 
 const InferredSchema = ComplianceResultSchema.omit({ attempt: true });
 
-/** Etapa 5 — Compliance (gate). Combina o check geral (Groq) com a checagem
- * dedicada de propriedade intelectual (OpenAI) num único resultado. */
+/** Etapa 5 — Compliance (gate). Combina o check geral com a checagem
+ * dedicada de propriedade intelectual num único resultado. */
 export async function validateCompliance(
   request: ContentRequest,
   generation: GenerationResult,
@@ -47,7 +47,7 @@ Roteiro para validação:\n${JSON.stringify(generation, null, 2)}`;
   const bannedPhraseViolations = checkBannedAbsoluteClaims(generation);
 
   const [general, copyrightViolations] = await Promise.all([
-    callStructured({
+    callStructuredText({
       schema: InferredSchema,
       system: SYSTEM,
       prompt,

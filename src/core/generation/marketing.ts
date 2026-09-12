@@ -1,4 +1,4 @@
-import { callStructured } from "../../lib/llm";
+import { callStructuredText } from "../../lib/openai";
 import {
   GenerationResultSchema,
   type ContentRequest,
@@ -44,7 +44,7 @@ Formato recomendado: ${recommendation.format} — ${recommendation.reasoning}
 
 Roteiro para revisão de posicionamento:\n${JSON.stringify(draft, null, 2)}`;
 
-  return callStructured({
+  return callStructuredText({
     schema: GenerationResultSchema,
     system: SYSTEM,
     prompt,
