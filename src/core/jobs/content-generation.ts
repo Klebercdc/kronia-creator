@@ -2,7 +2,7 @@ import { advanceJobStep, completeJob, type JobRow } from "../../lib/supabase";
 import { recommend } from "../recommendation/recommend";
 import { roteirista } from "../generation/roteirista";
 import { marketing } from "../generation/marketing";
-import { teologo } from "../generation/teologo";
+import { teologo, shouldRunTeologo } from "../generation/teologo";
 import { psicologiaDeCompra } from "../generation/psicologia-compra";
 import { persuasao } from "../generation/persuasao";
 import { cinematografico } from "../generation/cinematografico";
@@ -117,7 +117,7 @@ async function stepMarketing(job: JobRow): Promise<void> {
   const { request } = payloadOf(job);
   const progress = progressOf(job);
   const draft = await marketing(progress.draft!, request, progress.recommendation!);
-  const next = request.project === "jeova_fala" ? "teologo" : "psicologia";
+  const next = shouldRunTeologo(request) ? "teologo" : "psicologia";
   await advanceJobStep(job.id, next, { ...progress, draft });
 }
 

@@ -1,6 +1,52 @@
 import { callStructuredText } from "../../lib/openai";
-import { type GenerationResult } from "../../types/pipeline";
+import { type ContentRequest, type GenerationResult } from "../../types/pipeline";
 import { RevisionInferredSchema, DECISION_LOG_PROMPT_BLOCK, appendDecisionLog } from "./decision-log";
+
+/** Termos que indicam referência religiosa explícita no produto/briefing —
+ * checagem determinística (sem LLM), rodada em CIMA do que já existe em
+ * `productInfo` (EvidencedClaim[]) e na `idea` livre, se houver. Cresce só
+ * por evidência de uso real, mesmo princípio já usado em taxonomy.ts —
+ * versão provisória até o ProductTruthMap (Fase 3) existir e permitir uma
+ * checagem mais estruturada por característica em vez de texto livre. */
+const RELIGIOUS_MARKERS = [
+  "jesus",
+  "deus",
+  "cristo",
+  "cristã",
+  "cristão",
+  "bíblia",
+  "biblica",
+  "bíblica",
+  "versículo",
+  "versiculo",
+  "oração",
+  "oracao",
+  "igreja",
+  "espiritual",
+  "devocional",
+  "fé ",
+  "crença",
+  "crenca",
+  "anjo",
+  "evangelho",
+  "salmo",
+] as const;
+
+function normalize(text: string): string {
+  return text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
+/** Roda o Teólogo quando o projeto já é "jeova_fala" (regra original,
+ * inalterada) OU quando o produto tem referência religiosa explícita nas
+ * informações fornecidas — produto de fé vendido fora do projeto "jeova_fala"
+ * (ex.: joia com gravação bíblica no comercial/tiktok_shop) não pode
+ * atravessar o pipeline sem a checagem doutrinária só porque o `project`
+ * selecionado foi outro. */
+export function shouldRunTeologo(request: ContentRequest): boolean {
+  if (request.project === "jeova_fala") return true;
+  const haystack = normalize(request.productInfo.map((c) => c.text).join(" "));
+  return RELIGIOUS_MARKERS.some((marker) => haystack.includes(normalize(marker)));
+}
 
 const SYSTEM = `Você é o Teólogo do KRONIA, projeto Jeová Fala — e trabalha em cima do copywriting
 que o Roteirista e o Marketing já construíram, não substitui esse trabalho por um texto genérico.

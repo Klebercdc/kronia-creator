@@ -14,6 +14,8 @@ export const RULE_GROUPS = [
   "linguagem_proibida",
   "afirmacoes_absolutas",
   "promessas_nao_comprovadas",
+  /** Clichê/frase genérica que serviria pra qualquer produto — checagem determinística, cliche-guard.ts */
+  "cliche_generico",
   /** Vídeo de referência: mecânica pode ser adaptada, conteúdo literal não */
   "originalidade_anti_copia",
   /** Marca de terceiro, personagem, música ou conceito de campanha existente — risco de IP */

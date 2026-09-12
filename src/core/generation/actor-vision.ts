@@ -7,7 +7,13 @@ descrição como referência de consistência visual em outros vídeos gerados p
 Descreva SÓ o que está literalmente visível na imagem — tom de pele, cor e estilo de cabelo,
 barba (se houver), formato de rosto, roupa/vestimenta visível, expressão. Não invente traço que
 não dá pra confirmar pela foto, não embeleze, não generalize. O objetivo é que outro gerador de
-vídeo consiga reproduzir essa mesma aparência, não uma versão "parecida".`;
+vídeo consiga reproduzir essa mesma aparência, não uma versão "parecida".
+
+REGRA DE QUALIDADE — precisão específica, não descrição vaga:
+Depois de descrever, pergunte: essa descrição serviria pra qualquer pessoa parecida, ou só pra
+ESTA pessoa especificamente? Nunca troque especificidade por invenção — se um detalhe não está
+claro na foto, diga que não está claro, não arredonde pra uma descrição genérica só pra soar
+completa.`;
 
 const ResultSchema = z.object({
   appearanceDescription: z.string(),

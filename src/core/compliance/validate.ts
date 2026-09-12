@@ -4,6 +4,7 @@ import type { ContentRequest, GenerationResult } from "../../types/pipeline";
 import { checkCopyright } from "./copyright-check";
 import { checkFabricatedNumbers } from "./numeric-guard";
 import { checkBannedAbsoluteClaims } from "./absolute-claims-guard";
+import { checkCliches } from "./cliche-guard";
 
 const GENERAL_RULE_GROUPS = RULE_GROUPS.filter((g) => g !== "propriedade_intelectual");
 
@@ -46,6 +47,7 @@ Roteiro para validação:\n${JSON.stringify(generation, null, 2)}`;
 
   const fabricatedNumberViolations = checkFabricatedNumbers(generation, request.productInfo);
   const bannedPhraseViolations = checkBannedAbsoluteClaims(generation);
+  const clicheViolations = checkCliches(generation);
 
   const [general, copyrightViolations] = await Promise.all([
     callStructuredText({
@@ -57,13 +59,20 @@ Roteiro para validação:\n${JSON.stringify(generation, null, 2)}`;
     checkCopyright(generation),
   ]);
 
-  const violations = [...fabricatedNumberViolations, ...bannedPhraseViolations, ...general.violations, ...copyrightViolations];
+  const violations = [
+    ...fabricatedNumberViolations,
+    ...bannedPhraseViolations,
+    ...clicheViolations,
+    ...general.violations,
+    ...copyrightViolations,
+  ];
   const checkedGroups = Array.from(
     new Set([
       ...general.checkedGroups,
       "propriedade_intelectual" as const,
       "promessas_nao_comprovadas" as const,
       "afirmacoes_absolutas" as const,
+      "cliche_generico" as const,
     ]),
   );
 

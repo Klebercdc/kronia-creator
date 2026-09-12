@@ -7,7 +7,7 @@ import type {
 import type { VideoAnalysis } from "../../types/video-analysis";
 import { roteirista } from "./roteirista";
 import { marketing } from "./marketing";
-import { teologo } from "./teologo";
+import { teologo, shouldRunTeologo } from "./teologo";
 import { psicologiaDeCompra } from "./psicologia-compra";
 import { persuasao } from "./persuasao";
 import { cinematografico } from "./cinematografico";
@@ -15,8 +15,9 @@ import { judgeQuality, reviseForQuality } from "./quality-judge";
 
 /**
  * Etapa 4 — Geração. Cadeia fixa de sub-agentes:
- * Roteirista → Marketing → Teólogo (só se project === "jeova_fala") →
- * Psicologia de Compra → Persuasão → Cinematográfico.
+ * Roteirista → Marketing → Teólogo (se project === "jeova_fala" OU o
+ * produto tem referência religiosa explícita, ver shouldRunTeologo em
+ * teologo.ts) → Psicologia de Compra → Persuasão → Cinematográfico.
  *
  * SEO (legenda + hashtags) NÃO roda aqui — é sob demanda, via server fn
  * separada (`generateSeoPackage`), porque o usuário normalmente só quer
@@ -37,7 +38,7 @@ export async function generate(
   let draft = await roteirista(request, recommendation, classification);
   draft = await marketing(draft, request, recommendation);
 
-  if (request.project === "jeova_fala") {
+  if (shouldRunTeologo(request)) {
     draft = await teologo(draft);
   }
 

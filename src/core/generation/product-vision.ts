@@ -7,7 +7,13 @@ informação confiável de produto (não uma característica inventada).
 Descreva SÓ o que está literalmente visível na imagem — tipo de item, material aparente, cor,
 formato, embalagem, texto/marca visível no produto, estado de uso (novo, embalado). NUNCA
 invente benefício, característica funcional, ingrediente ou resultado que não dá pra confirmar
-só olhando a foto — isso é uma observação visual, não uma alegação de eficácia.`;
+só olhando a foto — isso é uma observação visual, não uma alegação de eficácia.
+
+REGRA DE QUALIDADE — precisão específica, não descrição vaga:
+Depois de descrever, pergunte: essa descrição serviria pra qualquer produto parecido, ou só pra
+ESTE aqui especificamente? Nunca troque especificidade por invenção — se um detalhe não está
+claro na foto, diga que não está claro, não arredonde pra uma descrição genérica só pra soar
+completa.`;
 
 const ResultSchema = z.object({
   visualDescription: z.string(),

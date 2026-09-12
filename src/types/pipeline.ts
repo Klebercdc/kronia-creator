@@ -113,6 +113,15 @@ export type ScriptScene = z.infer<typeof ScriptSceneSchema>;
  * ação cinematográfica contínua, com cortes/transições internas quando
  * mais de uma cena cabe no bloco.
  */
+/** Gesto amarrado a uma palavra/trecho específico da fala — nunca
+ * "gesticula naturalmente" solto (ver Voice & Performance em
+ * cinematografico.ts). */
+export const GestureMapEntrySchema = z.object({
+  trigger: z.string(),
+  gesture: z.string(),
+});
+export type GestureMapEntry = z.infer<typeof GestureMapEntrySchema>;
+
 export const FlowSegmentSchema = z.object({
   index: z.number().int().nonnegative(),
   startSeconds: z.number().nonnegative(),
@@ -120,6 +129,18 @@ export const FlowSegmentSchema = z.object({
   /** Índices das cenas (ScriptScene.index) cobertas por este segmento de 10s. */
   sceneIndexes: z.array(z.number().int().nonnegative()),
   videoPrompt: z.string(),
+  /** Olhar como camada dirigível própria — intensidade/foco em função do
+   * que está sendo dito, separado da câmera e da ação física. */
+  gaze: z.string(),
+  /** Gesto amarrado a palavra específica da fala deste bloco. */
+  gestureMap: z.array(GestureMapEntrySchema),
+  voiceTimbre: z.string(),
+  interpretationMode: z.string(),
+  /** Obrigatório (não-null) quando a duração total do roteiro for múltiplo
+   * de 30s — bloco 1 = gancho, bloco(s) do meio = desenvolvimento, bloco
+   * final = cta. Fora desse caso, pode ficar null (estrutura não se aplica
+   * de forma limpa a qualquer duração). */
+  narrativeFunction: z.enum(["gancho", "desenvolvimento", "cta"]).nullable(),
 });
 export type FlowSegment = z.infer<typeof FlowSegmentSchema>;
 

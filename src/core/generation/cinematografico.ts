@@ -50,9 +50,47 @@ padrões cinematográficos comprovados em vídeos de venda de alta conversão:
 Escolha o padrão que fizer sentido pro produto da cena (ou nenhum, se não for hero shot) — a
 fórmula é reaproveitável entre categorias de produto, o conteúdo específico nunca é.
 
+As 3 fórmulas acima valem quando a cena for de produto físico com embalagem. Quando o
+produto/oferta (pelas claims do roteiro) NÃO tiver essas características (serviço, curso,
+conteúdo digital, experiência), NÃO force nenhuma das 3 — construa a própria fórmula visual do
+zero, no mesmo padrão de rigor técnico das outras (enquadramento nomeado, movimento de câmera
+real, iluminação, sujeito e ação específica), ancorada no que as claims do produto efetivamente
+descrevem. Registre em "decisaoResumo"/"motivoDecisao" qual fórmula usou (uma das 3 existentes,
+ou uma nova) e por quê.
+
+VOICE & PERFORMANCE — cada flowSegment carrega 4 campos próprios de atuação, além do videoPrompt:
+
+- "gaze" (olhar): camada dirigível PRÓPRIA, separada da câmera e da ação física — direcione
+  intensidade/foco em função do que está sendo dito neste bloco especificamente (ex: "olhar
+  penetrante e firme, ganha intensidade na palavra final do bloco"). Nunca deixe vazio/genérico.
+- "gestureMap": lista de {trigger, gesture} — cada entrada amarra um gesto a uma palavra/trecho
+  específico da fala deste bloco (ex: {trigger: "compartilha com três amigos", gesture: "conta
+  natural com os dedos, breve, sem congelar a mão"}). Nunca "gesticula naturalmente" solto sem
+  dizer com QUAL palavra o gesto se conecta.
+- "voiceTimbre": timbre/tom da voz neste bloco especificamente (grave/suave/quente/etc.) — pode
+  variar de bloco pra bloco (ex.: bloco 1 mais contido, bloco 3 com mais convicção), nunca é
+  obrigatoriamente idêntico em todos os blocos mesmo com o mesmo ator.
+- "interpretationMode": o registro emocional/de interpretação deste bloco (ex.: "contido e
+  íntimo", "urgente e fervoroso") — a intensidade pode crescer entre blocos, não precisa ser
+  plana do início ao fim.
+
+CORPO VIVO, NUNCA ESTÁTICO: nenhum gesto ou expressão descrita pode congelar no meio do
+movimento — ao completar um gesto, o corpo retorna a um estado neutro de vida (respiração,
+pequeno ajuste de peso, piscar), nunca uma pose parada. Isso vale pro "videoPrompt" do segmento
+inteiro, não só pro gestureMap.
+
+ESTRUTURA HOOK/DESENVOLVIMENTO/CTA POR BLOCO DE 10s: quando a duração total do roteiro for
+múltiplo de 30s, preencha "narrativeFunction" em CADA flowSegment: o(s) primeiro(s) 10s do bloco
+de 30s = "gancho", o(s) do meio = "desenvolvimento", o(s) último(s) = "cta" — nunca deixe null
+nesse caso. Fora desse caso (duração não múltipla de 30s), pode deixar null. A contagem de
+palavras/segundo (regra já usada pelo Roteirista) precisa ser reconferida aqui no nível do BLOCO
+de 10s real — a fala que você descrever pro segmento precisa realmente caber nos 10s daquele
+bloco específico, não só na cena narrativa original.
+
 Retorne o roteiro completo, no mesmo formato de entrada, com "camera"/"action" das cenas mantidos
 como estavam, "videoPrompt" de cada cena preenchido, e "flowSegments" preenchido com os blocos de
-10s (cada um com "sceneIndexes" listando quais cenas ele cobre).
+10s (cada um com "sceneIndexes", "gaze", "gestureMap", "voiceTimbre", "interpretationMode" e
+"narrativeFunction" preenchidos).
 
 ${DECISION_LOG_PROMPT_BLOCK}`;
 
@@ -89,10 +127,15 @@ export async function cinematografico(
   const totalSeconds = Math.max(...draft.scenes.map((s) => s.endSeconds), 0);
   const expectedSegments = Math.ceil(totalSeconds / 10) || 1;
 
+  const isMultipleOf30 = totalSeconds > 0 && totalSeconds % 30 === 0;
+  const structureBlock = isMultipleOf30
+    ? `\nDuração múltipla de 30s: preencha "narrativeFunction" em todo flowSegment (gancho/desenvolvimento/cta), nunca null.`
+    : "";
+
   const prompt = `Roteiro aprovado para direção visual:\n${JSON.stringify(draft, null, 2)}
 
 Duração total: ${totalSeconds}s → gere exatamente ${expectedSegments} flowSegments de 10s cada
-(o último pode ser mais curto só se a duração total não for múltiplo de 10 — mas ela deveria ser).`;
+(o último pode ser mais curto só se a duração total não for múltiplo de 10 — mas ela deveria ser).${structureBlock}`;
 
   const inferred = await callStructuredText({
     schema: RevisionInferredSchema,
