@@ -7,7 +7,7 @@
   "background_color": "#17171a",
   "theme_color": "#17171a",
   "icons": [
-    { "src": "/favicon.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any" },
-    { "src": "/favicon.png", "sizes": "1254x1254", "type": "image/png", "purpose": "maskable" }
+    { "src": "/favicon-preto.png", "sizes": "830x800", "type": "image/png", "purpose": "any" },
+    { "src": "/favicon-preto.png", "sizes": "830x800", "type": "image/png", "purpose": "maskable" }
   ]
 }
