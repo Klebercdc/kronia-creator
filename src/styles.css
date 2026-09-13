@@ -109,8 +109,15 @@ body,
   }
 }
 
+/* var(--kr-bg), não #070707 fixo: body é quem aparece atrás de qualquer
+   sobra de área (overscroll, arredondamento entre unidades de viewport,
+   bounce do Safari) — com um preto fixo, essa sobra vira uma faixa preta
+   destoante no tema claro, bem atrás da barra de input. Seguindo --kr-bg
+   ela sempre bate com o tema ativo. As telas antigas (.app etc.) têm o
+   próprio background explícito e não dependem deste fallback. Porte de
+   claude/oi-7vz7ct (commit 2bd9bb1), nunca mergeada na main. */
 body {
-  background: #070707;
+  background: var(--kr-bg);
   color: #E5E5E5;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Manrope", ui-sans-serif, system-ui, sans-serif;
   font-size: 16px;
@@ -578,7 +585,8 @@ a {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
+  margin-top: 32px;
 }
 
 .kronia-home-hero h1 {
