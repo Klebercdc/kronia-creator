@@ -1453,7 +1453,6 @@ function ConversationScreen({
   const [sending, setSending] = useState(false);
   const [creationStatus, setCreationStatus] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
-  const [inputFocado, setInputFocado] = useState(false);
   const [saudacao] = useState(() => SAUDACOES_HOME[Math.floor(Math.random() * SAUDACOES_HOME.length)]);
   const mediaRecorderRef = useState<{ current: MediaRecorder | null }>(() => ({ current: null }))[0];
   const audioChunksRef = useState<{ current: Blob[] }>(() => ({ current: [] }))[0];
@@ -1661,10 +1660,11 @@ function ConversationScreen({
   }
 
   const isEmpty = messages.length === 0 && !sending;
-  // Some ao focar o campo (não só ao mandar mensagem) — mesmo comportamento
-  // do app do Claude: a saudação dá lugar à conversa assim que você toca
-  // pra digitar, não só depois que a primeira mensagem chega.
-  const mostrarSaudacao = isEmpty && !inputFocado;
+  // Some quando tem TEXTO digitado, não no simples foco — testado contra o
+  // próprio app do Claude: a saudação continua visível com o teclado aberto
+  // e o campo focado, enquanto o campo tá vazio; só dá lugar à conversa
+  // quando você começa a escrever de verdade.
+  const mostrarSaudacao = isEmpty && !input.trim();
 
   return (
     <div className="kronia-home">
@@ -1745,8 +1745,6 @@ function ConversationScreen({
           onKeyDown={(e) => {
             if (e.key === "Enter") void send(input);
           }}
-          onFocus={() => setInputFocado(true)}
-          onBlur={() => setInputFocado(false)}
           placeholder="Digite ou fale com o KRONIA..."
           disabled={sending}
         />
