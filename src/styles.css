@@ -265,6 +265,11 @@ a {
   margin-bottom: 10px;
 }
 
+/* font-size:16px, não 15px: abaixo de 16px o iOS dá zoom automático no
+   campo ao focar (decide que o texto tá pequeno demais pra ler) — era
+   esse zoom que "desfigurava" a tela ao tocar pra digitar, em QUALQUER
+   campo do app, não só no chat. Confirmado contra agenda-/css/mobile.css:
+   todo input de lá já usa 16px+ (17.5 a 20px), nunca menos. */
 .field-textarea {
   width: 100%;
   border: 1px solid #262626;
@@ -272,7 +277,7 @@ a {
   border-radius: 13px;
   padding: 12px 14px;
   color: #E5E5E5;
-  font-size: 15px;
+  font-size: 16px;
   font-family: inherit;
   resize: vertical;
   min-height: 70px;
@@ -285,7 +290,7 @@ a {
   border-radius: 13px;
   padding: 12px 14px;
   color: #E5E5E5;
-  font-size: 15px;
+  font-size: 16px;
   font-family: inherit;
 }
 
@@ -653,12 +658,15 @@ a {
   border: 1px solid var(--kr-line);
 }
 
+/* font-size:16px, não 15px — ver .field-input acima pro porquê (zoom
+   automático do iOS abaixo de 16px). Este era o campo que o usuário
+   estava testando quando reportou o "zoom" ao abrir o teclado. */
 .kronia-home-inputbar input {
   flex: 1;
   border: none;
   outline: none;
   background: transparent;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--kr-ink);
   font-family: inherit;
 }
