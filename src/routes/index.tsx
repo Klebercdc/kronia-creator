@@ -1419,6 +1419,17 @@ const CONTENT_GENERATION_STEP_LABELS_CONVERSATION: Record<string, string> = {
  * mas só quando o agente de conversa decide que já há informação
  * suficiente (`readyToCreate`), nunca pra qualquer texto digitado.
  */
+
+/** Saudações da Home vazia — uma sorteada por carregamento de tela, igual
+ * o "Olá, coruja noturna" do app do Claude varia a cada abertura. */
+const SAUDACOES_HOME: [string, string][] = [
+  ["O que vamos", "criar hoje?"],
+  ["Qual ideia vamos", "lançar agora?"],
+  ["Pronto pra criar", "algo novo?"],
+  ["Bora criar seu", "próximo vídeo?"],
+  ["O que sua marca", "precisa hoje?"],
+];
+
 function ConversationScreen({
   conversationId,
   onOpenMenu,
@@ -1442,6 +1453,8 @@ function ConversationScreen({
   const [sending, setSending] = useState(false);
   const [creationStatus, setCreationStatus] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
+  const [inputFocado, setInputFocado] = useState(false);
+  const [saudacao] = useState(() => SAUDACOES_HOME[Math.floor(Math.random() * SAUDACOES_HOME.length)]);
   const mediaRecorderRef = useState<{ current: MediaRecorder | null }>(() => ({ current: null }))[0];
   const audioChunksRef = useState<{ current: Blob[] }>(() => ({ current: [] }))[0];
 
@@ -1648,6 +1661,10 @@ function ConversationScreen({
   }
 
   const isEmpty = messages.length === 0 && !sending;
+  // Some ao focar o campo (não só ao mandar mensagem) — mesmo comportamento
+  // do app do Claude: a saudação dá lugar à conversa assim que você toca
+  // pra digitar, não só depois que a primeira mensagem chega.
+  const mostrarSaudacao = isEmpty && !inputFocado;
 
   return (
     <div className="kronia-home">
@@ -1660,15 +1677,17 @@ function ConversationScreen({
         </button>
       </div>
 
-      {isEmpty ? (
+      {mostrarSaudacao ? (
         <div className="kronia-home-hero">
           <h1>
-            O que vamos
+            {saudacao[0]}
             <br />
-            <span className="accent">criar hoje?</span>
+            <span className="accent">{saudacao[1]}</span>
           </h1>
           <p>Sua ideia. Nossa estratégia. Conteúdo que gera resultados.</p>
         </div>
+      ) : isEmpty ? (
+        <div className="kronia-home-hero" aria-hidden="true" />
       ) : (
         <div className="kronia-conversation-thread">
           {messages.map((m) => (
@@ -1726,6 +1745,8 @@ function ConversationScreen({
           onKeyDown={(e) => {
             if (e.key === "Enter") void send(input);
           }}
+          onFocus={() => setInputFocado(true)}
+          onBlur={() => setInputFocado(false)}
           placeholder="Digite ou fale com o KRONIA..."
           disabled={sending}
         />
