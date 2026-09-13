@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Outlet, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
 import { TEMA_ANTI_FLASH_SCRIPT } from "../lib/theme";
+import { useViewportKeyboardLock } from "../hooks/useViewportKeyboardLock";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -35,6 +36,9 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
+  // Global de propósito — teclado empurra o viewport do app inteiro, não só
+  // de uma tela. Ver src/hooks/useViewportKeyboardLock.ts.
+  useViewportKeyboardLock();
   return (
     <RootDocument>
       <Outlet />

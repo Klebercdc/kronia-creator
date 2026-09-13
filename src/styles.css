@@ -76,6 +76,19 @@ body,
   position: fixed;
   inset: 0;
   width: 100%;
+  /* Desfaz o empurrão que o iOS dá no viewport VISUAL ao focar um campo —
+     ver src/hooks/useViewportKeyboardLock.ts. Vale 0 fora do teclado, então
+     não custa nada no resto do app. Porte de #mobileRoot em
+     agenda-/css/mobile.css. */
+  transform: translateY(var(--vv-top, 0px));
+}
+
+/* Com o teclado aberto, dvh/svh não acompanham — só window.visualViewport
+   sabe o quanto sobrou acima do teclado, e é isso que --vh mede (ver
+   useViewportKeyboardLock). Fora do teclado, dvh acima já resolve, então
+   esta regra só entra em jogo com [data-teclado]. */
+[data-teclado] #root {
+  height: calc(var(--vh, 1vh) * 100);
 }
 
 /* A trava acima é pra tela. Sem este reset, um body fixo com altura de
@@ -651,6 +664,13 @@ a {
   overflow: hidden;
   background: var(--kr-bg);
   touch-action: pan-y pinch-zoom;
+}
+
+/* Com o teclado aberto vale --vh, que acompanha window.visualViewport de
+   verdade — svh não muda com o teclado, só com a barra do navegador. Ver
+   useViewportKeyboardLock. */
+[data-teclado] .kronia-palco {
+  height: calc(var(--vh, 1vh) * 100);
 }
 
 .kronia-menu-camada {
