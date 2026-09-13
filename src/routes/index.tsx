@@ -1432,11 +1432,9 @@ const SAUDACOES_HOME: [string, string][] = [
 
 function ConversationScreen({
   conversationId,
-  onOpenMenu,
   onConversationChange,
 }: {
   conversationId: string | null;
-  onOpenMenu: () => void;
   onConversationChange: (id: string) => void;
 }) {
   const createConversationRpc = useServerFn(createConversationFn);
@@ -1668,14 +1666,10 @@ function ConversationScreen({
 
   return (
     <div className="kronia-home">
-      <div className="kronia-home-topbar">
-        <button type="button" className="kronia-icon-btn" onClick={onOpenMenu} aria-label="Abrir menu">
-          <IconMenu />
-        </button>
-        <button type="button" className="kronia-icon-btn" aria-label="Assistente">
-          <IconChatBubble />
-        </button>
-      </div>
+      {/* .kronia-home-topbar saiu daqui — agora é irmã de .kronia-app-camada
+         em CriadorApp, fora do container transformado (ver comentário lá
+         sobre por que position:fixed precisava disso). onOpenMenu não é
+         mais usado por este componente. */}
 
       {mostrarSaudacao ? (
         <div className="kronia-home-hero">
@@ -1792,7 +1786,8 @@ function CriadorApp() {
   const menuRef = useRef<HTMLDivElement>(null);
   const sombraRef = useRef<HTMLDivElement>(null);
   const veuRef = useRef<HTMLDivElement>(null);
-  useMenuSpring(sidebarOpen, { app: appRef, menu: menuRef, sombra: sombraRef, veu: veuRef });
+  const topbarRef = useRef<HTMLDivElement>(null);
+  useMenuSpring(sidebarOpen, { app: appRef, menu: menuRef, sombra: sombraRef, veu: veuRef, topbar: topbarRef });
 
   const refreshConversations = () => {
     listConversationsRpcHook()
@@ -1828,11 +1823,28 @@ function CriadorApp() {
       {/* Só visual (pointer-events:none sempre, ver styles.css) — fechar
           tocando de lado é .kronia-app-back, dentro da camada do app. */}
       <div className="kronia-menu-veu" ref={veuRef} aria-hidden="true" />
+      {/* FORA de .kronia-app-camada de propósito: aquela camada tem
+          transform:translate3d permanente (truque de GPU pro deslize do
+          menu), e um transform no ancestral quebra position:fixed dos
+          filhos — vira fixo relativo à CAMADA, não ao viewport, e some ao
+          rolar o conteúdo por baixo (bug real, visto no device: o
+          cabeçalho sumia com o teclado aberto). Aqui, direto sob
+          .kronia-palco (sem transform), position:fixed funciona de
+          verdade. */}
+      {tab === "home" && (
+        <div className="kronia-home-topbar" ref={topbarRef}>
+          <button type="button" className="kronia-icon-btn" onClick={() => setSidebarOpen(true)} aria-label="Abrir menu">
+            <IconMenu />
+          </button>
+          <button type="button" className="kronia-icon-btn" aria-label="Assistente">
+            <IconChatBubble />
+          </button>
+        </div>
+      )}
       <div className="kronia-app-camada" ref={appRef}>
         {tab === "home" && (
           <ConversationScreen
             conversationId={activeConversationId}
-            onOpenMenu={() => setSidebarOpen(true)}
             onConversationChange={(id) => {
               setActiveConversationId(id);
               refreshConversations();

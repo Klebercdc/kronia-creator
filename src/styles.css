@@ -809,6 +809,18 @@ a {
   border-radius: 30px;
 }
 
+/* .kronia-home-topbar é irmã de .kronia-app-camada agora (não filha — ver
+   comentário no JSX sobre position:fixed), então precisa do MESMO deslize
+   quando o menu abre, senão ficaria flutuando fixa por cima do menu em vez
+   de sair de cena junto com o resto do app. Esta regra é só o estado
+   PARADO aberto (mesmo padrão de .kronia-app-camada acima) — durante o
+   movimento quem escreve o transform é a mola em JS (useMenuSpring ganhou
+   uma 4ª camada, topbar, só pra isso), que limpa o inline ao assentar e
+   deixa esta regra assumir. */
+.kronia-menu-aberto .kronia-home-topbar {
+  transform: translate3d(min(300px, 82vw), 0, 0);
+}
+
 /* Área de "tocar de lado pra fechar" — vive DENTRO da camada do app (cobre
    a tela ativa, que é o que fica visível/tocável quando o menu está
    aberto), nunca o véu (que é só visual, ver acima). pointer-events só liga

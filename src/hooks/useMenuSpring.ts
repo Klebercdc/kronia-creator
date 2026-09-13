@@ -57,6 +57,12 @@ export interface MenuSpringLayers {
   menu: HTMLElement;
   sombra: HTMLElement;
   veu: HTMLElement;
+  /** Opcional: só existe na Home (.kronia-home-topbar). Vive FORA de
+   * .kronia-app-camada (que tem transform:translate3d permanente e por
+   * isso quebra position:fixed dos filhos — ver comentário no CSS), então
+   * precisa do mesmo deslize aplicado por fora, aqui, pra não dessincronizar
+   * da mola durante a animação. */
+  topbar: HTMLElement | null;
 }
 
 /** Deslocamento real em px — min(300px, 82vw), igual ao CSS original
@@ -77,6 +83,7 @@ function pintar(c: MenuSpringLayers, p: number) {
   const t = `translate3d(${px}px,0,0)`;
   c.app.style.transform = t;
   c.app.style.borderRadius = (30 * Math.min(pv, 1)).toFixed(2) + "px";
+  if (c.topbar) c.topbar.style.transform = t;
   c.sombra.style.transform = t;
   c.sombra.style.opacity = Math.min(pv, 1).toFixed(3);
   c.menu.style.transform = `translate3d(${(-24 * (1 - Math.min(pv, 1))).toFixed(2)}px,0,0)`;
@@ -86,6 +93,7 @@ function pintar(c: MenuSpringLayers, p: number) {
 function limpar(c: MenuSpringLayers) {
   c.app.style.transform = "";
   c.app.style.borderRadius = "";
+  if (c.topbar) c.topbar.style.transform = "";
   c.sombra.style.transform = "";
   c.sombra.style.opacity = "";
   c.menu.style.transform = "";
@@ -190,14 +198,16 @@ export function useMenuSpring(
     menu: React.RefObject<HTMLElement | null>;
     sombra: React.RefObject<HTMLElement | null>;
     veu: React.RefObject<HTMLElement | null>;
+    /** Opcional — só existe quando a Home tá montada (ver MenuSpringLayers). */
+    topbar?: React.RefObject<HTMLElement | null>;
   },
 ) {
   const springRef = useRef<SpringHandle | null>(null);
   if (!springRef.current) {
     springRef.current = createSpring(() => {
-      const { app, menu, sombra, veu } = refs;
+      const { app, menu, sombra, veu, topbar } = refs;
       return app.current && menu.current && sombra.current && veu.current
-        ? { app: app.current, menu: menu.current, sombra: sombra.current, veu: veu.current }
+        ? { app: app.current, menu: menu.current, sombra: sombra.current, veu: veu.current, topbar: topbar?.current ?? null }
         : null;
     });
   }
