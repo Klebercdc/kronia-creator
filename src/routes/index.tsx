@@ -1665,13 +1665,11 @@ function ConversationScreen({
   const mostrarSaudacao = isEmpty && !input.trim();
 
   return (
-    <div className={`kronia-home ${isEmpty ? "kronia-home-vazia" : ""}`}>
+    <div className="kronia-home">
       {/* .kronia-home-topbar saiu daqui — agora é irmã de .kronia-app-camada
          em CriadorApp, fora do container transformado (ver comentário lá
          sobre por que position:fixed precisava disso). onOpenMenu não é
-         mais usado por este componente. kronia-home-vazia marca o estado
-         sem mensagens — ver a trava de overflow em styles.css, que só
-         desliga a rolagem quando não tem conversa de verdade pra rolar. */}
+         mais usado por este componente. */}
 
       {mostrarSaudacao ? (
         <div className="kronia-home-hero">

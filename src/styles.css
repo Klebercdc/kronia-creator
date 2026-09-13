@@ -809,22 +809,20 @@ a {
   border-radius: 30px;
 }
 
-/* Tira a rolagem enquanto o teclado tá aberto — visto no device real
-   (barra de scroll visível na lateral): o WebKit rola este container pra
-   tentar trazer o campo focado pra cima do teclado, mesmo sem precisar (o
-   conteúdo já cabe no espaço encolhido por --vh, ver
-   useViewportKeyboardLock), e é esse scroll que arrasta o cabeçalho
-   (agora fora daqui, mas o efeito visual do "sumiço" vinha desse
-   deslocamento por baixo). overflow:hidden fecha a rota inteira — mesma
-   ideia já aplicada em html/body pra trava de documento (commit f4cf4ff,
-   agenda-).
+/* Tira a rolagem por completo enquanto o teclado tá aberto — sem
+   condição nenhuma, testado no device real e confirmado que precisa ser
+   assim: o WebKit rola este container pra tentar trazer o campo focado
+   pra cima do teclado mesmo sem precisar, e foi esse scroll (visível como
+   barra de scroll na lateral, e como um artefato visual de tela
+   duplicada) que causava tudo — cabeçalho saindo do lugar, tela
+   "desfigurando". overflow:hidden fecha a rota inteira, igual a mesma
+   ideia já aplicada em html/body (commit f4cf4ff, agenda-).
 
-   :has(.kronia-home-vazia), NÃO incondicional: numa conversa longa de
-   verdade (com mensagens, .kronia-conversation-thread rolável) essa
-   rolagem É legítima — a pessoa pode querer ver o histórico enquanto
-   digita a próxima mensagem. A trava só entra na Home vazia (saudação),
-   onde não existe conteúdo nenhum pra rolar de propósito. */
-[data-teclado] .kronia-app-camada:has(.kronia-home-vazia) {
+   Uma versão anterior disto só entrava com :has(.kronia-home-vazia), pra
+   não travar a rolagem numa conversa longa com mensagens — mas isso não
+   resolveu no device real (:has() pode não estar sendo aplicado de forma
+   confiável nesse WebView). Voltou incondicional. */
+[data-teclado] .kronia-app-camada {
   overflow-y: hidden;
 }
 
