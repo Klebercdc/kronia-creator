@@ -594,12 +594,14 @@ a {
   cursor: default;
 }
 
+/* Centralizado verticalmente no espaço livre entre cabeçalho e barra de
+   input — modelo é a Home do próprio app do Claude ("Olá, coruja
+   noturna"): o miolo fica no meio do vão, não colado embaixo dos ícones. */
 .kronia-home-hero {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  margin-top: 32px;
+  justify-content: center;
 }
 
 .kronia-home-hero h1 {
