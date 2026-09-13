@@ -628,9 +628,12 @@ a {
   justify-content: center;
 }
 
+/* 26px, não 40px — pedido explícito comparando com o tamanho da saudação
+   do app do Claude ("Vamos matutar"), bem mais discreta que o título
+   grande que tinha aqui antes. */
 .kronia-home-hero h1 {
-  font-size: 40px;
-  line-height: 1.12;
+  font-size: 26px;
+  line-height: 1.2;
   font-weight: 800;
   margin: 0 0 14px;
   color: var(--kr-ink);
