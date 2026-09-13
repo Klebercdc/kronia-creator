@@ -105,7 +105,11 @@ export function useViewportKeyboardLock() {
         alturaCheia = altura;
       }
       if (alturaCheia !== null && alturaCheia - altura >= LIMIAR_TECLADO_POR_ALTURA) {
-        marcarTeclado(true);
+        if (!teclado) marcarTeclado(true);
+        // Mesmo já sabendo por foco, o resize do visualViewport pode
+        // acontecer em vários passos enquanto o teclado anima — cada um é
+        // uma chance nova do navegador tentar rolar de novo.
+        if (ehCampoDeTexto(document.activeElement)) zerarScrollDoAncestralRolavel(document.activeElement!);
       } else if (teclado && alturaCheia !== null && alturaCheia - altura < TOLERANCIA_ALTURA) {
         marcarTeclado(false);
       }
@@ -139,8 +143,37 @@ export function useViewportKeyboardLock() {
       raiz.toggleAttribute("data-teclado", aberto);
     }
 
+    // Ao focar, o navegador rola o ancestral rolável mais próximo do campo
+    // pra tentar trazê-lo pra cima do teclado — é esse scroll que arrasta o
+    // cabeçalho junto (ele é o primeiro filho desse mesmo container),
+    // visto no device real (barra de scroll aparecendo na lateral). Como
+    // --vh já encolhe o app pro espaço acima do teclado, o conteúdo cabe
+    // sem precisar rolar nada; esse scroll é sempre indesejado aqui.
+    // Zera de volta por ~400ms (a animação do teclado no iOS dura uns
+    // 250-300ms) — tempo baseado, não contagem de quadros, pra cobrir a
+    // janela toda mesmo se o navegador variar a taxa de quadros.
+    const DURACAO_ZERAR_SCROLL_MS = 400;
+    function zerarScrollDoAncestralRolavel(el: Element) {
+      let container: HTMLElement | null = el.parentElement;
+      while (container) {
+        if (container.scrollHeight > container.clientHeight) break;
+        container = container.parentElement;
+      }
+      if (!container) return;
+      const alvo = container;
+      const fim = performance.now() + DURACAO_ZERAR_SCROLL_MS;
+      function zerar() {
+        alvo.scrollTop = 0;
+        if (performance.now() < fim) requestAnimationFrame(zerar);
+      }
+      requestAnimationFrame(zerar);
+    }
+
     function aoFocar(e: FocusEvent) {
-      if (ehCampoDeTexto(e.target as Element)) marcarTeclado(true);
+      const alvo = e.target as Element;
+      if (!ehCampoDeTexto(alvo)) return;
+      marcarTeclado(true);
+      zerarScrollDoAncestralRolavel(alvo);
     }
     function aoDesfocar() {
       // Próximo quadro: entre sair de um campo e entrar no seguinte existe um
