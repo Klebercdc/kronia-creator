@@ -7,7 +7,11 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      {
+        name: "viewport",
+        content:
+          "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content",
+      },
       { title: "KRONIA — Criador Inteligente" },
       { name: "theme-color", content: "#17171a" },
       // iOS: faz "Adicionar à Tela de Início" abrir em tela cheia, sem a barra do Safari.

@@ -60,11 +60,35 @@ html[data-theme="escuro"] {
   box-sizing: border-box;
 }
 
+/* html,body travados: sem isto o iOS empurra o LAYOUT viewport pra trazer um
+   campo focado pra cima do teclado (overflow:hidden sozinho não impede — ele
+   ignora o overflow nesse caminho), e o app inteiro sobe pra fora da tela com
+   um vazio embaixo. Com position:fixed + inset:0 a área rolável do documento
+   é ZERO: não existe o que empurrar, então o empurrão nunca acontece. Porte
+   exato de agenda-/css/mobile.css (commit f4cf4ff). */
 html,
 body,
 #root {
   height: 100%;
+  height: 100dvh;
   margin: 0;
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+}
+
+/* A trava acima é pra tela. Sem este reset, um body fixo com altura de
+   viewport faz o navegador imprimir só a primeira página. */
+@media print {
+  html,
+  body,
+  #root {
+    position: static;
+    height: auto;
+    overflow: visible;
+    inset: auto;
+  }
 }
 
 body {
@@ -641,6 +665,7 @@ a {
   flex-direction: column;
   padding: max(20px, env(safe-area-inset-top)) calc(14px + 24px) calc(16px + env(safe-area-inset-bottom)) 14px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   z-index: 0;
   background: var(--kr-bg);
   transform: translate3d(-24px, 0, 0);
@@ -689,6 +714,7 @@ a {
      escondido pra recortar a quina arredondada durante o deslocamento. */
   overflow-y: auto;
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   transform: translate3d(0, 0, 0);
 }
 
@@ -1001,6 +1027,7 @@ a {
   flex-direction: column;
   gap: 14px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 4px 0 12px;
 }
 
