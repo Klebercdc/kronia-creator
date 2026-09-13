@@ -621,10 +621,14 @@ a {
 /* Centralizado verticalmente no espaço livre entre cabeçalho e barra de
    input — modelo é a Home do próprio app do Claude ("Olá, coruja
    noturna"): o miolo fica no meio do vão, não colado embaixo dos ícones. */
+/* align-items+text-align:center — referência é o app do Claude, onde o
+   texto fica centralizado na tela toda, não só verticalmente. */
 .kronia-home-hero {
   flex: 1;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
   justify-content: center;
 }
 
