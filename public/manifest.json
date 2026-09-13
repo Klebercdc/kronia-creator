@@ -7,7 +7,9 @@
   "background_color": "#17171a",
   "theme_color": "#17171a",
   "icons": [
-    { "src": "/favicon-preto.png", "sizes": "830x800", "type": "image/png", "purpose": "any" },
-    { "src": "/favicon-preto.png", "sizes": "830x800", "type": "image/png", "purpose": "maskable" }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
