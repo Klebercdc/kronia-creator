@@ -536,7 +536,11 @@ a {
   color: var(--kr-ink);
   display: flex;
   flex-direction: column;
-  padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+  /* padding-top faltava o safe-area-inset-top: o cabeçalho (ícone de menu +
+     ícone de chat) ficava colado na status bar/notch — só o rodapé (onde
+     mora a barra de input) já tinha o inset-bottom. Mesmo padrão que
+     .brand-row (telas antigas) já usa. */
+  padding: calc(20px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom));
 }
 
 .kronia-home-topbar {
