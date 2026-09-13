@@ -543,11 +543,17 @@ a {
   color: var(--kr-ink);
   display: flex;
   flex-direction: column;
-  /* padding-top faltava o safe-area-inset-top: o cabeçalho (ícone de menu +
-     ícone de chat) ficava colado na status bar/notch — só o rodapé (onde
-     mora a barra de input) já tinha o inset-bottom. Mesmo padrão que
-     .brand-row (telas antigas) já usa. */
-  padding: calc(20px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom));
+  /* max(), não só soma com env(): testado no device real (iPhone 15 Pro
+     Max, instalado na tela de início) e env(safe-area-inset-*) não estava
+     contribuindo nada — resultado idêntico ao de uma aba comum do Safari,
+     onde a área segura da PÁGINA é mesmo 0 (quem ocupa ali é a barra do
+     navegador). Em vez de depender só do valor do WebKit, o max() garante
+     um piso nos números reais do 15 Pro Max (Dynamic Island ~59px,
+     indicador de home ~34px) — se o env() vier a funcionar/contribuir
+     mais que isso em outro aparelho, o max() usa o maior dos dois, nunca
+     menos que o piso. */
+  padding: max(59px, calc(20px + env(safe-area-inset-top))) 20px
+    max(34px, calc(20px + env(safe-area-inset-bottom)));
 }
 
 .kronia-home-topbar {
@@ -700,7 +706,11 @@ a {
   width: calc(min(300px, 82vw) + 24px);
   display: flex;
   flex-direction: column;
-  padding: max(20px, env(safe-area-inset-top)) calc(14px + 24px) calc(16px + env(safe-area-inset-bottom)) 14px;
+  /* max(59px, ...) — mesmo motivo do piso em .kronia-home: env() não
+     estava contribuindo nada no device real testado (iPhone 15 Pro Max
+     instalado), então o piso usa o valor real da Dynamic Island em vez de
+     confiar só no env(). */
+  padding: max(59px, env(safe-area-inset-top)) calc(14px + 24px) max(34px, calc(16px + env(safe-area-inset-bottom))) 14px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   z-index: 0;
