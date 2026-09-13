@@ -548,48 +548,38 @@ a {
   color: var(--kr-ink);
   display: flex;
   flex-direction: column;
-  /* Sem padding-top: quem reserva o respiro do topo agora é
-     .kronia-home-topbar (ela é sticky — ver comentário lá; se o padding-top
-     ficasse aqui, o sticky grudaria em top:0 e perderia essa folga assim
-     que a tela rolasse).
+  /* padding-top reserva o espaço do cabeçalho FIXO (ver .kronia-home-topbar
+     abaixo) — ele saiu do fluxo normal, então o conteúdo embaixo precisa
+     dessa folga pra não nascer por baixo dele. 62px = 42px do botão
+     redondo + 20px de padding-bottom do cabeçalho.
      Padding-bottom ZERO, sem env() nenhum: pedido explícito do usuário —
      a barra de input encosta na base de verdade, sem nenhum respiro. */
-  padding: 0 20px 0;
+  padding: calc(max(59px, env(safe-area-inset-top)) + 62px) 20px 0;
 }
 
-/* sticky: quem rola aqui não é o documento, é .kronia-app-camada
-   (overflow-y:auto). Ao focar o campo de digitar, o navegador rola esse
-   container pra trazer o campo pra cima do teclado — sem sticky, os
-   ícones do topo rolavam junto e ficavam parcialmente atrás da barra de
-   status ("desfigurado" no print do usuário).
-
-   O respiro do topo mora no `top` do sticky, NÃO em padding-top: `top` é
-   o quanto o sticky reserva ANTES de grudar (equivalente ao
-   safe-area-inset-top real), então mesmo grudado ele para na borda do
-   safe-area, nunca cobrindo a barra de status. padding-top é só o
-   espaço visual fixo ATÉ os ícones, por dentro dessa reserva.
-
-   top usa max(59px, ...) SEMPRE, sem restringir a @media
-   display-mode:standalone (diferente do piso de padding em outros
-   lugares deste arquivo): env(safe-area-inset-top) não contribuía nada
-   no device real testado, e sem o piso o sticky gruda em top:0 assim
-   que a tela rola (exatamente quando o teclado abre) — sobrepondo a
-   barra de status de novo. Isso só entra em jogo DURANTE o scroll (não
-   muda o layout parado), então não tem o mesmo risco de "espaço demais
-   no Safari" que o padding-top tinha.
-
-   Fundo sólido porque, sendo sticky, o conteúdo abaixo (o "O que vamos
-   criar hoje?") passa por baixo dele ao rolar — sem --kr-bg aqui ficaria
-   transparente. */
+/* position:FIXED, não mais sticky. Duas tentativas com sticky falharam de
+   um jeito sutil (sobrepunha a barra de status, ou sumia de vez) quando o
+   teclado abria com o campo ainda vazio — sticky depende de como
+   .kronia-app-camada (o container que rola de verdade) se comporta por
+   baixo, e isso mostrou ser frágil nesse app. Fixed prende ao viewport de
+   verdade, sem depender de scroll container nenhum — mesmo comportamento
+   que o usuário confirmou existir no cabeçalho do app do Claude ("é fixo,
+   não sobe").
+   left/right+max-width+margin:auto repetem a centralização de .kronia-home
+   porque, sendo fixed, ele sai do contexto de .kronia-home e precisa se
+   alinhar sozinho com a mesma coluna de 480px. */
 .kronia-home-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: sticky;
+  position: fixed;
   top: max(59px, env(safe-area-inset-top));
-  padding-top: 20px;
-  padding-bottom: 20px;
-  z-index: 5;
+  left: 0;
+  right: 0;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 20px 20px;
+  z-index: 20;
   background: var(--kr-bg);
 }
 
