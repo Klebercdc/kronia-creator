@@ -659,23 +659,23 @@ a {
    no mesmo lugar.
    ========================================================================== */
 
+/* height:100% (do #root), NÃO uma unidade de viewport recalculada aqui de
+   novo. #root já é position:fixed com altura EXATA (100dvh normal,
+   calc(var(--vh)*100) com teclado — ver a regra dele acima) — duplicar o
+   cálculo aqui com uma unidade diferente (era 100svh) dava margem pra uma
+   sobrar maior que a outra, e a fresta ficava sem cobertura: mostrava o
+   fundo escuro do body por trás em vez do --kr-bg da tela. Herdando do pai
+   não existe fresta possível, e nem precisa mais de regra própria pro
+   teclado. */
 .kronia-palco {
   position: relative;
   width: 100%;
   max-width: 480px;
   margin: 0 auto;
-  height: 100vh;
-  height: 100svh;
+  height: 100%;
   overflow: hidden;
   background: var(--kr-bg);
   touch-action: pan-y pinch-zoom;
-}
-
-/* Com o teclado aberto vale --vh, que acompanha window.visualViewport de
-   verdade — svh não muda com o teclado, só com a barra do navegador. Ver
-   useViewportKeyboardLock. */
-[data-teclado] .kronia-palco {
-  height: calc(var(--vh, 1vh) * 100);
 }
 
 .kronia-menu-camada {
