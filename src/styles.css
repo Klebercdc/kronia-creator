@@ -539,52 +539,118 @@ a {
   cursor: default;
 }
 
-/* Drawer / sidebar */
+/* ==========================================================================
+   Menu lateral — TRÊS CAMADAS + motor de mola
+   --------------------------------------------------------------------------
+   Porte do menu que existiu em agenda-/js/mobile-core.js (removido de lá em
+   07f879a) — ver src/hooks/useMenuSpring.ts pra física. O menu NÃO desliza
+   sobre o app: quem se move é o app inteiro, que sai da frente e revela o
+   que já estava atrás.
 
-.kronia-drawer-root {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  pointer-events: none;
+   Camada 1  .kronia-palco        recorta e centraliza (como .app já fazia)
+   Camada 2  .kronia-menu-camada  o menu, SEMPRE atrás
+   Camada 3  .kronia-app-camada   o app inteiro (todas as abas vivem aqui)
+
+   SEM transition nenhuma aqui — as regras abaixo são só os dois estados
+   PARADOS (fechado é o estado natural do HTML; aberto é a classe
+   .kronia-menu-aberto). O caminho entre eles é a mola em JS, que escreve
+   inline por cima destas regras enquanto trabalha e limpa ao assentar, já
+   no mesmo lugar.
+   ========================================================================== */
+
+.kronia-palco {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  background: #FAF9F7;
+  touch-action: pan-y pinch-zoom;
 }
 
-.kronia-drawer-root.open {
-  pointer-events: auto;
-}
-
-.kronia-drawer-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(10, 8, 4, 0.4);
-  border: none;
-  padding: 0;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.kronia-drawer-root.open .kronia-drawer-overlay {
-  opacity: 1;
-}
-
-.kronia-sidebar {
+.kronia-menu-camada {
   position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
-  width: min(84vw, 320px);
-  background: #FAF9F7;
-  color: #17140F;
+  /* --kronia-menu-desloca: min(300px, 82vw) — mesmo valor de agenda-, nunca
+     deixa o app sem nenhuma fatia de tela pra tocar de volta. */
+  width: calc(min(300px, 82vw) + 24px);
   display: flex;
   flex-direction: column;
-  padding: 20px 16px calc(16px + env(safe-area-inset-bottom));
-  transform: translateX(-100%);
-  transition: transform 0.24s ease;
+  padding: max(20px, env(safe-area-inset-top)) calc(14px + 24px) calc(16px + env(safe-area-inset-bottom)) 14px;
   overflow-y: auto;
-  box-shadow: 2px 0 24px rgba(0, 0, 0, 0.12);
+  z-index: 0;
+  background: #FAF9F7;
+  transform: translate3d(-24px, 0, 0);
 }
 
-.kronia-drawer-root.open .kronia-sidebar {
-  transform: translateX(0);
+.kronia-menu-aberto .kronia-menu-camada {
+  transform: translate3d(0, 0, 0);
+}
+
+/* Véu que mantém o menu um passo abaixo da tela principal — cobre o palco
+   inteiro (não só a largura do menu) pra não precisar acompanhar o
+   parallax; o que sobra pra direita fica debaixo da camada do app, opaca. */
+.kronia-menu-veu {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border: none;
+  padding: 0;
+  background: rgba(10, 8, 4, 0.4);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.kronia-menu-aberto .kronia-menu-veu {
+  opacity: 0.18;
+  pointer-events: auto;
+}
+
+.kronia-app-camada {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  /* Fundo escuro de base — .app (Criar/Histórico/Explorar/Prompt/Perfil,
+     tema escuro) nunca teve background próprio, sempre dependeu do body
+     atrás dele. Agora que essas telas vivem dentro desta camada (que fica
+     por cima do palco claro, não do body), sem isto o claro vazava atrás
+     das telas escuras. .kronia-home (a única tela clara) já é opaca e
+     cobre isto normalmente. */
+  background: #070707;
+  /* auto (não hidden) no eixo vertical: as telas internas não têm scroll
+     próprio, então é esta camada que precisa rolar. Horizontal continua
+     escondido pra recortar a quina arredondada durante o deslocamento. */
+  overflow-y: auto;
+  overflow-x: hidden;
+  transform: translate3d(0, 0, 0);
+}
+
+.kronia-menu-aberto .kronia-app-camada {
+  transform: translate3d(min(300px, 82vw), 0, 0);
+  border-radius: 30px;
+}
+
+/* A sombra da tela principal mora num elemento próprio — só o que ela
+   projeta pra fora importa, o interior fica coberto pela camada do app. */
+.kronia-app-sombra {
+  position: absolute;
+  inset: 1px;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  border-radius: 30px;
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.18),
+    0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.kronia-menu-aberto .kronia-app-sombra {
+  opacity: 1;
+  transform: translate3d(min(300px, 82vw), 0, 0);
 }
 
 .kronia-sidebar-brand {

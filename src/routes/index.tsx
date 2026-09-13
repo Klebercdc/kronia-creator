@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
+import { useMenuSpring } from "../hooks/useMenuSpring";
 import {
   enqueueReferenceIngestion,
   advanceIngestionJob,
@@ -1191,27 +1192,27 @@ const SIDEBAR_ITEMS: { id: AppTab; label: string; Icon: () => React.JSX.Element;
   { id: "historico", label: "Mais opções", Icon: IconGrid },
 ];
 
+/**
+ * Só o CONTEÚDO do menu — quem é a camada (posição, tamanho, o que anda
+ * durante a abertura) é `.kronia-menu-camada` em CriadorApp, pintada pelo
+ * motor de mola (useMenuSpring). Nenhum overlay/transform próprio aqui.
+ */
 function AppSidebar({
-  open,
   active,
   recentConversations,
-  onClose,
   onNavigate,
   onNewConversation,
   onOpenConversation,
 }: {
-  open: boolean;
   active: AppTab;
   recentConversations: ConversationRow[];
-  onClose: () => void;
   onNavigate: (tab: AppTab, mediaHint?: "image") => void;
   onNewConversation: () => void;
   onOpenConversation: (id: string) => void;
 }) {
   const [showAllRecents, setShowAllRecents] = useState(false);
   return (
-    <div className={`kronia-drawer-root ${open ? "open" : ""}`} aria-hidden={!open}>
-      <button type="button" className="kronia-drawer-overlay" aria-label="Fechar menu" onClick={onClose} tabIndex={open ? 0 : -1} />
+    <>
       <aside className="kronia-sidebar">
         <div className="kronia-sidebar-brand">
           <img src={logoIcon} alt="Kronia" style={{ width: 24, height: 24, objectFit: "contain" }} />
@@ -1291,7 +1292,7 @@ function AppSidebar({
           <IconGear />
         </button>
       </aside>
-    </div>
+    </>
   );
 }
 
@@ -1675,6 +1676,15 @@ function ConversationScreen({
   );
 }
 
+/**
+ * Menu lateral como 3 camadas empilhadas (porte do menu que existiu em
+ * agenda-/js/mobile-core.js, removido de lá em 07f879a): o menu fica
+ * SEMPRE atrás, e quem se move é o app inteiro, que sai da frente e
+ * revela o que já estava atrás — não um painel entrando por cima. A mola
+ * (useMenuSpring) é quem pinta o caminho entre os dois estados; este
+ * arquivo só descreve os dois estados parados (ver .kronia-palco em
+ * styles.css) e troca uma classe quando `open` muda.
+ */
 function CriadorApp() {
   const [tab, setTab] = useState<AppTab>("home");
   const [pendingOpportunity, setPendingOpportunity] = useState<PendingOpportunitySeed | null>(null);
@@ -1683,6 +1693,12 @@ function CriadorApp() {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [recentConversations, setRecentConversations] = useState<ConversationRow[]>([]);
   const listConversationsRpcHook = useServerFn(listConversationsRpc);
+
+  const appRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const sombraRef = useRef<HTMLDivElement>(null);
+  const veuRef = useRef<HTMLButtonElement>(null);
+  useMenuSpring(sidebarOpen, { app: appRef, menu: menuRef, sombra: sombraRef, veu: veuRef });
 
   const refreshConversations = () => {
     listConversationsRpcHook()
@@ -1699,54 +1715,65 @@ function CriadorApp() {
   }
 
   return (
-    <>
-      {tab === "home" && (
-        <ConversationScreen
-          conversationId={activeConversationId}
-          onOpenMenu={() => setSidebarOpen(true)}
-          onConversationChange={(id) => {
+    <div className={`kronia-palco ${sidebarOpen ? "kronia-menu-aberto" : ""}`}>
+      <div className="kronia-menu-camada" ref={menuRef} aria-hidden={!sidebarOpen} inert={!sidebarOpen}>
+        <AppSidebar
+          active={tab}
+          recentConversations={recentConversations}
+          onNavigate={navigate}
+          onNewConversation={() => {
+            setActiveConversationId(null);
+            navigate("home");
+          }}
+          onOpenConversation={(id) => {
             setActiveConversationId(id);
-            refreshConversations();
+            navigate("home");
           }}
         />
-      )}
-      {tab === "criar" && (
-        <CriarFlow
-          onOpenProfile={() => setTab("perfil")}
-          pendingOpportunity={pendingOpportunity}
-          onConsumePendingOpportunity={() => setPendingOpportunity(null)}
-        />
-      )}
-      {tab === "historico" && <HistoricoTab />}
-      {tab === "explorar" && (
-        <OportunidadesTab
-          onCreateContent={(seed) => {
-            setPendingOpportunity(seed);
-            navigate("criar");
-          }}
-        />
-      )}
-      {tab === "prompt" && <PromptTab initialMedia={initialMedia} />}
-      {tab === "perfil" && (
-        <PlaceholderTab title="Perfil" hint="Em breve: atores salvos, preferências e configurações da conta." />
-      )}
-      {tab !== "home" && <BottomNav active={tab} onChange={(next) => navigate(next)} />}
-      <AppSidebar
-        open={sidebarOpen}
-        active={tab}
-        recentConversations={recentConversations}
-        onClose={() => setSidebarOpen(false)}
-        onNavigate={navigate}
-        onNewConversation={() => {
-          setActiveConversationId(null);
-          navigate("home");
-        }}
-        onOpenConversation={(id) => {
-          setActiveConversationId(id);
-          navigate("home");
-        }}
+      </div>
+      <button
+        type="button"
+        className="kronia-menu-veu"
+        ref={veuRef}
+        aria-label="Fechar menu"
+        onClick={() => setSidebarOpen(false)}
+        tabIndex={sidebarOpen ? 0 : -1}
       />
-    </>
+      <div className="kronia-app-camada" ref={appRef}>
+        {tab === "home" && (
+          <ConversationScreen
+            conversationId={activeConversationId}
+            onOpenMenu={() => setSidebarOpen(true)}
+            onConversationChange={(id) => {
+              setActiveConversationId(id);
+              refreshConversations();
+            }}
+          />
+        )}
+        {tab === "criar" && (
+          <CriarFlow
+            onOpenProfile={() => setTab("perfil")}
+            pendingOpportunity={pendingOpportunity}
+            onConsumePendingOpportunity={() => setPendingOpportunity(null)}
+          />
+        )}
+        {tab === "historico" && <HistoricoTab />}
+        {tab === "explorar" && (
+          <OportunidadesTab
+            onCreateContent={(seed) => {
+              setPendingOpportunity(seed);
+              navigate("criar");
+            }}
+          />
+        )}
+        {tab === "prompt" && <PromptTab initialMedia={initialMedia} />}
+        {tab === "perfil" && (
+          <PlaceholderTab title="Perfil" hint="Em breve: atores salvos, preferências e configurações da conta." />
+        )}
+        {tab !== "home" && <BottomNav active={tab} onChange={(next) => navigate(next)} />}
+      </div>
+      <div className="kronia-app-sombra" ref={sombraRef} />
+    </div>
   );
 }
 
