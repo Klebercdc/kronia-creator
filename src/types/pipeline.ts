@@ -122,6 +122,19 @@ export const GestureMapEntrySchema = z.object({
 });
 export type GestureMapEntry = z.infer<typeof GestureMapEntrySchema>;
 
+/** As 3 fórmulas visuais pré-validadas de hero shot (ver cinematografico.ts)
+ * + "custom" quando o produto/oferta não se encaixa em nenhuma delas e o
+ * Cinematográfico precisa inventar a própria fórmula. Campo estruturado
+ * (não texto livre dentro do decisionLog) porque pedir só na instrução pra
+ * LLM "nomear a fórmula no decisaoResumo" se provou não confiável em teste
+ * real — a LLM escrevia comentário genérico sobre "estrutura de segmentos"
+ * em vez de nomear a fórmula. Um enum obrigatório força a decisão a
+ * existir, mesmo que o rótulo dela ("custom" + label) ainda seja texto.
+ */
+export const HERO_SHOT_FORMULAS = ["reveal_liquido", "textura_macro", "reveal_embalagem", "custom"] as const;
+export const HeroShotFormulaSchema = z.enum(HERO_SHOT_FORMULAS);
+export type HeroShotFormula = z.infer<typeof HeroShotFormulaSchema>;
+
 export const FlowSegmentSchema = z.object({
   index: z.number().int().nonnegative(),
   startSeconds: z.number().nonnegative(),
@@ -129,6 +142,15 @@ export const FlowSegmentSchema = z.object({
   /** Índices das cenas (ScriptScene.index) cobertas por este segmento de 10s. */
   sceneIndexes: z.array(z.number().int().nonnegative()),
   videoPrompt: z.string(),
+  /** Null se este bloco de 10s não tiver nenhum momento de hero shot de
+   * produto. Preenchido só pelo Cinematográfico — nenhum outro agente
+   * toca neste campo (mesmo isolamento já usado pro flowSegment inteiro). */
+  heroShotFormula: HeroShotFormulaSchema.nullable(),
+  /** Obrigatório (não-null) quando heroShotFormula==="custom" — nome/
+   * descrição curta da fórmula inventada. Deve ficar null em qualquer
+   * outro caso (nunca preencher "à toa" quando usou uma das 3 fórmulas
+   * padrão ou quando não há hero shot no bloco). */
+  customHeroShotFormulaLabel: z.string().nullable(),
   /** Olhar como camada dirigível própria — intensidade/foco em função do
    * que está sendo dito, separado da câmera e da ação física. */
   gaze: z.string(),

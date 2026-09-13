@@ -1,7 +1,14 @@
 import { callStructuredText } from "../../lib/openai";
-import { type ContentRequest, type GenerationResult } from "../../types/pipeline";
+import { GenerationResultSchema, type ContentRequest, type GenerationResult } from "../../types/pipeline";
 import type { VideoAnalysis } from "../../types/video-analysis";
 import { RevisionInferredSchema, DECISION_LOG_PROMPT_BLOCK, appendDecisionLog } from "./decision-log";
+import { validateFlowSegments, sanitizeGestureMap } from "./flow-segment-validator";
+
+/** decisionLog nunca é pedido de volta aqui — esta correção só ajusta a
+ * matemática dos flowSegments (index/startSeconds/endSeconds/
+ * narrativeFunction), não é uma decisão criativa nova; o log acumulado é
+ * só preservado, igual ao padrão já usado em compliance/correct.ts. */
+const StructuralFixSchema = GenerationResultSchema.omit({ decisionLog: true });
 
 const BASE_SYSTEM = `Você é o agente Cinematográfico do KRONIA. Transforma o roteiro aprovado em direção
 visual final, em duas camadas:
@@ -55,24 +62,38 @@ produto/oferta (pelas claims do roteiro) NÃO tiver essas características (serv
 conteúdo digital, experiência), NÃO force nenhuma das 3 — construa a própria fórmula visual do
 zero, no mesmo padrão de rigor técnico das outras (enquadramento nomeado, movimento de câmera
 real, iluminação, sujeito e ação específica), ancorada no que as claims do produto efetivamente
-descrevem. Registre em "decisaoResumo"/"motivoDecisao" qual fórmula usou (uma das 3 existentes,
-ou uma nova) e por quê.
+descrevem.
 
-VOICE & PERFORMANCE — cada flowSegment carrega 4 campos próprios de atuação, além do videoPrompt:
+REGISTRO ESTRUTURADO DA FÓRMULA (campo, não prosa livre): todo flowSegment tem os campos
+"heroShotFormula" e "customHeroShotFormulaLabel". Se o bloco de 10s contiver um momento de hero
+shot de produto, preencha "heroShotFormula" com "reveal_liquido", "textura_macro",
+"reveal_embalagem" OU "custom" — nunca deixe null quando houver hero shot no bloco. Se escolher
+"custom", "customHeroShotFormulaLabel" é OBRIGATÓRIO: um nome/descrição curta da fórmula inventada
+(ex: "produto em uso real, mão fechando o zíper") — em qualquer outro caso
+"customHeroShotFormulaLabel" fica null (nunca preencha se heroShotFormula não for "custom"). Se o
+bloco não tiver hero shot nenhum (só ator falando, por exemplo), "heroShotFormula" fica null.
+
+VOICE & PERFORMANCE — cada flowSegment carrega 4 campos próprios de atuação, além do videoPrompt.
+PROIBIDO usar valores genéricos como "olhar natural", "gesticula naturalmente", "voz natural" ou
+"fala de forma natural" — cada campo precisa de direção concreta, específica deste bloco:
 
 - "gaze" (olhar): camada dirigível PRÓPRIA, separada da câmera e da ação física — direcione
-  intensidade/foco em função do que está sendo dito neste bloco especificamente (ex: "olhar
-  penetrante e firme, ganha intensidade na palavra final do bloco"). Nunca deixe vazio/genérico.
-- "gestureMap": lista de {trigger, gesture} — cada entrada amarra um gesto a uma palavra/trecho
-  específico da fala deste bloco (ex: {trigger: "compartilha com três amigos", gesture: "conta
-  natural com os dedos, breve, sem congelar a mão"}). Nunca "gesticula naturalmente" solto sem
-  dizer com QUAL palavra o gesto se conecta.
-- "voiceTimbre": timbre/tom da voz neste bloco especificamente (grave/suave/quente/etc.) — pode
-  variar de bloco pra bloco (ex.: bloco 1 mais contido, bloco 3 com mais convicção), nunca é
-  obrigatoriamente idêntico em todos os blocos mesmo com o mesmo ator.
-- "interpretationMode": o registro emocional/de interpretação deste bloco (ex.: "contido e
-  íntimo", "urgente e fervoroso") — a intensidade pode crescer entre blocos, não precisa ser
-  plana do início ao fim.
+  intensidade/foco em função do que está sendo dito neste bloco especificamente. Exemplo aceitável:
+  "olhar direto para a lente durante a frase central, desviando brevemente para o produto no
+  momento da revelação". Nunca deixe vazio/genérico.
+- "gestureMap": lista de {trigger, gesture} — cada "trigger" precisa ser um trecho REAL e literal
+  da narração das cenas deste bloco (código confere isso depois e descarta qualquer entrada cujo
+  trigger não apareça na fala — nunca invente um trigger só pra preencher o campo). Exemplo
+  aceitável: {trigger: "ao pronunciar 'fé'", gesture: "ele toca o anel com o polegar ao pronunciar
+  'fé'"}. Se não houver um gatilho verbal real que justifique um gesto, deixe "gestureMap": [] —
+  isso é preferível a inventar.
+- "voiceTimbre": timbre/tom da voz neste bloco especificamente. Exemplo aceitável: "voz masculina
+  próxima, firme e calorosa, com leve aumento de intensidade na frase final" — pode variar de
+  bloco pra bloco (ex.: bloco 1 mais contido, bloco 3 com mais convicção), nunca é obrigatoriamente
+  idêntico em todos os blocos mesmo com o mesmo ator.
+- "interpretationMode": o registro emocional/de interpretação deste bloco. Exemplo aceitável:
+  "íntimo e convicto, sem tom de locução publicitária" — a intensidade pode crescer entre blocos,
+  não precisa ser plana do início ao fim.
 
 CORPO VIVO, NUNCA ESTÁTICO: nenhum gesto ou expressão descrita pode congelar no meio do
 movimento — ao completar um gesto, o corpo retorna a um estado neutro de vida (respiração,
@@ -89,10 +110,16 @@ bloco específico, não só na cena narrativa original.
 
 Retorne o roteiro completo, no mesmo formato de entrada, com "camera"/"action" das cenas mantidos
 como estavam, "videoPrompt" de cada cena preenchido, e "flowSegments" preenchido com os blocos de
-10s (cada um com "sceneIndexes", "gaze", "gestureMap", "voiceTimbre", "interpretationMode" e
-"narrativeFunction" preenchidos).
+10s (cada um com "sceneIndexes", "gaze", "gestureMap", "voiceTimbre", "interpretationMode",
+"narrativeFunction", "heroShotFormula" e "customHeroShotFormulaLabel" preenchidos).
 
-${DECISION_LOG_PROMPT_BLOCK}`;
+${DECISION_LOG_PROMPT_BLOCK}
+
+Pro Cinematográfico especificamente: "motivoDecisao" precisa citar a decisão VISUAL concreta que
+você tomou (enquadramento, movimento, escolha de hero shot etc.), nunca um motivo genérico de
+processo. Rejeitado: "Escolhi esta abordagem porque é mais impactante." Aceitável: "Escolhi
+macro close-up no anel porque a gravação de referência enfatiza o detalhe da peça e o objetivo é
+aumentar percepção de acabamento sem alterar nenhuma característica factual do produto."`;
 
 function buildSystem(actorProfile: ContentRequest["actorProfile"], ingestion: VideoAnalysis | null): string {
   let system = BASE_SYSTEM;
@@ -118,6 +145,45 @@ precisa repetir literalmente estas características, sem variar de segmento pra 
 Nunca mude a voz ou a aparência descritas acima entre segmentos — é o mesmo ator/avatar no vídeo todo.`;
 }
 
+/** Correção estrutural determinística: 1 chamada direcionada, corrigindo
+ * SÓ os campos estruturais dos flowSegments apontados pelo
+ * `validateFlowSegments` (timing/narrativeFunction/heroShotFormula), sem
+ * tocar em videoPrompt/gaze/gestureMap/voiceTimbre/interpretationMode —
+ * mesma lógica de "1 correção + 1 reauditoria, nunca um loop" já usada em
+ * compliance/correct.ts. Se a estrutura continuar errada depois dessa 1
+ * tentativa, quem chama decide (aqui: falha explícita — nunca inventamos
+ * um número/valor certo em código). */
+async function fixFlowSegmentStructure(
+  draft: GenerationResult,
+  totalSeconds: number,
+  issues: string[],
+): Promise<GenerationResult> {
+  const prompt = `Roteiro com flowSegments estruturalmente incorretos:\n${JSON.stringify(draft, null, 2)}
+
+Duração total do roteiro: ${totalSeconds}s.
+
+Problemas ESTRUTURAIS detectados em código (sem margem de interpretação) — corrija SOMENTE os
+campos "index", "startSeconds", "endSeconds", "narrativeFunction", "heroShotFormula" e
+"customHeroShotFormulaLabel" dos flowSegments até eliminar cada um destes; não altere videoPrompt,
+gaze, gestureMap, voiceTimbre, interpretationMode, sceneIndexes nem qualquer outro campo do
+roteiro:
+${issues.map((i) => `- ${i}`).join("\n")}`;
+
+  const fixed = await callStructuredText({
+    schema: StructuralFixSchema,
+    system: `Você corrige apenas a estrutura dos flowSegments de um roteiro do KRONIA: index
+sequencial 0..n-1, startSeconds/endSeconds formando blocos contíguos de exatos 10s (sem gap nem
+sobreposição, último bloco cobrindo até a duração total), narrativeFunction seguindo
+gancho(1º bloco)/desenvolvimento(blocos do meio)/cta(último bloco) quando a duração total for
+múltiplo de 30s, e customHeroShotFormulaLabel preenchido SOMENTE quando heroShotFormula==="custom"
+(null em qualquer outro caso). Não reescreva nenhum outro campo do roteiro.`,
+    prompt,
+    toolName: "generation_result",
+  });
+
+  return { ...fixed, decisionLog: draft.decisionLog };
+}
+
 /** Sub-agente 6 de 6 da Geração. */
 export async function cinematografico(
   draft: GenerationResult,
@@ -134,8 +200,8 @@ export async function cinematografico(
 
   const prompt = `Roteiro aprovado para direção visual:\n${JSON.stringify(draft, null, 2)}
 
-Duração total: ${totalSeconds}s → gere exatamente ${expectedSegments} flowSegments de 10s cada
-(o último pode ser mais curto só se a duração total não for múltiplo de 10 — mas ela deveria ser).${structureBlock}`;
+Duração total: ${totalSeconds}s → gere exatamente ${expectedSegments} flowSegments de EXATOS 10s
+cada, sem exceção (0-10, 10-20, ..., até ${totalSeconds}s). Nenhum bloco final mais curto.${structureBlock}`;
 
   const inferred = await callStructuredText({
     schema: RevisionInferredSchema,
@@ -144,5 +210,21 @@ Duração total: ${totalSeconds}s → gere exatamente ${expectedSegments} flowSe
     toolName: "generation_result",
   });
 
-  return appendDecisionLog(inferred, draft.decisionLog, "cinematografico");
+  let result = appendDecisionLog(inferred, draft.decisionLog, "cinematografico");
+  result = { ...result, flowSegments: sanitizeGestureMap(result.flowSegments, result.scenes) };
+
+  const issues = validateFlowSegments(result.flowSegments, totalSeconds);
+  if (issues.length > 0) {
+    result = await fixFlowSegmentStructure(result, totalSeconds, issues);
+    result = { ...result, flowSegments: sanitizeGestureMap(result.flowSegments, result.scenes) };
+
+    const remaining = validateFlowSegments(result.flowSegments, totalSeconds);
+    if (remaining.length > 0) {
+      throw new Error(
+        `Cinematográfico: flowSegments continuam estruturalmente inválidos após 1 tentativa de correção determinística:\n${remaining.join("\n")}`,
+      );
+    }
+  }
+
+  return result;
 }

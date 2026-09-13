@@ -8,9 +8,13 @@ import type { ComplianceViolation } from "../../types/compliance";
  * contornável (a LLM trocou "pensar" por "refletir" e passou) — o problema
  * não é a OpenAI ser fraca, é que autoverificação DENTRO da mesma chamada
  * que gerou o texto tende a se autoaprovar. Por isso os padrões abaixo são
- * REGEX com alternância de sinônimo (fuzzy o suficiente pra pegar variação
- * de palavra, sem precisar de comparação semântica/embedding), não string
- * exata — e rodam DEPOIS da chamada de IA, nunca no lugar dela.
+ * REGEX com alternativas/sinônimos conhecidos e listados explicitamente
+ * (ex.: "pensar|refletir|considerar") — cada variante precisa estar
+ * escrita no regex pra ser pega; isto NÃO é fuzzy matching nem comparação
+ * semântica/embedding, então uma variação de palavra que não esteja
+ * listada aqui passa despercebida (o Compliance via LLM continua sendo a
+ * rede de segurança pra esse caso, não este arquivo). Roda DEPOIS da
+ * chamada de IA, nunca no lugar dela.
  */
 const CLICHE_PATTERNS: { label: string; regex: RegExp }[] = [
   {
@@ -45,10 +49,16 @@ export function checkCliches(generation: GenerationResult): ComplianceViolation[
   function checkField(location: string, text: string | null) {
     if (!text) return;
     for (const { label, regex } of CLICHE_PATTERNS) {
-      if (regex.test(text)) {
+      const match = text.match(regex);
+      if (match) {
         violations.push({
           group: "cliche_generico",
-          flaggedText: text,
+          // Só o trecho que o regex realmente casou, não o campo inteiro —
+          // é o que o correctForCompliance depois usa pra confirmar em
+          // código (findStillPresentViolations) que o clichê sumiu; o
+          // campo inteiro faria essa checagem sempre falhar depois de
+          // qualquer edição parcial da frase.
+          flaggedText: match[0],
           reason: `Padrão de clichê genérico (${label}) em ${location} — checagem automática, sem IA. Frase que serviria pra qualquer produto do nicho, não só este.`,
           suggestion: `Reescrever a frase inteira ancorada numa característica REAL deste produto — nunca só trocar a palavra do clichê por um sinônimo.`,
         });
