@@ -20,8 +20,17 @@ import {
 } from "../server/pipeline.functions";
 import { ACTOR_PRESETS } from "../core/generation/actor-presets";
 import { uploadReferenceVideo } from "../lib/supabase-client";
-import type { SavedTheme, HistoryEntry } from "../lib/supabase";
+import type { SavedTheme, HistoryEntry, ConversationRow } from "../lib/supabase";
 import type { ContentRequest, GenerationResult, PipelineOutput, ReferenceAnalysis } from "../types/pipeline";
+import type { Attachment, ConversationMessage } from "../types/conversation";
+import {
+  createConversationFn,
+  listConversationsFn as listConversationsRpc,
+  getConversationFn,
+  sendMessageFn,
+  appendConversationResultFn,
+  transcribeVoiceMessageFn,
+} from "../server/conversation.functions";
 import { findOpportunities, type OpportunityWithScore, type FindOpportunitiesResult } from "../server/intelligence.functions";
 import { opportunityToPrecomputedAnalysis } from "../core/intelligence/opportunities/bridge";
 import { recommendationBadge } from "../core/intelligence/opportunities/schemas";
@@ -103,7 +112,7 @@ function StageIndicator({ current }: { current: 0 | 1 | 2 }) {
   );
 }
 
-type AppTab = "criar" | "historico" | "explorar" | "prompt" | "perfil";
+type AppTab = "home" | "criar" | "historico" | "explorar" | "prompt" | "perfil";
 
 /** Ícones — traçados copiados 1:1 do handoff de design (KroniaMockup.dc.html),
  * não reinventados, pra bater pixel a pixel com o mockup aprovado. */
@@ -235,6 +244,144 @@ function IconApprovedBadge() {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
       <circle cx="12" cy="12" r="10" fill="#22C55E" />
       <path d="M7 12.5l3 3 7-7" stroke="#0A0A0A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Ícones do novo shell (sidebar + home conversacional) — mesmo padrão
+ * SVG traço/stroke="currentColor" já usado acima, não uma biblioteca nova. */
+function IconMenu() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconChatBubble() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path
+        d="M4 12c0-4.4 3.6-8 8-8s8 3.6 8 8-3.6 8-8 8c-1.1 0-2.1-.2-3.1-.6L5 20l1.3-4C4.9 14.7 4 13.4 4 12z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconSparkles() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M11 3l1.4 3.6L16 8l-3.6 1.4L11 13l-1.4-3.6L6 8l3.6-1.4L11 3z" strokeLinejoin="round" />
+      <path d="M18 14l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconBarChartUp() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M5 20V13M11 20V8M17 20V4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconDocument() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M7 3h7l4 4v14a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" strokeLinejoin="round" />
+      <path d="M9 12h6M9 16h6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconImage() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="9" cy="10" r="1.6" />
+      <path d="M4 18l5.5-5.5a1.5 1.5 0 012.1 0L18 18" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconBag() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M6 8h12l1 12a1 1 0 01-1 1H6a1 1 0 01-1-1L6 8z" strokeLinejoin="round" />
+      <path d="M9 8V6a3 3 0 016 0v2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconTarget() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="4.5" />
+      <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function IconGrid() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="4" y="4" width="7" height="7" rx="1.2" />
+      <rect x="13" y="4" width="7" height="7" rx="1.2" />
+      <rect x="4" y="13" width="7" height="7" rx="1.2" />
+      <rect x="13" y="13" width="7" height="7" rx="1.2" />
+    </svg>
+  );
+}
+
+function IconChevronRight() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconPlus() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconMic() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5 11a7 7 0 0014 0M12 18v3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconSend() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 12l16-8-6 16-3-7-7-1z" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconGear() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 00-2.1-1.2L14 3h-4l-.5 2.6a7 7 0 00-2.1 1.2l-2.3-.9-2 3.4 2 1.5A7 7 0 005 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-.9c.6.5 1.3.9 2.1 1.2L10 21h4l.5-2.6c.8-.3 1.5-.7 2.1-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z" />
+    </svg>
+  );
+}
+
+function IconCrown() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M3 8l4 3 5-6 5 6 4-3-2 11H5L3 8z" />
     </svg>
   );
 }
@@ -741,7 +888,7 @@ const PROMPT_REFERENCE_STEP_LABELS: Record<string, string> = {
   vision: "Analisando a mecânica do vídeo...",
 };
 
-function PromptTab() {
+function PromptTab({ initialMedia = "video" }: { initialMedia?: "image" | "video" } = {}) {
   const buildCreativePromptRpc = useServerFn(buildCreativePromptFn);
   const enqueueReferenceIngestionRpc = useServerFn(enqueueReferenceIngestion);
   const advanceIngestionJobRpc = useServerFn(advanceIngestionJob);
@@ -749,7 +896,7 @@ function PromptTab() {
   const [idea, setIdea] = useState("");
   const [productInfoText, setProductInfoText] = useState("");
   const [objective, setObjective] = useState("");
-  const [media, setMedia] = useState<"image" | "video">("video");
+  const [media, setMedia] = useState<"image" | "video">(initialMedia);
   const [targetId, setTargetId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -1031,11 +1178,538 @@ interface PendingOpportunitySeed {
   precomputedAnalysis: ReferenceAnalysis;
 }
 
+/** Item de navegação da sidebar (drawer) — distinto de TAB_ITEMS/BottomNav,
+ * que continua servindo as telas internas (Criar/Histórico/Explorar/Prompt/
+ * Perfil) enquanto a Home não tiver equivalente pra todas elas. */
+const SIDEBAR_ITEMS: { id: AppTab; label: string; Icon: () => React.JSX.Element; mediaHint?: "image" }[] = [
+  { id: "criar", label: "Criar conteúdo", Icon: IconSparkles },
+  { id: "criar", label: "Analisar referência", Icon: IconBarChartUp },
+  { id: "criar", label: "Criar roteiro", Icon: IconDocument },
+  { id: "prompt", label: "Gerar imagem", Icon: IconImage, mediaHint: "image" },
+  { id: "criar", label: "TikTok Shop", Icon: IconBag },
+  { id: "explorar", label: "Estratégia de crescimento", Icon: IconTarget },
+  { id: "historico", label: "Mais opções", Icon: IconGrid },
+];
+
+function AppSidebar({
+  open,
+  active,
+  recentConversations,
+  onClose,
+  onNavigate,
+  onNewConversation,
+  onOpenConversation,
+}: {
+  open: boolean;
+  active: AppTab;
+  recentConversations: ConversationRow[];
+  onClose: () => void;
+  onNavigate: (tab: AppTab, mediaHint?: "image") => void;
+  onNewConversation: () => void;
+  onOpenConversation: (id: string) => void;
+}) {
+  const [showAllRecents, setShowAllRecents] = useState(false);
+  return (
+    <div className={`kronia-drawer-root ${open ? "open" : ""}`} aria-hidden={!open}>
+      <button type="button" className="kronia-drawer-overlay" aria-label="Fechar menu" onClick={onClose} tabIndex={open ? 0 : -1} />
+      <aside className="kronia-sidebar">
+        <div className="kronia-sidebar-brand">
+          <img src={logoIcon} alt="Kronia" style={{ width: 24, height: 24, objectFit: "contain" }} />
+          <div>
+            <div className="kronia-sidebar-brand-word">KRONIA</div>
+            <div className="kronia-sidebar-brand-sub">CREATOR</div>
+          </div>
+        </div>
+        <div className="kronia-pro-badge">
+          <IconCrown /> PRO
+        </div>
+
+        <nav className="kronia-sidebar-nav">
+          <div className="kronia-sidebar-item-row">
+            <button
+              type="button"
+              className={`kronia-sidebar-item ${active === "home" ? "active" : ""}`}
+              onClick={() => onNavigate("home")}
+            >
+              <IconChatBubble />
+              <span>Conversas</span>
+              <IconChevronRight />
+            </button>
+            <button type="button" className="kronia-new-chat-btn" onClick={onNewConversation} aria-label="Novo bate-papo" title="Novo bate-papo">
+              <IconPlus />
+            </button>
+          </div>
+          {SIDEBAR_ITEMS.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              className={`kronia-sidebar-item ${active === item.id ? "active" : ""}`}
+              onClick={() => onNavigate(item.id, item.mediaHint)}
+            >
+              <item.Icon />
+              <span>{item.label}</span>
+              <IconChevronRight />
+            </button>
+          ))}
+        </nav>
+
+        {recentConversations.length > 0 && (
+          <div className="kronia-sidebar-recents">
+            <div className="kronia-sidebar-recents-header">
+              <span>Recentes</span>
+              {recentConversations.length > 5 && (
+                <button type="button" onClick={() => setShowAllRecents((v) => !v)}>
+                  {showAllRecents ? "Ver menos" : "Ver todos"} <IconChevronRight />
+                </button>
+              )}
+            </div>
+            {recentConversations.slice(0, showAllRecents ? 20 : 5).map((conv) => (
+              <button
+                key={conv.id}
+                type="button"
+                className="kronia-recent-item"
+                onClick={() => onOpenConversation(conv.id)}
+              >
+                <span className="kronia-recent-thumb">{(conv.title || "Conversa").slice(0, 1).toUpperCase()}</span>
+                <span className="kronia-recent-text">
+                  <span className="kronia-recent-title">{conv.title || "Nova conversa"}</span>
+                  <span className="kronia-recent-time">
+                    {new Date(conv.updatedAt).toLocaleDateString("pt-BR")} · {new Date(conv.updatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        <button type="button" className="kronia-sidebar-footer" onClick={() => onNavigate("perfil")}>
+          <span className="kronia-sidebar-avatar">K</span>
+          <span className="kronia-sidebar-footer-text">
+            <span className="kronia-sidebar-footer-name">Kleber</span>
+            <span className="kronia-sidebar-footer-plan">Conta PRO</span>
+          </span>
+          <IconGear />
+        </button>
+      </aside>
+    </div>
+  );
+}
+
+interface PendingAttachment {
+  file: File;
+  type: "image" | "video";
+  /** Imagem: data URL inline (mesmo padrão de analyzeProductPhoto/
+   * analyzeActorPhoto). Vídeo: null até o upload terminar. */
+  dataUrl: string | null;
+  /** Vídeo: path no bucket creator-reference-videos já existente (mesma
+   * função uploadReferenceVideo do fluxo de vídeo de referência). Imagem: sempre null. */
+  storagePath: string | null;
+  uploading: boolean;
+}
+
+/** Só imagem/vídeo têm caminho de upload já existente no projeto — outros
+ * tipos de arquivo não têm precedente (nem product-vision nem a Ingestão
+ * aceitam "arquivo genérico"), então não aparecem no seletor. */
+function attachmentKind(file: File): "image" | "video" | null {
+  if (file.type.startsWith("image/")) return "image";
+  if (file.type.startsWith("video/")) return "video";
+  return null;
+}
+
+const CONTENT_GENERATION_STEP_LABELS_CONVERSATION: Record<string, string> = {
+  recommend: "Recomendando o melhor formato...",
+  roteirista: "Escrevendo o roteiro e os hooks...",
+  marketing: "Ajustando o ângulo de marketing...",
+  teologo: "Revisando a mensagem teológica...",
+  psicologia: "Aplicando gatilhos de decisão de compra...",
+  persuasao: "Refinando a persuasão...",
+  cinematografico: "Montando a direção cinematográfica...",
+  quality_judge: "Avaliando qualidade criativa...",
+  quality_revise: "Refinando pontos fracos do roteiro...",
+  compliance_validate: "Validando conformidade...",
+  compliance_correct: "Corrigindo pontos de conformidade...",
+  quality_judge_final: "Avaliação final de qualidade...",
+  quality_revise_final: "Ajuste final do roteiro...",
+};
+
+/**
+ * Home/Conversa — a entrada real do módulo "Conversas" (não um seed pro
+ * fluxo Criar). Estado vazio = hero do mockup; assim que a 1ª mensagem é
+ * enviada, vira uma conversa real e persistida (creator_conversations/
+ * creator_conversation_messages, ver server/conversation.functions.ts).
+ *
+ * A conversa PODE acionar o pipeline real de Criação (mesmas RPCs que
+ * CriarFlow usa: enqueueContentGeneration/advanceContentGenerationJob) —
+ * mas só quando o agente de conversa decide que já há informação
+ * suficiente (`readyToCreate`), nunca pra qualquer texto digitado.
+ */
+function ConversationScreen({
+  conversationId,
+  onOpenMenu,
+  onConversationChange,
+}: {
+  conversationId: string | null;
+  onOpenMenu: () => void;
+  onConversationChange: (id: string) => void;
+}) {
+  const createConversationRpc = useServerFn(createConversationFn);
+  const getConversationRpc = useServerFn(getConversationFn);
+  const sendMessageRpc = useServerFn(sendMessageFn);
+  const appendConversationResultRpc = useServerFn(appendConversationResultFn);
+  const transcribeVoiceMessageRpc = useServerFn(transcribeVoiceMessageFn);
+  const enqueueContentGenerationRpc = useServerFn(enqueueContentGeneration);
+  const advanceContentGenerationJobRpc = useServerFn(advanceContentGenerationJob);
+
+  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
+  const [sending, setSending] = useState(false);
+  const [creationStatus, setCreationStatus] = useState<string | null>(null);
+  const [recording, setRecording] = useState(false);
+  const mediaRecorderRef = useState<{ current: MediaRecorder | null }>(() => ({ current: null }))[0];
+  const audioChunksRef = useState<{ current: Blob[] }>(() => ({ current: [] }))[0];
+
+  useEffect(() => {
+    if (!conversationId) {
+      setMessages([]);
+      return;
+    }
+    getConversationRpc({ data: { conversationId } })
+      .then((res) => {
+        if (res) setMessages(res.messages);
+      })
+      .catch(() => {
+        // best-effort — abrir uma conversa que falhou ao carregar só fica vazia
+      });
+  }, [conversationId]);
+
+  async function runCreationJob(productInfoText: string, targetConversationId: string) {
+    setCreationStatus("Recomendando o melhor formato...");
+    try {
+      const request: ContentRequest = {
+        project: "comercial",
+        objective: "vender",
+        mode: "tiktok_shop",
+        productPhotoUrls: [],
+        productInfo: [{ text: productInfoText, kind: "fato", source: "conversa" }],
+        referenceVideoUrl: null,
+        referenceVideoStoragePath: null,
+        actorProfile: null,
+        targetDurationSeconds: 30,
+      };
+      const { jobId } = await enqueueContentGenerationRpc({ data: { request } });
+
+      let consecutiveNetworkFailures = 0;
+      for (;;) {
+        let job: Awaited<ReturnType<typeof advanceContentGenerationJobRpc>>;
+        try {
+          job = await advanceContentGenerationJobRpc({ data: { jobId } });
+          consecutiveNetworkFailures = 0;
+        } catch (err) {
+          consecutiveNetworkFailures += 1;
+          if (consecutiveNetworkFailures > 8) throw err;
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+          continue;
+        }
+        if (job) {
+          setCreationStatus(CONTENT_GENERATION_STEP_LABELS_CONVERSATION[job.step] ?? "Criando...");
+          if (job.status === "succeeded") {
+            const resultMessage = await appendConversationResultRpc({ data: { conversationId: targetConversationId, jobId } });
+            if (resultMessage) setMessages((prev) => [...prev, resultMessage]);
+            setCreationStatus(null);
+            return;
+          }
+          if (job.status === "failed") {
+            setCreationStatus(null);
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: crypto.randomUUID(),
+                conversationId: targetConversationId,
+                role: "assistant",
+                content: `Não consegui terminar a criação: ${job.error ?? "erro desconhecido"}.`,
+                attachments: [],
+                jobId: null,
+                createdAt: new Date().toISOString(),
+              },
+            ]);
+            return;
+          }
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+    } catch (err) {
+      setCreationStatus(null);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          conversationId: targetConversationId,
+          role: "assistant",
+          content: `Não consegui acionar a criação: ${err instanceof Error ? err.message : "erro desconhecido"}.`,
+          attachments: [],
+          jobId: null,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+    }
+  }
+
+  async function send(rawText: string) {
+    const text = rawText.trim();
+    const attachments: Attachment[] = pendingAttachments
+      .filter((a) => a.dataUrl || a.storagePath)
+      .map((a) => ({
+        type: a.type,
+        name: a.file.name,
+        mimeType: a.file.type,
+        dataUrl: a.dataUrl,
+        storagePath: a.storagePath,
+        visualDescription: null,
+      }));
+    if (!text && attachments.length === 0) return;
+
+    setSending(true);
+    setInput("");
+    setPendingAttachments([]);
+
+    try {
+      let activeConversationId = conversationId;
+      if (!activeConversationId) {
+        const conv = await createConversationRpc();
+        activeConversationId = conv.id;
+        onConversationChange(conv.id);
+      }
+
+      const { userMessage, assistantMessage, readyToCreate, productInfoText } = await sendMessageRpc({
+        data: { conversationId: activeConversationId, content: text, attachments },
+      });
+      setMessages((prev) => [...prev, userMessage, assistantMessage]);
+
+      if (readyToCreate && productInfoText) {
+        void runCreationJob(productInfoText, activeConversationId);
+      }
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          conversationId: conversationId ?? "",
+          role: "assistant",
+          content: `Não consegui responder agora: ${err instanceof Error ? err.message : "erro desconhecido"}.`,
+          attachments: [],
+          jobId: null,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function handleAttachFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []).filter((file) => attachmentKind(file) !== null);
+    e.target.value = "";
+    if (files.length === 0) return;
+
+    const staged: PendingAttachment[] = files.map((file) => ({
+      file,
+      type: attachmentKind(file)!,
+      dataUrl: null,
+      storagePath: null,
+      uploading: true,
+    }));
+    setPendingAttachments((prev) => [...prev, ...staged]);
+
+    for (const item of staged) {
+      try {
+        if (item.type === "image") {
+          // Mesmo caminho que analyzeProductPhoto/analyzeActorPhoto já usam.
+          const dataUrl = await readFileAsDataUrl(item.file);
+          setPendingAttachments((prev) => prev.map((a) => (a.file === item.file ? { ...a, dataUrl, uploading: false } : a)));
+        } else {
+          // Vídeo: mesmo bucket/função do vídeo de referência já existente.
+          const storagePath = await uploadReferenceVideo(item.file);
+          setPendingAttachments((prev) =>
+            prev.map((a) => (a.file === item.file ? { ...a, storagePath, uploading: false } : a)),
+          );
+        }
+      } catch {
+        setPendingAttachments((prev) => prev.filter((a) => a.file !== item.file));
+      }
+    }
+  }
+
+  async function toggleRecording() {
+    if (recording) {
+      mediaRecorderRef.current?.stop();
+      setRecording(false);
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      recorder.ondataavailable = (e) => audioChunksRef.current.push(e.data);
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || "audio/webm" });
+        const arrayBuffer = await blob.arrayBuffer();
+        const audioBase64 = btoa(Array.from(new Uint8Array(arrayBuffer), (b) => String.fromCharCode(b)).join(""));
+        try {
+          const { text } = await transcribeVoiceMessageRpc({ data: { audioBase64, mimeType: blob.type } });
+          if (text.trim()) void send(text);
+        } catch {
+          // best-effort — falha de transcrição não trava a conversa
+        }
+      };
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setRecording(true);
+    } catch {
+      // sem permissão de microfone — botão simplesmente não faz nada
+    }
+  }
+
+  const isEmpty = messages.length === 0 && !sending;
+
+  return (
+    <div className="kronia-home">
+      <div className="kronia-home-topbar">
+        <button type="button" className="kronia-icon-btn" onClick={onOpenMenu} aria-label="Abrir menu">
+          <IconMenu />
+        </button>
+        <button type="button" className="kronia-icon-btn" aria-label="Assistente">
+          <IconChatBubble />
+        </button>
+      </div>
+
+      {isEmpty ? (
+        <div className="kronia-home-hero">
+          <h1>
+            O que vamos
+            <br />
+            <span className="accent">criar hoje?</span>
+          </h1>
+          <p>Sua ideia. Nossa estratégia. Conteúdo que gera resultados.</p>
+        </div>
+      ) : (
+        <div className="kronia-conversation-thread">
+          {messages.map((m) => (
+            <div key={m.id} className={`kronia-msg kronia-msg-${m.role}`}>
+              {m.attachments.length > 0 && (
+                <div className="kronia-msg-attachments">
+                  {m.attachments.map((a, i) => (
+                    <span key={i} className="kronia-msg-attachment-chip">
+                      {a.type === "image" ? <IconImage /> : <IconBarChartUp />}
+                      {a.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {m.content && <div className="kronia-msg-bubble">{m.content}</div>}
+            </div>
+          ))}
+          {creationStatus && (
+            <div className="kronia-msg kronia-msg-assistant">
+              <div className="kronia-msg-bubble kronia-msg-bubble-loading">
+                <span className="spinner-inline" /> {creationStatus}
+              </div>
+            </div>
+          )}
+          {sending && !creationStatus && (
+            <div className="kronia-msg kronia-msg-assistant">
+              <div className="kronia-msg-bubble kronia-msg-bubble-loading">
+                <span className="spinner-inline" /> Pensando...
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {pendingAttachments.length > 0 && (
+        <div className="kronia-pending-attachments">
+          {pendingAttachments.map((a, i) => (
+            <span key={i} className={`kronia-pending-chip ${a.uploading ? "uploading" : ""}`}>
+              {a.type === "image" ? <IconImage /> : <IconBarChartUp />}
+              {a.file.name}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="kronia-home-inputbar">
+        <label className="kronia-icon-btn ghost" aria-label="Anexar">
+          <IconPlus />
+          <input type="file" multiple hidden onChange={handleAttachFiles} accept="image/*,video/*" />
+        </label>
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void send(input);
+          }}
+          placeholder="Digite ou fale com o KRONIA..."
+          disabled={sending}
+        />
+        <button
+          type="button"
+          className={`kronia-icon-btn ghost ${recording ? "recording" : ""}`}
+          aria-label={recording ? "Parar gravação" : "Falar"}
+          onClick={toggleRecording}
+        >
+          <IconMic />
+        </button>
+        <button
+          type="button"
+          className="kronia-send-btn"
+          onClick={() => void send(input)}
+          aria-label="Enviar"
+          disabled={sending || (!input.trim() && pendingAttachments.every((a) => a.uploading))}
+        >
+          <IconSend />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function CriadorApp() {
-  const [tab, setTab] = useState<AppTab>("criar");
+  const [tab, setTab] = useState<AppTab>("home");
   const [pendingOpportunity, setPendingOpportunity] = useState<PendingOpportunitySeed | null>(null);
+  const [initialMedia, setInitialMedia] = useState<"image" | "video">("video");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [recentConversations, setRecentConversations] = useState<ConversationRow[]>([]);
+  const listConversationsRpcHook = useServerFn(listConversationsRpc);
+
+  const refreshConversations = () => {
+    listConversationsRpcHook()
+      .then(setRecentConversations)
+      .catch(() => setRecentConversations([]));
+  };
+
+  useEffect(refreshConversations, []);
+
+  function navigate(nextTab: AppTab, mediaHint?: "image") {
+    if (mediaHint) setInitialMedia(mediaHint);
+    setTab(nextTab);
+    setSidebarOpen(false);
+  }
+
   return (
     <>
+      {tab === "home" && (
+        <ConversationScreen
+          conversationId={activeConversationId}
+          onOpenMenu={() => setSidebarOpen(true)}
+          onConversationChange={(id) => {
+            setActiveConversationId(id);
+            refreshConversations();
+          }}
+        />
+      )}
       {tab === "criar" && (
         <CriarFlow
           onOpenProfile={() => setTab("perfil")}
@@ -1048,15 +1722,30 @@ function CriadorApp() {
         <OportunidadesTab
           onCreateContent={(seed) => {
             setPendingOpportunity(seed);
-            setTab("criar");
+            navigate("criar");
           }}
         />
       )}
-      {tab === "prompt" && <PromptTab />}
+      {tab === "prompt" && <PromptTab initialMedia={initialMedia} />}
       {tab === "perfil" && (
         <PlaceholderTab title="Perfil" hint="Em breve: atores salvos, preferências e configurações da conta." />
       )}
-      <BottomNav active={tab} onChange={setTab} />
+      {tab !== "home" && <BottomNav active={tab} onChange={(next) => navigate(next)} />}
+      <AppSidebar
+        open={sidebarOpen}
+        active={tab}
+        recentConversations={recentConversations}
+        onClose={() => setSidebarOpen(false)}
+        onNavigate={navigate}
+        onNewConversation={() => {
+          setActiveConversationId(null);
+          navigate("home");
+        }}
+        onOpenConversation={(id) => {
+          setActiveConversationId(id);
+          navigate("home");
+        }}
+      />
     </>
   );
 }
@@ -1065,10 +1754,12 @@ function CriarFlow({
   onOpenProfile,
   pendingOpportunity,
   onConsumePendingOpportunity,
+  initialIdea,
 }: {
   onOpenProfile: () => void;
   pendingOpportunity: PendingOpportunitySeed | null;
   onConsumePendingOpportunity: () => void;
+  initialIdea?: string | null;
 }) {
   const enqueueReferenceIngestionFn = useServerFn(enqueueReferenceIngestion);
   const advanceIngestionJobFn = useServerFn(advanceIngestionJob);
@@ -1088,7 +1779,7 @@ function CriarFlow({
   const [project, setProject] = useState<ContentRequest["project"]>("comercial");
   const [objective, setObjective] = useState<ContentRequest["objective"]>("vender");
   const [mode, setMode] = useState<ContentRequest["mode"]>("tiktok_shop");
-  const [productInfoText, setProductInfoText] = useState("");
+  const [productInfoText, setProductInfoText] = useState(() => initialIdea ?? "");
   const [productPhotoDataUrls, setProductPhotoDataUrls] = useState<string[]>([]);
   const [productPhotoDescription, setProductPhotoDescription] = useState<string | null>(null);
   const [analyzingProductPhoto, setAnalyzingProductPhoto] = useState(false);

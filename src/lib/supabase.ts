@@ -3,9 +3,9 @@ import type { PipelineOutput } from "../types/pipeline";
 
 export type JobStatus = "pending" | "running" | "succeeded" | "failed";
 
-/** Schema mínimo só da tabela que este app usa — o projeto Supabase é
+/** Schema mínimo só das tabelas que este app usa — o projeto Supabase é
  * compartilhado com outro produto (app de treino), mas o KRONIA Criador
- * Inteligente só enxerga/tipa essa uma tabela, isolada das demais. */
+ * Inteligente só enxerga/tipa essas tabelas, isoladas das demais. */
 interface Database {
   public: {
     Tables: {
@@ -13,6 +13,32 @@ interface Database {
         Row: { id: string; text: string; created_at: string };
         Insert: { text: string };
         Update: { text?: string };
+        Relationships: [];
+      };
+      creator_conversations: {
+        Row: { id: string; title: string; created_at: string; updated_at: string };
+        Insert: { title?: string };
+        Update: { title?: string; updated_at?: string };
+        Relationships: [];
+      };
+      creator_conversation_messages: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          role: "user" | "assistant";
+          content: string;
+          attachments: Record<string, unknown>[];
+          job_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          conversation_id: string;
+          role: "user" | "assistant";
+          content: string;
+          attachments?: Record<string, unknown>[];
+          job_id?: string | null;
+        };
+        Update: never;
         Relationships: [];
       };
       creator_history: {
@@ -140,6 +166,114 @@ export async function addSavedTheme(text: string): Promise<SavedTheme> {
 export async function removeSavedTheme(id: string): Promise<void> {
   const { error } = await getSupabase().from("creator_saved_themes").delete().eq("id", id);
   if (error) throw error;
+}
+
+/** Conversas — memória real da Home/"Conversas" (ver types/conversation.ts
+ * pro shape validado por Zod usado pelo resto do app; aqui é só CRUD
+ * cru sobre as tabelas). */
+export interface ConversationRow {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConversationMessageRow {
+  id: string;
+  conversationId: string;
+  role: "user" | "assistant";
+  content: string;
+  attachments: Record<string, unknown>[];
+  jobId: string | null;
+  createdAt: string;
+}
+
+export async function createConversation(title = ""): Promise<ConversationRow> {
+  const { data, error } = await getSupabase().from("creator_conversations").insert([{ title }]).select("*").single();
+  if (error) throw error;
+  return { id: data.id, title: data.title, createdAt: data.created_at, updatedAt: data.updated_at };
+}
+
+export async function listConversations(limit = 30): Promise<ConversationRow[]> {
+  const { data, error } = await getSupabase()
+    .from("creator_conversations")
+    .select("*")
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data.map((d) => ({ id: d.id, title: d.title, createdAt: d.created_at, updatedAt: d.updated_at }));
+}
+
+export async function getConversation(id: string): Promise<ConversationRow | null> {
+  const { data, error } = await getSupabase().from("creator_conversations").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data ? { id: data.id, title: data.title, createdAt: data.created_at, updatedAt: data.updated_at } : null;
+}
+
+export async function touchConversationTitle(id: string, title: string): Promise<void> {
+  const { error } = await getSupabase()
+    .from("creator_conversations")
+    .update({ title, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function touchConversation(id: string): Promise<void> {
+  const { error } = await getSupabase()
+    .from("creator_conversations")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function listConversationMessages(conversationId: string): Promise<ConversationMessageRow[]> {
+  const { data, error } = await getSupabase()
+    .from("creator_conversation_messages")
+    .select("*")
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data.map((d) => ({
+    id: d.id,
+    conversationId: d.conversation_id,
+    role: d.role,
+    content: d.content,
+    attachments: d.attachments,
+    jobId: d.job_id,
+    createdAt: d.created_at,
+  }));
+}
+
+export async function addConversationMessage(entry: {
+  conversationId: string;
+  role: "user" | "assistant";
+  content: string;
+  attachments?: Record<string, unknown>[];
+  jobId?: string | null;
+}): Promise<ConversationMessageRow> {
+  const { data, error } = await getSupabase()
+    .from("creator_conversation_messages")
+    .insert([
+      {
+        conversation_id: entry.conversationId,
+        role: entry.role,
+        content: entry.content,
+        attachments: entry.attachments ?? [],
+        job_id: entry.jobId ?? null,
+      },
+    ])
+    .select("*")
+    .single();
+  if (error) throw error;
+  return {
+    id: data.id,
+    conversationId: data.conversation_id,
+    role: data.role,
+    content: data.content,
+    attachments: data.attachments,
+    jobId: data.job_id,
+    createdAt: data.created_at,
+  };
 }
 
 export interface HistoryEntry {
