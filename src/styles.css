@@ -1,3 +1,61 @@
+/* ==========================================================================
+   Tokens de tema — claro (padrão) e escuro
+   --------------------------------------------------------------------------
+   Porte do sistema de tema de agenda-/css/mobile.css (:root +
+   html[data-theme="escuro"], toggle salvo em localStorage, aplicado antes
+   do primeiro render pra não piscar — ver __root.tsx e src/lib/theme.ts).
+
+   ESCOPO: estes tokens valem só pras classes .kronia-* (Home/Conversa/
+   menu lateral/toggle de tema) — as telas antigas (.app, .card,
+   .field-input, .btn-primary, .pill, .brand-row etc, usadas por Criar/
+   Histórico/Explorar/Prompt/Perfil) continuam com hex cravado, do jeito
+   que sempre foram, INTOCADAS por este sistema. Motivo: o mockup exige
+   Home/menu claros por padrão; as telas antigas têm dezenas de estilos
+   inline (fora deste arquivo) que pressupõem fundo escuro e não foram
+   convertidos nesta rodada — os dois defaults juntos não cabem numa
+   variável de tema global só. Um retema completo das telas antigas fica
+   pra uma rodada própria.
+   ========================================================================== */
+:root {
+  --kr-bg: #FAF9F7;
+  --kr-card: #FFFFFF;
+  --kr-card-2: #F1EEE7;
+  --kr-ink: #17140F;
+  --kr-muted: #7A7568;
+  --kr-muted-2: #9A947F;
+  --kr-line: #EFECE6;
+  --kr-accent: #FF6A1A;
+  --kr-accent-2: #FF8A1A;
+  --kr-accent-3: #FF5500;
+  --kr-accent-ink: #B84E10;
+  --kr-tint: #FDE7D8;
+  --kr-header-bg: rgba(250, 249, 247, 0.92);
+  --kr-shadow: rgba(0, 0, 0, 0.08);
+  --kr-overlay: rgba(23, 20, 15, 0.4);
+  --kr-placeholder: #B0AA9B;
+  --kr-white: #FFFFFF;
+}
+
+html[data-theme="escuro"] {
+  --kr-bg: #070707;
+  --kr-card: #121212;
+  --kr-card-2: #101010;
+  --kr-ink: #F2F2F2;
+  --kr-muted: #9A9A9A;
+  --kr-muted-2: #7A7A7A;
+  --kr-line: #262626;
+  --kr-accent: #FF6A1A;
+  --kr-accent-2: #FF8A1A;
+  --kr-accent-3: #FF5500;
+  --kr-accent-ink: #FF9A5A;
+  --kr-tint: #2E2013;
+  --kr-header-bg: rgba(7, 7, 7, 0.94);
+  --kr-shadow: rgba(0, 0, 0, 0.3);
+  --kr-overlay: rgba(0, 0, 0, 0.4);
+  --kr-placeholder: #6B6B6B;
+  --kr-white: #FFFFFF;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -28,6 +86,8 @@ a {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  background: #070707;
+  color: #E5E5E5;
 }
 
 .bottom-nav {
@@ -420,19 +480,18 @@ a {
 }
 
 /* ==========================================================================
-   Fase 2 — Home conversacional + Sidebar (drawer)
-   Tema CLARO isolado do tema escuro acima (mockup aprovado usa fundo
-   claro/creme só nesta tela nova) — escopo desta fase é só a Home + o
-   drawer de navegação; as telas internas (Criar/Histórico/Explorar/Prompt/
-   Perfil) continuam no tema escuro existente até uma fase de re-tema.
+   Home conversacional + Sidebar (drawer) — usa os mesmos tokens --kr-*
+   acima; a Home é a origem da paleta clara (era o único lugar com essas
+   cores antes do retema; agora --kr-* no :root é a mesma coisa em toda
+   parte, e a Home não precisa mais de nenhuma cor própria).
    ========================================================================== */
 
 .kronia-home {
   min-height: 100%;
   max-width: 480px;
   margin: 0 auto;
-  background: #FAF9F7;
-  color: #17140F;
+  background: var(--kr-bg);
+  color: var(--kr-ink);
   display: flex;
   flex-direction: column;
   padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
@@ -449,19 +508,19 @@ a {
   height: 42px;
   border-radius: 999px;
   border: none;
-  background: #fff;
-  color: #17140F;
+  background: var(--kr-card);
+  color: var(--kr-ink);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px var(--kr-shadow);
   cursor: pointer;
 }
 
 .kronia-icon-btn.ghost {
   background: transparent;
   box-shadow: none;
-  color: #8A8578;
+  color: var(--kr-muted-2);
 }
 
 .kronia-icon-btn:disabled {
@@ -481,16 +540,16 @@ a {
   line-height: 1.12;
   font-weight: 800;
   margin: 0 0 14px;
-  color: #17140F;
+  color: var(--kr-ink);
 }
 
 .kronia-home-hero h1 .accent {
-  color: #FF6A1A;
+  color: var(--kr-accent);
 }
 
 .kronia-home-hero p {
   font-size: 15px;
-  color: #7A7568;
+  color: var(--kr-muted);
   margin: 0;
   max-width: 320px;
 }
@@ -499,11 +558,11 @@ a {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #fff;
+  background: var(--kr-card);
   border-radius: 999px;
   padding: 6px 6px 6px 14px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-  border: 1px solid #EFECE6;
+  box-shadow: 0 2px 10px var(--kr-shadow);
+  border: 1px solid var(--kr-line);
 }
 
 .kronia-home-inputbar input {
@@ -512,12 +571,12 @@ a {
   outline: none;
   background: transparent;
   font-size: 15px;
-  color: #17140F;
+  color: var(--kr-ink);
   font-family: inherit;
 }
 
 .kronia-home-inputbar input::placeholder {
-  color: #B0AA9B;
+  color: var(--kr-placeholder);
 }
 
 .kronia-send-btn {
@@ -525,8 +584,8 @@ a {
   height: 42px;
   border-radius: 999px;
   border: none;
-  background: #17140F;
-  color: #fff;
+  background: var(--kr-ink);
+  color: var(--kr-bg);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -566,7 +625,7 @@ a {
   height: 100vh;
   height: 100svh;
   overflow: hidden;
-  background: #FAF9F7;
+  background: var(--kr-bg);
   touch-action: pan-y pinch-zoom;
 }
 
@@ -575,15 +634,15 @@ a {
   top: 0;
   bottom: 0;
   left: 0;
-  /* --kronia-menu-desloca: min(300px, 82vw) — mesmo valor de agenda-, nunca
-     deixa o app sem nenhuma fatia de tela pra tocar de volta. */
+  /* min(300px, 82vw) — mesmo valor de agenda-, nunca deixa o app sem
+     nenhuma fatia de tela pra tocar de volta. */
   width: calc(min(300px, 82vw) + 24px);
   display: flex;
   flex-direction: column;
   padding: max(20px, env(safe-area-inset-top)) calc(14px + 24px) calc(16px + env(safe-area-inset-bottom)) 14px;
   overflow-y: auto;
   z-index: 0;
-  background: #FAF9F7;
+  background: var(--kr-bg);
   transform: translate3d(-24px, 0, 0);
 }
 
@@ -593,34 +652,38 @@ a {
 
 /* Véu que mantém o menu um passo abaixo da tela principal — cobre o palco
    inteiro (não só a largura do menu) pra não precisar acompanhar o
-   parallax; o que sobra pra direita fica debaixo da camada do app, opaca. */
+   parallax; o que sobra pra direita fica debaixo da camada do app, opaca.
+   SÓ VISUAL — pointer-events:none sempre, nos dois estados: se ficasse
+   clicável ele intercepta o toque nos próprios itens do menu (cobre o
+   palco inteiro, inclusive onde o menu está). Fechar tocando de lado é
+   .kronia-app-back, um elemento à parte DENTRO da camada do app — mesma
+   separação que agenda- já tinha (kr-drawer-back), ver logo abaixo. */
 .kronia-menu-veu {
   position: absolute;
   inset: 0;
   z-index: 0;
   border: none;
   padding: 0;
-  background: rgba(10, 8, 4, 0.4);
+  background: var(--kr-overlay);
   opacity: 0;
   pointer-events: none;
 }
 
 .kronia-menu-aberto .kronia-menu-veu {
   opacity: 0.18;
-  pointer-events: auto;
 }
 
 .kronia-app-camada {
   position: relative;
   z-index: 1;
   height: 100%;
-  /* Fundo escuro de base — .app (Criar/Histórico/Explorar/Prompt/Perfil,
-     tema escuro) nunca teve background próprio, sempre dependeu do body
-     atrás dele. Agora que essas telas vivem dentro desta camada (que fica
-     por cima do palco claro, não do body), sem isto o claro vazava atrás
-     das telas escuras. .kronia-home (a única tela clara) já é opaca e
-     cobre isto normalmente. */
-  background: #070707;
+  /* Fundo PRÓPRIO — as telas internas nunca tiveram background próprio,
+     sempre dependeram do body atrás. Agora que vivem dentro desta camada
+     (que fica sobre o palco, não mais direto sobre o body), sem isto o
+     fundo do palco vazava atrás delas. Mesmo token que .app usa: sempre a
+     cor de fundo do tema atual, então nunca há costura visível entre
+     app-camada e o conteúdo real de dentro. */
+  background: var(--kr-bg);
   /* auto (não hidden) no eixo vertical: as telas internas não têm scroll
      próprio, então é esta camada que precisa rolar. Horizontal continua
      escondido pra recortar a quina arredondada durante o deslocamento. */
@@ -632,6 +695,28 @@ a {
 .kronia-menu-aberto .kronia-app-camada {
   transform: translate3d(min(300px, 82vw), 0, 0);
   border-radius: 30px;
+}
+
+/* Área de "tocar de lado pra fechar" — vive DENTRO da camada do app (cobre
+   a tela ativa, que é o que fica visível/tocável quando o menu está
+   aberto), nunca o véu (que é só visual, ver acima). pointer-events só liga
+   com o menu aberto, senão bloquearia toque na tela normalmente. */
+.kronia-app-back {
+  position: absolute;
+  inset: 0;
+  /* Acima de qualquer coisa dentro da camada do app, inclusive cabeçalho
+     sticky e bottom-nav fixo (ambos z-index:10 no CSS deles) — com o menu
+     aberto, tocar em QUALQUER ponto da tela principal fecha, mesmo que ali
+     embaixo houvesse um botão normal. */
+  z-index: 20;
+  border: none;
+  padding: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.kronia-menu-aberto .kronia-app-back {
+  pointer-events: auto;
 }
 
 /* A sombra da tela principal mora num elemento próprio — só o que ela
@@ -664,12 +749,13 @@ a {
   font-size: 15px;
   font-weight: 800;
   letter-spacing: 0.02em;
+  color: var(--kr-ink);
 }
 
 .kronia-sidebar-brand-sub {
   font-size: 9px;
   letter-spacing: 0.12em;
-  color: #9A947F;
+  color: var(--kr-muted-2);
 }
 
 .kronia-pro-badge {
@@ -680,8 +766,8 @@ a {
   margin: 0 8px 16px;
   padding: 5px 12px;
   border-radius: 999px;
-  border: 1px solid #FFD7B0;
-  color: #FF6A1A;
+  border: 1px solid var(--kr-tint);
+  color: var(--kr-accent);
   font-size: 11px;
   font-weight: 700;
 }
@@ -700,7 +786,7 @@ a {
   border-radius: 12px;
   border: none;
   background: transparent;
-  color: #3A362D;
+  color: var(--kr-ink);
   font-size: 14.5px;
   font-weight: 600;
   text-align: left;
@@ -712,19 +798,19 @@ a {
 }
 
 .kronia-sidebar-item svg:last-child {
-  color: #C7C1B2;
+  color: var(--kr-muted-2);
   flex-shrink: 0;
 }
 
 .kronia-sidebar-item.active {
-  background: #FDE7D8;
-  color: #B84E10;
+  background: var(--kr-tint);
+  color: var(--kr-accent-ink);
 }
 
 .kronia-sidebar-recents {
   margin-top: 18px;
   padding-top: 14px;
-  border-top: 1px solid #EFECE6;
+  border-top: 1px solid var(--kr-line);
 }
 
 .kronia-sidebar-recents-header {
@@ -733,7 +819,7 @@ a {
   justify-content: space-between;
   padding: 0 10px 8px;
   font-size: 12px;
-  color: #9A947F;
+  color: var(--kr-muted-2);
 }
 
 .kronia-sidebar-recents-header button {
@@ -742,7 +828,7 @@ a {
   gap: 2px;
   border: none;
   background: transparent;
-  color: #9A947F;
+  color: var(--kr-muted-2);
   font-size: 12px;
   cursor: pointer;
 }
@@ -764,8 +850,8 @@ a {
   width: 36px;
   height: 36px;
   border-radius: 9px;
-  background: #EFECE6;
-  color: #8A8578;
+  background: var(--kr-card-2);
+  color: var(--kr-muted-2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -784,7 +870,7 @@ a {
 .kronia-recent-title {
   font-size: 13px;
   font-weight: 600;
-  color: #17140F;
+  color: var(--kr-ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -792,13 +878,13 @@ a {
 
 .kronia-recent-time {
   font-size: 11px;
-  color: #9A947F;
+  color: var(--kr-muted-2);
 }
 
 .kronia-sidebar-footer {
   margin-top: auto;
   padding-top: 14px;
-  border-top: 1px solid #EFECE6;
+  border-top: 1px solid var(--kr-line);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -812,8 +898,8 @@ a {
   width: 34px;
   height: 34px;
   border-radius: 999px;
-  background: #FDE7D8;
-  color: #B84E10;
+  background: var(--kr-tint);
+  color: var(--kr-accent-ink);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -832,17 +918,17 @@ a {
 .kronia-sidebar-footer-name {
   font-size: 13.5px;
   font-weight: 700;
-  color: #17140F;
+  color: var(--kr-ink);
 }
 
 .kronia-sidebar-footer-plan {
   font-size: 11.5px;
-  color: #FF6A1A;
+  color: var(--kr-accent);
   font-weight: 600;
 }
 
 .kronia-sidebar-footer svg {
-  color: #9A947F;
+  color: var(--kr-muted-2);
 }
 
 .kronia-sidebar-item-row {
@@ -861,7 +947,7 @@ a {
   border-radius: 9px;
   border: none;
   background: transparent;
-  color: #8A8578;
+  color: var(--kr-muted-2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -870,12 +956,41 @@ a {
 }
 
 .kronia-new-chat-btn:hover {
-  background: #F1EEE7;
+  background: var(--kr-card-2);
 }
 
 .kronia-icon-btn.recording {
   color: #E23B2E;
-  background: #FCE4E1;
+  background: rgba(226, 59, 46, 0.12);
+}
+
+/* Toggle de tema (claro/escuro) — mesmo desenho de agenda-/mobile-perfil.js:
+   pílula com sol/lua, o ativo ganha fundo sólido. Vive na Perfil. */
+.kronia-tema-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--kr-card-2);
+  border-radius: 999px;
+  padding: 4px;
+}
+
+.kronia-tema-opt {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--kr-muted-2);
+}
+
+.kronia-tema-opt.active {
+  background: var(--kr-ink);
+  color: var(--kr-bg);
 }
 
 /* Thread de conversa */
@@ -914,15 +1029,15 @@ a {
 }
 
 .kronia-msg-user .kronia-msg-bubble {
-  background: #17140F;
-  color: #fff;
+  background: var(--kr-ink);
+  color: var(--kr-bg);
   border-bottom-right-radius: 4px;
 }
 
 .kronia-msg-assistant .kronia-msg-bubble {
-  background: #fff;
-  color: #17140F;
-  border: 1px solid #EFECE6;
+  background: var(--kr-card);
+  color: var(--kr-ink);
+  border: 1px solid var(--kr-line);
   border-bottom-left-radius: 4px;
 }
 
@@ -930,15 +1045,15 @@ a {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #8A8578;
+  color: var(--kr-muted-2);
 }
 
 .spinner-inline {
   width: 14px;
   height: 14px;
   border-radius: 999px;
-  border: 2px solid #E5E1D6;
-  border-top-color: #FF6A1A;
+  border: 2px solid var(--kr-line);
+  border-top-color: var(--kr-accent);
   animation: spin 0.8s linear infinite;
   flex-shrink: 0;
 }
@@ -956,8 +1071,8 @@ a {
   gap: 5px;
   padding: 5px 10px;
   border-radius: 999px;
-  background: #F1EEE7;
-  color: #5C5748;
+  background: var(--kr-card-2);
+  color: var(--kr-muted);
   font-size: 12px;
   max-width: 160px;
   overflow: hidden;
@@ -984,9 +1099,9 @@ a {
   gap: 5px;
   padding: 5px 10px;
   border-radius: 999px;
-  background: #fff;
-  border: 1px solid #EFECE6;
-  color: #5C5748;
+  background: var(--kr-card);
+  border: 1px solid var(--kr-line);
+  color: var(--kr-muted);
   font-size: 12px;
   max-width: 160px;
   overflow: hidden;

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState, useEffect, useRef, type FormEvent } from "react";
 import { useMenuSpring } from "../hooks/useMenuSpring";
+import { getStoredTema, setStoredTema, type Tema } from "../lib/theme";
 import {
   enqueueReferenceIngestion,
   advanceIngestionJob,
@@ -58,9 +59,18 @@ type Step = "form" | "loading" | "resultado" | "roteiro" | "manual" | "error";
 
 const CONFIDENCE_LABEL: Record<string, string> = { alta: "Alta", media: "Média", baixa: "Baixa" };
 
-function BrandRow({ onBack, onProfile }: { onBack?: () => void; onProfile?: () => void } = {}) {
+function BrandRow({
+  onBack,
+  onProfile,
+  onOpenMenu,
+}: { onBack?: () => void; onProfile?: () => void; onOpenMenu?: () => void } = {}) {
   return (
     <div className="brand-row">
+      {onOpenMenu && (
+        <button type="button" onClick={onOpenMenu} className="brand-back" aria-label="Abrir menu">
+          <IconMenu />
+        </button>
+      )}
       {onBack && (
         <button type="button" onClick={onBack} className="brand-back" aria-label="Voltar">
           <IconChevronLeft />
@@ -387,6 +397,23 @@ function IconCrown() {
   );
 }
 
+function IconSun() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="4.5" />
+      <path d="M12 3v2M12 19v2M5 5l1.4 1.4M17.6 17.6L19 19M3 12h2M19 12h2M5 19l1.4-1.4M17.6 6.4L19 5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconMoon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M20 14.5A8.5 8.5 0 1110 3.5a7 7 0 0010 11z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 const TAB_ITEMS: { id: AppTab; label: string; Icon: () => React.JSX.Element }[] = [
   { id: "criar", label: "Criar", Icon: IconHome },
   { id: "historico", label: "Histórico", Icon: IconClock },
@@ -415,15 +442,51 @@ function BottomNav({ active, onChange }: { active: AppTab; onChange: (tab: AppTa
   );
 }
 
-function PlaceholderTab({ title, hint }: { title: string; hint: string }) {
+/** Perfil — hoje só o toggle de tema é funcionalidade real, o resto ainda é
+ * placeholder. Mesmo desenho de agenda-/mobile-perfil.js: pílula sol/lua,
+ * persistida em localStorage. */
+function PerfilTab({ onOpenMenu }: { onOpenMenu: () => void }) {
+  const [tema, setTema] = useState<Tema>(() => getStoredTema());
+
+  function trocar(novo: Tema) {
+    setStoredTema(novo);
+    setTema(novo);
+  }
+
   return (
     <div className="app">
-      <BrandRow />
+      <BrandRow onOpenMenu={onOpenMenu} />
       <h1 className="h1" style={{ fontSize: 20 }}>
-        {title}
+        Perfil
       </h1>
+
+      <div className="card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 14.5, color: "#fff" }}>Tema</div>
+          <div style={{ fontSize: 12.5, color: "#8A8A8A", marginTop: 2 }}>Claro ou escuro, sua escolha fica salva.</div>
+        </div>
+        <div className="kronia-tema-toggle">
+          <button
+            type="button"
+            className={`kronia-tema-opt ${tema === "claro" ? "active" : ""}`}
+            onClick={() => trocar("claro")}
+            aria-label="Tema claro"
+          >
+            <IconSun />
+          </button>
+          <button
+            type="button"
+            className={`kronia-tema-opt ${tema === "escuro" ? "active" : ""}`}
+            onClick={() => trocar("escuro")}
+            aria-label="Tema escuro"
+          >
+            <IconMoon />
+          </button>
+        </div>
+      </div>
+
       <div className="card" style={{ color: "#8A8A8A", fontSize: 14 }}>
-        {hint}
+        Em breve: atores salvos, preferências e configurações da conta.
       </div>
     </div>
   );
@@ -589,7 +652,13 @@ const TARGET_SELECTION_LABEL: Record<string, string> = {
   default_target: "padrão",
 };
 
-function OportunidadesTab({ onCreateContent }: { onCreateContent: (seed: PendingOpportunitySeed) => void }) {
+function OportunidadesTab({
+  onCreateContent,
+  onOpenMenu,
+}: {
+  onCreateContent: (seed: PendingOpportunitySeed) => void;
+  onOpenMenu: () => void;
+}) {
   const findOpportunitiesFn = useServerFn(findOpportunities);
 
   const [niche, setNiche] = useState("");
@@ -652,7 +721,7 @@ function OportunidadesTab({ onCreateContent }: { onCreateContent: (seed: Pending
 
   return (
     <div className="app">
-      <BrandRow />
+      <BrandRow onOpenMenu={onOpenMenu} />
       <h1 className="h1" style={{ fontSize: 20, marginBottom: 4 }}>
         Oportunidades
       </h1>
@@ -778,7 +847,7 @@ function OportunidadesTab({ onCreateContent }: { onCreateContent: (seed: Pending
   );
 }
 
-function HistoricoTab() {
+function HistoricoTab({ onOpenMenu }: { onOpenMenu: () => void }) {
   const listHistoryRpc = useServerFn(listHistoryFn);
   const removeHistoryRpc = useServerFn(removeHistoryEntryFn);
   const [entries, setEntries] = useState<HistoryEntry[] | null>(null);
@@ -801,7 +870,7 @@ function HistoricoTab() {
 
   return (
     <div className="app">
-      <BrandRow />
+      <BrandRow onOpenMenu={onOpenMenu} />
       <h1 className="h1" style={{ fontSize: 20 }}>
         Histórico
       </h1>
@@ -889,7 +958,13 @@ const PROMPT_REFERENCE_STEP_LABELS: Record<string, string> = {
   vision: "Analisando a mecânica do vídeo...",
 };
 
-function PromptTab({ initialMedia = "video" }: { initialMedia?: "image" | "video" } = {}) {
+function PromptTab({
+  initialMedia = "video",
+  onOpenMenu,
+}: {
+  initialMedia?: "image" | "video";
+  onOpenMenu: () => void;
+}) {
   const buildCreativePromptRpc = useServerFn(buildCreativePromptFn);
   const enqueueReferenceIngestionRpc = useServerFn(enqueueReferenceIngestion);
   const advanceIngestionJobRpc = useServerFn(advanceIngestionJob);
@@ -1017,7 +1092,7 @@ function PromptTab({ initialMedia = "video" }: { initialMedia?: "image" | "video
 
   return (
     <div className="app">
-      <BrandRow />
+      <BrandRow onOpenMenu={onOpenMenu} />
       <h1 className="h1" style={{ fontSize: 20, marginBottom: 4 }}>
         Prompt
       </h1>
@@ -1697,7 +1772,7 @@ function CriadorApp() {
   const appRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const sombraRef = useRef<HTMLDivElement>(null);
-  const veuRef = useRef<HTMLButtonElement>(null);
+  const veuRef = useRef<HTMLDivElement>(null);
   useMenuSpring(sidebarOpen, { app: appRef, menu: menuRef, sombra: sombraRef, veu: veuRef });
 
   const refreshConversations = () => {
@@ -1731,14 +1806,9 @@ function CriadorApp() {
           }}
         />
       </div>
-      <button
-        type="button"
-        className="kronia-menu-veu"
-        ref={veuRef}
-        aria-label="Fechar menu"
-        onClick={() => setSidebarOpen(false)}
-        tabIndex={sidebarOpen ? 0 : -1}
-      />
+      {/* Só visual (pointer-events:none sempre, ver styles.css) — fechar
+          tocando de lado é .kronia-app-back, dentro da camada do app. */}
+      <div className="kronia-menu-veu" ref={veuRef} aria-hidden="true" />
       <div className="kronia-app-camada" ref={appRef}>
         {tab === "home" && (
           <ConversationScreen
@@ -1753,24 +1823,31 @@ function CriadorApp() {
         {tab === "criar" && (
           <CriarFlow
             onOpenProfile={() => setTab("perfil")}
+            onOpenMenu={() => setSidebarOpen(true)}
             pendingOpportunity={pendingOpportunity}
             onConsumePendingOpportunity={() => setPendingOpportunity(null)}
           />
         )}
-        {tab === "historico" && <HistoricoTab />}
+        {tab === "historico" && <HistoricoTab onOpenMenu={() => setSidebarOpen(true)} />}
         {tab === "explorar" && (
           <OportunidadesTab
             onCreateContent={(seed) => {
               setPendingOpportunity(seed);
               navigate("criar");
             }}
+            onOpenMenu={() => setSidebarOpen(true)}
           />
         )}
-        {tab === "prompt" && <PromptTab initialMedia={initialMedia} />}
-        {tab === "perfil" && (
-          <PlaceholderTab title="Perfil" hint="Em breve: atores salvos, preferências e configurações da conta." />
-        )}
+        {tab === "prompt" && <PromptTab initialMedia={initialMedia} onOpenMenu={() => setSidebarOpen(true)} />}
+        {tab === "perfil" && <PerfilTab onOpenMenu={() => setSidebarOpen(true)} />}
         {tab !== "home" && <BottomNav active={tab} onChange={(next) => navigate(next)} />}
+        <button
+          type="button"
+          className="kronia-app-back"
+          aria-label="Fechar menu"
+          onClick={() => setSidebarOpen(false)}
+          tabIndex={sidebarOpen ? 0 : -1}
+        />
       </div>
       <div className="kronia-app-sombra" ref={sombraRef} />
     </div>
@@ -1779,11 +1856,13 @@ function CriadorApp() {
 
 function CriarFlow({
   onOpenProfile,
+  onOpenMenu,
   pendingOpportunity,
   onConsumePendingOpportunity,
   initialIdea,
 }: {
   onOpenProfile: () => void;
+  onOpenMenu: () => void;
   pendingOpportunity: PendingOpportunitySeed | null;
   onConsumePendingOpportunity: () => void;
   initialIdea?: string | null;
@@ -2199,7 +2278,7 @@ function CriarFlow({
 
   return (
     <div className="app">
-      <BrandRow onProfile={onOpenProfile} />
+      <BrandRow onProfile={onOpenProfile} onOpenMenu={onOpenMenu} />
       <StageIndicator current={0} />
       <div>
         <h1 className="h1">Criar</h1>

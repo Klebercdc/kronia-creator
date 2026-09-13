@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Outlet, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
+import { TEMA_ANTI_FLASH_SCRIPT } from "../lib/theme";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -39,8 +40,11 @@ function RootComponent() {
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
       <head>
+        {/* Aplica o tema salvo ANTES do primeiro paint — ver src/lib/theme.ts.
+            Precisa vir antes de qualquer conteúdo pra não piscar claro→escuro. */}
+        <script dangerouslySetInnerHTML={{ __html: TEMA_ANTI_FLASH_SCRIPT }} />
         <HeadContent />
       </head>
       <body>
