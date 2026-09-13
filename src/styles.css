@@ -543,33 +543,51 @@ a {
   color: var(--kr-ink);
   display: flex;
   flex-direction: column;
-  /* Padding-top normal — vale pra Safari comum, onde a área segura da
-     PÁGINA é mesmo 0 (quem cobre notch/indicador ali é a própria UI do
-     navegador). O piso fixo pra standalone (abaixo, @media
-     display-mode:standalone) NÃO entra aqui: aplicá-lo sempre forçava
-     59px também dentro do Safari, onde a barra de endereço já dá a folga
-     sozinha — sintoma reportado como "empurrou tudo pra baixo" num print
-     no Safari.
+  /* Sem padding-top: quem reserva o respiro do topo agora é
+     .kronia-home-topbar (ela é sticky — ver comentário lá; se o padding-top
+     ficasse aqui, o sticky grudaria em top:0 e perderia essa folga assim
+     que a tela rolasse).
      Padding-bottom ZERO, sem env() nenhum: pedido explícito do usuário —
      a barra de input encosta na base de verdade, sem nenhum respiro. */
-  padding: calc(20px + env(safe-area-inset-top)) 20px 0;
+  padding: 0 20px 0;
 }
 
-/* Só quando o app roda instalado de verdade (ícone na tela de início, sem
-   nenhuma UI de navegador): aí sim env(safe-area-inset-*) não contribuía
-   nada no device real testado (iPhone 15 Pro Max), então o piso usa os
-   números reais do aparelho (Dynamic Island ~59px, indicador de home
-   ~34px) em vez de confiar só no env(). */
-@media (display-mode: standalone) {
-  .kronia-home {
-    padding-top: max(59px, calc(20px + env(safe-area-inset-top)));
-  }
-}
+/* sticky: quem rola aqui não é o documento, é .kronia-app-camada
+   (overflow-y:auto). Ao focar o campo de digitar, o navegador rola esse
+   container pra trazer o campo pra cima do teclado — sem sticky, os
+   ícones do topo rolavam junto e ficavam parcialmente atrás da barra de
+   status ("desfigurado" no print do usuário).
 
+   O respiro do topo mora no `top` do sticky, NÃO em padding-top: `top` é
+   o quanto o sticky reserva ANTES de grudar (equivalente ao
+   safe-area-inset-top real), então mesmo grudado ele para na borda do
+   safe-area, nunca cobrindo a barra de status. padding-top é só o
+   espaço visual fixo ATÉ os ícones, por dentro dessa reserva.
+
+   Fundo sólido porque, sendo sticky, o conteúdo abaixo (o "O que vamos
+   criar hoje?") passa por baixo dele ao rolar — sem --kr-bg aqui ficaria
+   transparente. */
 .kronia-home-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: sticky;
+  top: env(safe-area-inset-top);
+  padding-top: 20px;
+  padding-bottom: 20px;
+  z-index: 5;
+  background: var(--kr-bg);
+}
+
+/* Só quando o app roda instalado de verdade (ícone na tela de início, sem
+   nenhuma UI de navegador): aí sim env(safe-area-inset-*) não contribuía
+   nada no device real testado (iPhone 15 Pro Max), então o piso usa o
+   número real do aparelho (Dynamic Island ~59px) em vez de confiar só
+   no env(). */
+@media (display-mode: standalone) {
+  .kronia-home-topbar {
+    top: max(59px, env(safe-area-inset-top));
+  }
 }
 
 .kronia-icon-btn {
