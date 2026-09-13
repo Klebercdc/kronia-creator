@@ -543,21 +543,24 @@ a {
   color: var(--kr-ink);
   display: flex;
   flex-direction: column;
-  /* max(), não só soma com env(): testado no device real (iPhone 15 Pro
-     Max, instalado na tela de início) e env(safe-area-inset-*) não estava
-     contribuindo nada — resultado idêntico ao de uma aba comum do Safari,
-     onde a área segura da PÁGINA é mesmo 0 (quem ocupa ali é a barra do
-     navegador). Em vez de depender só do valor do WebKit, o max() garante
-     um piso nos números reais do 15 Pro Max (Dynamic Island ~59px,
-     indicador de home ~34px) — se o env() vier a funcionar/contribuir
-     mais que isso em outro aparelho, o max() usa o maior dos dois, nunca
-     menos que o piso. */
-  /* Rodapé enxuto de propósito: referência foi a distância entre a barra
-     de digitar e a base NESTE MESMO app (Claude Code no celular) — só o
-     suficiente pra não colar no indicador de home, sem folga extra
-     somada em cima do piso do safe-area. */
-  padding: max(59px, calc(20px + env(safe-area-inset-top))) 20px
-    max(8px, env(safe-area-inset-bottom));
+  /* Padding normal — vale pra Safari comum, onde a área segura da PÁGINA é
+     mesmo 0 (quem cobre notch/indicador ali é a própria UI do navegador).
+     O piso fixo pra standalone (abaixo, @media display-mode:standalone)
+     NÃO entra aqui: aplicá-lo sempre forçava 59px também dentro do Safari,
+     onde a barra de endereço já dá a folga sozinha — sintoma reportado
+     como "empurrou tudo pra baixo" num print no Safari. */
+  padding: calc(20px + env(safe-area-inset-top)) 20px max(8px, env(safe-area-inset-bottom));
+}
+
+/* Só quando o app roda instalado de verdade (ícone na tela de início, sem
+   nenhuma UI de navegador): aí sim env(safe-area-inset-*) não contribuía
+   nada no device real testado (iPhone 15 Pro Max), então o piso usa os
+   números reais do aparelho (Dynamic Island ~59px, indicador de home
+   ~34px) em vez de confiar só no env(). */
+@media (display-mode: standalone) {
+  .kronia-home {
+    padding-top: max(59px, calc(20px + env(safe-area-inset-top)));
+  }
 }
 
 .kronia-home-topbar {
@@ -710,11 +713,10 @@ a {
   width: calc(min(300px, 82vw) + 24px);
   display: flex;
   flex-direction: column;
-  /* max(59px, ...) — mesmo motivo do piso em .kronia-home: env() não
-     estava contribuindo nada no device real testado (iPhone 15 Pro Max
-     instalado), então o piso usa o valor real da Dynamic Island em vez de
-     confiar só no env(). */
-  padding: max(59px, env(safe-area-inset-top)) calc(14px + 24px) max(34px, calc(16px + env(safe-area-inset-bottom))) 14px;
+  /* Padding normal — mesmo raciocínio de .kronia-home: o piso fixo pra
+     standalone (abaixo) não entra aqui pra não forçar respiro extra
+     também dentro do Safari, onde a barra do navegador já cobre isso. */
+  padding: max(20px, env(safe-area-inset-top)) calc(14px + 24px) calc(16px + env(safe-area-inset-bottom)) 14px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   z-index: 0;
@@ -724,6 +726,13 @@ a {
 
 .kronia-menu-aberto .kronia-menu-camada {
   transform: translate3d(0, 0, 0);
+}
+
+@media (display-mode: standalone) {
+  .kronia-menu-camada {
+    padding-top: max(59px, env(safe-area-inset-top));
+    padding-bottom: max(34px, calc(16px + env(safe-area-inset-bottom)));
+  }
 }
 
 /* Véu que mantém o menu um passo abaixo da tela principal — cobre o palco
