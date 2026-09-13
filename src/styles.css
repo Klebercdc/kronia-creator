@@ -809,17 +809,22 @@ a {
   border-radius: 30px;
 }
 
-/* Tira a rolagem por completo enquanto o teclado tá aberto — visto no
-   device real (barra de scroll visível na lateral): o WebKit rola este
-   container pra tentar trazer o campo focado pra cima do teclado, mesmo
-   sem precisar (o conteúdo já cabe no espaço encolhido por --vh, ver
+/* Tira a rolagem enquanto o teclado tá aberto — visto no device real
+   (barra de scroll visível na lateral): o WebKit rola este container pra
+   tentar trazer o campo focado pra cima do teclado, mesmo sem precisar (o
+   conteúdo já cabe no espaço encolhido por --vh, ver
    useViewportKeyboardLock), e é esse scroll que arrasta o cabeçalho
    (agora fora daqui, mas o efeito visual do "sumiço" vinha desse
-   deslocamento por baixo). overflow:hidden fecha a rota inteira — não
-   tem mais scrollável nenhum aqui pro WebKit empurrar, igual a mesma
-   ideia já aplicada em html/body pra trava de documento (commit
-   f4cf4ff, agenda-). */
-[data-teclado] .kronia-app-camada {
+   deslocamento por baixo). overflow:hidden fecha a rota inteira — mesma
+   ideia já aplicada em html/body pra trava de documento (commit f4cf4ff,
+   agenda-).
+
+   :has(.kronia-home-vazia), NÃO incondicional: numa conversa longa de
+   verdade (com mensagens, .kronia-conversation-thread rolável) essa
+   rolagem É legítima — a pessoa pode querer ver o histórico enquanto
+   digita a próxima mensagem. A trava só entra na Home vazia (saudação),
+   onde não existe conteúdo nenhum pra rolar de propósito. */
+[data-teclado] .kronia-app-camada:has(.kronia-home-vazia) {
   overflow-y: hidden;
 }
 
