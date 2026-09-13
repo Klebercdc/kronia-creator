@@ -1,68 +1,48 @@
 import { useEffect } from "react";
 
 /**
- * Porte 1:1 de `agenda-/js/mobile-core.js` (`mobAtualizarAlturaReal`,
+ * Porte de `agenda-/js/mobile-core.js` (`mobAtualizarAlturaReal`,
  * `mobDecidirMedidasDoViewport`, `mobMarcarTeclado`, `mobObservarTeclado`,
  * `mobTravarEixoHorizontal` — commit `f4cf4ff` e o que veio depois dele) +
- * `agenda-/js/mobile-bootstrap.js` (os listeners). Mesmo raciocínio, mesmos
- * números — só o alvo da escrita mudou de `document.documentElement` /
- * `#mobileRoot` fixo por id para as duas variáveis (`--vh`, `--vv-top`) que
- * `:root` e `#root` já esperam em styles.css.
+ * `agenda-/js/mobile-bootstrap.js` (os listeners). Só o alvo da escrita
+ * mudou de `document.documentElement`/`#mobileRoot` fixo por id para a
+ * variável `--vh` que `:root`/`#root` já esperam em styles.css.
  *
  * O QUE ISTO RESOLVE (e o CSS sozinho não resolve):
  *
- * 1. TAMANHO. Com o teclado do iOS aberto, `window.innerHeight` continua
- *    sendo a tela inteira — quem encolhe é `visualViewport.height`. Sem medir
- *    isso, o app fica com a altura da tela cheia e sobra espaço por baixo do
- *    teclado (a barra de navegação flutuando no meio da tela).
- * 2. POSIÇÃO. Ao focar um campo, o Safari empurra o viewport VISUAL pra
- *    trazer o campo pra cima do teclado — mesmo com html/body em
- *    position:fixed (ver styles.css), que só zera a área ROLÁVEL do
- *    documento. `window.scrollY` continua 0 nesse caminho, então não tem
- *    scroll pra desfazer: o que sobra é compensar com `translateY` a mesma
- *    distância que `visualViewport.offsetTop` andou.
+ * TAMANHO. Com o teclado do iOS aberto, `window.innerHeight` continua
+ * sendo a tela inteira — quem encolhe é `visualViewport.height`. Sem medir
+ * isso, o app fica com a altura da tela cheia e sobra espaço por baixo do
+ * teclado (a barra de navegação flutuando no meio da tela).
  *
- * NÃO PORTADO: a checagem de atualização (`mobChecarAtualizacaoSilenciosa`) —
- * é PWA de outro projeto, sem equivalente aqui ainda.
+ * NÃO PORTADO (removido depois de testar no device real):
+ * - `--vv-top`/`translateY` (compensação de POSIÇÃO via
+ *   `visualViewport.offsetTop`). Calibrada pro empurrão do Safari normal,
+ *   mas no WKWebView standalone real testado (iPhone 15 Pro Max instalado
+ *   na tela de início) ela sobrepunha o cabeçalho na barra de status ao
+ *   abrir o teclado — piorava a posição em vez de corrigi-la. --vh sozinho
+ *   já resolve o tamanho; sem a compensação de posição sobra o layout
+ *   original, sem overcorrection.
+ * - a checagem de atualização (`mobChecarAtualizacaoSilenciosa`) — é PWA
+ *   de outro projeto, sem equivalente aqui ainda.
  */
 
 const TOLERANCIA_ALTURA = 60;
-const TOLERANCIA_DESLOC = 2;
 
 interface EstadoViewport {
   altura: number;
-  offsetTop: number;
-  semZoom: boolean;
   teclado: boolean;
   vhAplicado: number | null;
-  vvTopAplicado: number | null;
 }
 
-interface DecisaoViewport {
-  vh: number | null;
-  vvTop: number | null;
-}
-
-/** Decide O QUE precisa ser reescrito, sem tocar em nada — separado da
+/** Decide SE precisa reescrever --vh, sem tocar em nada — separado da
  * função que escreve pra ficar testável sem visualViewport nenhum. */
-function decidirMedidas(estado: EstadoViewport): DecisaoViewport {
-  const saida: DecisaoViewport = { vh: null, vvTop: null };
+function decidirAltura(estado: EstadoViewport): number | null {
   const limite = estado.teclado ? TOLERANCIA_ALTURA : 1;
   if (estado.vhAplicado === null || Math.abs(estado.altura - estado.vhAplicado) >= limite) {
-    saida.vh = estado.altura;
+    return estado.altura;
   }
-  const desloc = estado.semZoom && estado.teclado ? Math.round(estado.offsetTop) : 0;
-  // Voltar pro zero sempre passa: é o que desfaz o empurrão quando o teclado
-  // fecha, e deixá-lo pela metade deixaria o app deslocado pra sempre.
-  const zerando = desloc === 0 && estado.vvTopAplicado !== 0;
-  if (
-    estado.vvTopAplicado === null ||
-    zerando ||
-    Math.abs(desloc - estado.vvTopAplicado) >= TOLERANCIA_DESLOC
-  ) {
-    saida.vvTop = desloc;
-  }
-  return saida;
+  return null;
 }
 
 const CAMPOS_DE_TEXTO = ["INPUT", "TEXTAREA"];
@@ -76,7 +56,7 @@ const CAIXAS_QUE_ROLAM_TEXTO = ["INPUT", "TEXTAREA", "SELECT"];
 
 /**
  * Ativa a trava de teclado/viewport pro app inteiro. Chame uma vez, no
- * componente raiz — os efeitos (atributo em `<html>`, variáveis CSS em
+ * componente raiz — os efeitos (atributo em `<html>`, variável CSS em
  * `:root`) são globais por natureza, então um único listener cobre qualquer
  * tela.
  */
@@ -86,28 +66,20 @@ export function useViewportKeyboardLock() {
 
     const raiz = document.documentElement;
     let vhAplicado: number | null = null;
-    let vvTopAplicado: number | null = null;
     let quadroAgendado = false;
 
-    function escreverMedidas() {
+    function escreverAltura() {
       const vv = window.visualViewport;
       const semZoom = !!vv && vv.scale <= 1.01;
       const altura = semZoom && vv ? vv.height : window.innerHeight;
-      const decisao = decidirMedidas({
+      const novoVh = decidirAltura({
         altura,
-        offsetTop: vv ? vv.offsetTop : 0,
-        semZoom,
         teclado: raiz.hasAttribute("data-teclado"),
         vhAplicado,
-        vvTopAplicado,
       });
-      if (decisao.vh !== null) {
-        raiz.style.setProperty("--vh", decisao.vh * 0.01 + "px");
-        vhAplicado = decisao.vh;
-      }
-      if (decisao.vvTop !== null) {
-        raiz.style.setProperty("--vv-top", decisao.vvTop + "px");
-        vvTopAplicado = decisao.vvTop;
+      if (novoVh !== null) {
+        raiz.style.setProperty("--vh", novoVh * 0.01 + "px");
+        vhAplicado = novoVh;
       }
     }
 
@@ -116,15 +88,15 @@ export function useViewportKeyboardLock() {
       quadroAgendado = true;
       requestAnimationFrame(() => {
         quadroAgendado = false;
-        escreverMedidas();
+        escreverAltura();
       });
     }
 
     // Só marca — NÃO mede aqui. Quem mede é o evento real de
-    // visualViewport (resize/scroll), disparado pelo próprio teclado
-    // animando; medir no foco mediria a altura de ANTES do teclado mudar
-    // nada. "Reforço que só erra pra um lado é pior que reforço nenhum" —
-    // mesmo comentário de agenda-/js/mobile-core.js.
+    // visualViewport (resize), disparado pelo próprio teclado animando;
+    // medir no foco mediria a altura de ANTES do teclado mudar nada.
+    // "Reforço que só erra pra um lado é pior que reforço nenhum" — mesmo
+    // comentário de agenda-/js/mobile-core.js.
     function marcarTeclado(aberto: boolean) {
       raiz.toggleAttribute("data-teclado", aberto);
     }
@@ -152,16 +124,10 @@ export function useViewportKeyboardLock() {
 
     const toque = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
 
-    escreverMedidas();
+    escreverAltura();
     window.addEventListener("resize", atualizarAlturaReal);
     window.addEventListener("orientationchange", () => setTimeout(atualizarAlturaReal, 100));
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener("resize", atualizarAlturaReal);
-      // 'scroll' também, não só 'resize': o teclado muda o TAMANHO do
-      // viewport visual (resize) e a POSIÇÃO dele (scroll) em eventos
-      // diferentes. Só o resize deixava o app do tamanho certo e deslocado.
-      window.visualViewport.addEventListener("scroll", atualizarAlturaReal);
-    }
+    window.visualViewport?.addEventListener("resize", atualizarAlturaReal);
     if (toque) {
       document.addEventListener("focusin", aoFocar);
       document.addEventListener("focusout", aoDesfocar);
@@ -172,10 +138,7 @@ export function useViewportKeyboardLock() {
 
     return () => {
       window.removeEventListener("resize", atualizarAlturaReal);
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener("resize", atualizarAlturaReal);
-        window.visualViewport.removeEventListener("scroll", atualizarAlturaReal);
-      }
+      window.visualViewport?.removeEventListener("resize", atualizarAlturaReal);
       document.removeEventListener("focusin", aoFocar);
       document.removeEventListener("focusout", aoDesfocar);
       document.removeEventListener("scroll", aoRolar, { capture: true });

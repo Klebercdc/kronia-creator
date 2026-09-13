@@ -78,14 +78,14 @@ body,
   width: 100%;
 }
 
-/* O translateY fica SÓ aqui — um elemento só, igual #mobileRoot em
-   agenda-/css/mobile.css. html/body/#root têm o MESMO seletor acima porque
-   compartilham o resto das regras (trava de rolagem), mas empilhar o mesmo
-   transform:translateY nos três (pai, filho e neto) somaria o deslocamento
-   3x em vez de aplicá-lo uma vez só — daí não entrar na regra combinada. */
-#root {
-  transform: translateY(var(--vv-top, 0px));
-}
+/* O translateY(var(--vv-top)) que existia aqui foi REMOVIDO. Reportado com
+   print real: ao abrir o teclado, o cabeçalho ficava sobreposto à barra de
+   status ("desfigurado") — a compensação, calibrada pro comportamento do
+   Safari normal (empurrão do viewport visual arrastando junto o
+   position:fixed), piorava a posição em vez de corrigi-la no WKWebView
+   standalone real testado. --vh (abaixo) sozinho já resolve o TAMANHO
+   (a barra de input aparece acima do teclado, não escondida atrás dele);
+   sem --vv-top sobra só a posição original, sem overcorrection. */
 
 /* Com o teclado aberto, dvh/svh não acompanham — só window.visualViewport
    sabe o quanto sobrou acima do teclado, e é isso que --vh mede (ver
