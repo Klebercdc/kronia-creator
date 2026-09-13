@@ -543,13 +543,16 @@ a {
   color: var(--kr-ink);
   display: flex;
   flex-direction: column;
-  /* Padding normal — vale pra Safari comum, onde a área segura da PÁGINA é
-     mesmo 0 (quem cobre notch/indicador ali é a própria UI do navegador).
-     O piso fixo pra standalone (abaixo, @media display-mode:standalone)
-     NÃO entra aqui: aplicá-lo sempre forçava 59px também dentro do Safari,
-     onde a barra de endereço já dá a folga sozinha — sintoma reportado
-     como "empurrou tudo pra baixo" num print no Safari. */
-  padding: calc(20px + env(safe-area-inset-top)) 20px max(8px, env(safe-area-inset-bottom));
+  /* Padding-top normal — vale pra Safari comum, onde a área segura da
+     PÁGINA é mesmo 0 (quem cobre notch/indicador ali é a própria UI do
+     navegador). O piso fixo pra standalone (abaixo, @media
+     display-mode:standalone) NÃO entra aqui: aplicá-lo sempre forçava
+     59px também dentro do Safari, onde a barra de endereço já dá a folga
+     sozinha — sintoma reportado como "empurrou tudo pra baixo" num print
+     no Safari.
+     Padding-bottom ZERO, sem env() nenhum: pedido explícito do usuário —
+     a barra de input encosta na base de verdade, sem nenhum respiro. */
+  padding: calc(20px + env(safe-area-inset-top)) 20px 0;
 }
 
 /* Só quando o app roda instalado de verdade (ícone na tela de início, sem
