@@ -552,8 +552,12 @@ a {
      indicador de home ~34px) — se o env() vier a funcionar/contribuir
      mais que isso em outro aparelho, o max() usa o maior dos dois, nunca
      menos que o piso. */
+  /* Rodapé enxuto de propósito: referência foi a distância entre a barra
+     de digitar e a base NESTE MESMO app (Claude Code no celular) — só o
+     suficiente pra não colar no indicador de home, sem folga extra
+     somada em cima do piso do safe-area. */
   padding: max(59px, calc(20px + env(safe-area-inset-top))) 20px
-    max(34px, calc(20px + env(safe-area-inset-bottom)));
+    max(8px, env(safe-area-inset-bottom));
 }
 
 .kronia-home-topbar {
