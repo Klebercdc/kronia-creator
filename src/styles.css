@@ -801,6 +801,21 @@ a {
   transform: translate3d(min(300px, 82vw), 0, 0);
 }
 
+/* Sem isto o <aside> era um bloco comum: sua altura vinha só do conteúdo,
+   bem menor que .kronia-menu-camada (que É flex column, mas não estica os
+   filhos no eixo principal por padrão). Sobrava um vão cinza vazio entre
+   "Kleber/Conta PRO" e o fim de verdade da tela — e o margin-top:auto do
+   footer (kronia-sidebar-footer) não tinha container flex nenhum pra valer,
+   então não empurrava nada. flex:1 aqui estica o <aside> até preencher
+   .kronia-menu-camada; display:flex column é o que faz o margin-top:auto
+   do footer funcionar. */
+.kronia-sidebar {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 100%;
+}
+
 .kronia-sidebar-brand {
   display: flex;
   align-items: center;
