@@ -76,10 +76,14 @@ body,
   position: fixed;
   inset: 0;
   width: 100%;
-  /* Desfaz o empurrão que o iOS dá no viewport VISUAL ao focar um campo —
-     ver src/hooks/useViewportKeyboardLock.ts. Vale 0 fora do teclado, então
-     não custa nada no resto do app. Porte de #mobileRoot em
-     agenda-/css/mobile.css. */
+}
+
+/* O translateY fica SÓ aqui — um elemento só, igual #mobileRoot em
+   agenda-/css/mobile.css. html/body/#root têm o MESMO seletor acima porque
+   compartilham o resto das regras (trava de rolagem), mas empilhar o mesmo
+   transform:translateY nos três (pai, filho e neto) somaria o deslocamento
+   3x em vez de aplicá-lo uma vez só — daí não entrar na regra combinada. */
+#root {
   transform: translateY(var(--vv-top, 0px));
 }
 
@@ -101,6 +105,7 @@ body,
     height: auto;
     overflow: visible;
     inset: auto;
+    transform: none;
   }
 }
 

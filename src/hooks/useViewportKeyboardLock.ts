@@ -120,9 +120,13 @@ export function useViewportKeyboardLock() {
       });
     }
 
+    // Só marca — NÃO mede aqui. Quem mede é o evento real de
+    // visualViewport (resize/scroll), disparado pelo próprio teclado
+    // animando; medir no foco mediria a altura de ANTES do teclado mudar
+    // nada. "Reforço que só erra pra um lado é pior que reforço nenhum" —
+    // mesmo comentário de agenda-/js/mobile-core.js.
     function marcarTeclado(aberto: boolean) {
       raiz.toggleAttribute("data-teclado", aberto);
-      atualizarAlturaReal();
     }
 
     function aoFocar(e: FocusEvent) {
