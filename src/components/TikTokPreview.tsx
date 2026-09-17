@@ -72,9 +72,14 @@ export function TikTokPreview({ videoUrl, width = 140, height = 249 }: TikTokPre
   const [loaded, setLoaded] = useState(false);
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
 
+  // Fica parado mostrando a capa até o card atingir uma boa parte da tela
+  // (60%) — só aí monta o player e começa o loop. Sair desse nível
+  // desmonta o player e volta pra capa parada.
   useEffect(() => {
     if (!containerRef.current) return;
-    const obs = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting), { threshold: 0.2 });
+    const obs = new IntersectionObserver(([entry]) => setVisible(entry.intersectionRatio >= 0.6), {
+      threshold: [0, 0.6],
+    });
     obs.observe(containerRef.current);
     return () => obs.disconnect();
   }, []);
