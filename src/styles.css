@@ -809,6 +809,18 @@ a {
   border-radius: 30px;
 }
 
+/* Criar/Histórico/Explorar/Prompt/Perfil (.app, hex cravado, sempre escuro
+   — ver comentário no topo do arquivo) vivem dentro desta camada, cujo
+   fundo por padrão segue --kr-bg (claro no tema padrão, pensado pra
+   Home/menu). Sem isto, qualquer sobra de área durante bounce/redimensão
+   do teclado/barra do navegador (a própria .app tem altura própria, a
+   camada por trás pode aparecer por baixo) mostra uma faixa clara atrás
+   de uma tela que é sempre escura — reportado como "margem branca" no
+   rodapé da aba Explorar. */
+.kronia-app-camada-escura {
+  background: #070707;
+}
+
 /* Tira a rolagem por completo enquanto o teclado tá aberto — sem
    condição nenhuma, testado no device real e confirmado que precisa ser
    assim: o WebKit rola este container pra tentar trazer o campo focado

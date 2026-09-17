@@ -1874,7 +1874,7 @@ function CriadorApp() {
           </button>
         </div>
       )}
-      <div className="kronia-app-camada" ref={appRef}>
+      <div className={`kronia-app-camada ${tab !== "home" ? "kronia-app-camada-escura" : ""}`} ref={appRef}>
         {tab === "home" && (
           <ConversationScreen
             conversationId={activeConversationId}
