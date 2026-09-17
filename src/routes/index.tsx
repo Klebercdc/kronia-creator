@@ -21,6 +21,7 @@ import {
   type RunPipelineResult,
 } from "../server/pipeline.functions";
 import { ACTOR_PRESETS } from "../core/generation/actor-presets";
+import { TikTokPreview } from "../components/TikTokPreview";
 import { uploadReferenceVideo } from "../lib/supabase-client";
 import type { SavedTheme, HistoryEntry, ConversationRow } from "../lib/supabase";
 import type { ContentRequest, GenerationResult, PipelineOutput, ReferenceAnalysis } from "../types/pipeline";
@@ -885,13 +886,17 @@ function HistoricoTab({ onOpenMenu }: { onOpenMenu: () => void }) {
       {entries?.map((entry) => {
         const output = entry.output as PipelineOutput | null;
         const open = openId === entry.id;
+        const referenceVideoUrl = output?.request.referenceVideoUrl ?? null;
         return (
           <div key={entry.id} className="card">
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-              <div>
-                <div className="scene-tag">{formatLabel(entry.format)}</div>
-                <div style={{ fontSize: 13.5, color: "#B5B5B5" }}>
-                  {entry.theme || "(sem tema)"} · {new Date(entry.createdAt).toLocaleDateString("pt-BR")}
+              <div style={{ display: "flex", gap: 10, minWidth: 0 }}>
+                {referenceVideoUrl && <TikTokPreview videoUrl={referenceVideoUrl} width={72} height={128} />}
+                <div style={{ minWidth: 0 }}>
+                  <div className="scene-tag">{formatLabel(entry.format)}</div>
+                  <div style={{ fontSize: 13.5, color: "#B5B5B5" }}>
+                    {entry.theme || "(sem tema)"} · {new Date(entry.createdAt).toLocaleDateString("pt-BR")}
+                  </div>
                 </div>
               </div>
               <button
@@ -1924,6 +1929,7 @@ function CriarFlow({
   const [savedThemes, setSavedThemes] = useState<SavedTheme[]>([]);
   const [referenceVideoFile, setReferenceVideoFile] = useState<{ name: string; storagePath: string } | null>(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [referenceVideoUrlInput, setReferenceVideoUrlInput] = useState("");
   const [ingestionStep, setIngestionStep] = useState<string | null>(null);
   const [ingestionProgressPercent, setIngestionProgressPercent] = useState<number | null>(null);
   const [actorName, setActorName] = useState("");
@@ -2160,7 +2166,7 @@ function CriarFlow({
       mode,
       productPhotoUrls: productPhotoDataUrls,
       productInfo,
-      referenceVideoUrl: null,
+      referenceVideoUrl: referenceVideoUrlInput.trim() || null,
       referenceVideoStoragePath: referenceVideoFile?.storagePath ?? null,
       actorProfile: hasActor
         ? {
@@ -2559,6 +2565,23 @@ function CriarFlow({
             A primeira geração com vídeo de referência pode demorar alguns segundos a mais —
             as ferramentas de extração são baixadas na primeira vez.
           </div>
+          <input
+            type="url"
+            value={referenceVideoUrlInput}
+            onChange={(e) => setReferenceVideoUrlInput(e.target.value)}
+            placeholder="ou cole o link do vídeo no TikTok (ex: https://www.tiktok.com/@usuario/video/...)"
+            style={{
+              width: "100%",
+              marginTop: 8,
+              background: "#101010",
+              border: "1.5px solid #2A2A2A",
+              borderRadius: 12,
+              padding: "10px 12px",
+              color: "#EDEDED",
+              fontSize: 13.5,
+            }}
+          />
+          <div className="hint">Usado pra mostrar a prévia do vídeo real no card do Histórico.</div>
         </div>
 
         <button
