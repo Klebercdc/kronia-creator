@@ -21,6 +21,8 @@ import {
   type RunPipelineResult,
 } from "../server/pipeline.functions";
 import { ACTOR_PRESETS } from "../core/generation/actor-presets";
+import { TikTokPreview } from "../components/TikTokPreview";
+import { ReferenceLibraryCatalog } from "../components/ReferenceLibraryCatalog";
 import { uploadReferenceVideo } from "../lib/supabase-client";
 import type { SavedTheme, HistoryEntry, ConversationRow } from "../lib/supabase";
 import type { ContentRequest, GenerationResult, PipelineOutput, ReferenceAnalysis } from "../types/pipeline";
@@ -661,6 +663,7 @@ function OportunidadesTab({
 }) {
   const findOpportunitiesFn = useServerFn(findOpportunities);
 
+  const [mode, setMode] = useState<"ia" | "biblioteca">("biblioteca");
   const [niche, setNiche] = useState("");
   const [objective, setObjective] = useState("");
   const [product, setProduct] = useState("");
@@ -716,7 +719,7 @@ function OportunidadesTab({
     ]
       .filter(Boolean)
       .join(" ");
-    onCreateContent({ productInfoText, precomputedAnalysis });
+    onCreateContent({ kind: "opportunity", productInfoText, precomputedAnalysis });
   }
 
   return (
@@ -729,6 +732,31 @@ function OportunidadesTab({
         O TikTok mostra a tendência. O KRONIA decide o que fazer com ela.
       </div>
 
+      <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+        <button
+          type="button"
+          className={`pill ${mode === "ia" ? "active" : ""}`}
+          onClick={() => setMode("ia")}
+        >
+          Tendências (IA)
+        </button>
+        <button
+          type="button"
+          className={`pill ${mode === "biblioteca" ? "active" : ""}`}
+          onClick={() => setMode("biblioteca")}
+        >
+          Biblioteca real
+        </button>
+      </div>
+
+      {mode === "biblioteca" && (
+        <ReferenceLibraryCatalog
+          onUseReference={(seed) => onCreateContent({ kind: "reference", ...seed })}
+        />
+      )}
+
+      {mode === "ia" && (
+      <>
       <form onSubmit={handleFind} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div>
           <div className="section-label">Nicho</div>
@@ -843,6 +871,8 @@ function OportunidadesTab({
             ))}
         </div>
       )}
+      </>
+      )}
     </div>
   );
 }
@@ -885,13 +915,17 @@ function HistoricoTab({ onOpenMenu }: { onOpenMenu: () => void }) {
       {entries?.map((entry) => {
         const output = entry.output as PipelineOutput | null;
         const open = openId === entry.id;
+        const referenceVideoUrl = output?.request.referenceVideoUrl ?? null;
         return (
           <div key={entry.id} className="card">
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-              <div>
-                <div className="scene-tag">{formatLabel(entry.format)}</div>
-                <div style={{ fontSize: 13.5, color: "#B5B5B5" }}>
-                  {entry.theme || "(sem tema)"} · {new Date(entry.createdAt).toLocaleDateString("pt-BR")}
+              <div style={{ display: "flex", gap: 10, minWidth: 0 }}>
+                {referenceVideoUrl && <TikTokPreview videoUrl={referenceVideoUrl} width={72} height={128} />}
+                <div style={{ minWidth: 0 }}>
+                  <div className="scene-tag">{formatLabel(entry.format)}</div>
+                  <div style={{ fontSize: 13.5, color: "#B5B5B5" }}>
+                    {entry.theme || "(sem tema)"} · {new Date(entry.createdAt).toLocaleDateString("pt-BR")}
+                  </div>
                 </div>
               </div>
               <button
@@ -1249,10 +1283,9 @@ function PromptTab({
  * recomendação sintetizadas (bridge, sem chamada de servidor), pra
  * `runContentPipeline` não refazer Ingestão/Classificação/Recomendação
  * (não existe vídeo de referência aqui pra analisar mesmo). */
-interface PendingOpportunitySeed {
-  productInfoText: string;
-  precomputedAnalysis: ReferenceAnalysis;
-}
+type PendingOpportunitySeed =
+  | { kind: "opportunity"; productInfoText: string; precomputedAnalysis: ReferenceAnalysis }
+  | { kind: "reference"; productInfoText: string; referenceVideoUrl: string };
 
 /** Item de navegação da sidebar (drawer) — distinto de TAB_ITEMS/BottomNav,
  * que continua servindo as telas internas (Criar/Histórico/Explorar/Prompt/
@@ -1924,6 +1957,7 @@ function CriarFlow({
   const [savedThemes, setSavedThemes] = useState<SavedTheme[]>([]);
   const [referenceVideoFile, setReferenceVideoFile] = useState<{ name: string; storagePath: string } | null>(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [referenceVideoUrlInput, setReferenceVideoUrlInput] = useState("");
   const [ingestionStep, setIngestionStep] = useState<string | null>(null);
   const [ingestionProgressPercent, setIngestionProgressPercent] = useState<number | null>(null);
   const [actorName, setActorName] = useState("");
@@ -1948,7 +1982,11 @@ function CriarFlow({
   useEffect(() => {
     if (!pendingOpportunity) return;
     setProductInfoText(pendingOpportunity.productInfoText);
-    setOpportunityAnalysis(pendingOpportunity.precomputedAnalysis);
+    if (pendingOpportunity.kind === "opportunity") {
+      setOpportunityAnalysis(pendingOpportunity.precomputedAnalysis);
+    } else {
+      setReferenceVideoUrlInput(pendingOpportunity.referenceVideoUrl);
+    }
     onConsumePendingOpportunity();
   }, [pendingOpportunity]);
 
@@ -2160,7 +2198,7 @@ function CriarFlow({
       mode,
       productPhotoUrls: productPhotoDataUrls,
       productInfo,
-      referenceVideoUrl: null,
+      referenceVideoUrl: referenceVideoUrlInput.trim() || null,
       referenceVideoStoragePath: referenceVideoFile?.storagePath ?? null,
       actorProfile: hasActor
         ? {
@@ -2559,6 +2597,23 @@ function CriarFlow({
             A primeira geração com vídeo de referência pode demorar alguns segundos a mais —
             as ferramentas de extração são baixadas na primeira vez.
           </div>
+          <input
+            type="url"
+            value={referenceVideoUrlInput}
+            onChange={(e) => setReferenceVideoUrlInput(e.target.value)}
+            placeholder="ou cole o link do vídeo no TikTok (ex: https://www.tiktok.com/@usuario/video/...)"
+            style={{
+              width: "100%",
+              marginTop: 8,
+              background: "#101010",
+              border: "1.5px solid #2A2A2A",
+              borderRadius: 12,
+              padding: "10px 12px",
+              color: "#EDEDED",
+              fontSize: 13.5,
+            }}
+          />
+          <div className="hint">Usado pra mostrar a prévia do vídeo real no card do Histórico.</div>
         </div>
 
         <button
