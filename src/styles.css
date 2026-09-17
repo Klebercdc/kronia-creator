@@ -729,6 +729,18 @@ a {
   touch-action: pan-y pinch-zoom;
 }
 
+/* Mesma família do fix em .kronia-app-camada-escura — .kronia-palco é o
+   CANVAS por trás de tudo (inclusive do bottom-nav, agora irmão dela), e
+   também segue --kr-bg (claro por padrão). Numa aba que não é a Home
+   (sempre escura, hex cravado), qualquer fresta — overscroll, faixa de
+   segurança embaixo do bottom-nav — mostrava esse claro por trás (print
+   do usuário: faixa branca colada no fundo da aba Prompt). Não mexe em
+   .kronia-menu-camada, que continua clara por regra própria (é o menu,
+   sempre claro por design, mesmo dentro de uma aba escura). */
+.kronia-palco-escuro {
+  background: #070707;
+}
+
 .kronia-menu-camada {
   position: absolute;
   top: 0;

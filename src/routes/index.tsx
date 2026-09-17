@@ -1847,7 +1847,7 @@ function CriadorApp() {
   }
 
   return (
-    <div className={`kronia-palco ${sidebarOpen ? "kronia-menu-aberto" : ""}`}>
+    <div className={`kronia-palco ${sidebarOpen ? "kronia-menu-aberto" : ""} ${tab !== "home" ? "kronia-palco-escuro" : ""}`}>
       <div className="kronia-menu-camada" ref={menuRef} aria-hidden={!sidebarOpen} inert={!sidebarOpen}>
         <AppSidebar
           active={tab}
