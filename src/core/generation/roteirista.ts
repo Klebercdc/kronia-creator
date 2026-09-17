@@ -8,6 +8,7 @@ import {
   type GenerationResult,
 } from "../../types/pipeline";
 import { CREATIVE_QUALITY_BAR } from "./quality-bar";
+import { buildHookIntelligenceBrief } from "./hook-engine";
 
 /** decisionLog não vem da LLM como array pronto — cada agente só devolve
  * SUA PRÓPRIA entrada (decisaoResumo/motivoDecisao/alternativasDescartadas),
@@ -148,12 +149,12 @@ Mecanismos de persuasão já identificados: ${classification.persuasionMechanism
     ? `\nDuração total desejada: ${request.targetDurationSeconds}s (${request.targetDurationSeconds / 10} blocos de 10s no Flow) — use exatamente essa duração.`
     : "\nDuração total: escolha um múltiplo de 10s sensato pro formato/objetivo.";
 
-  const prompt = `Formato recomendado: ${recommendation.format} (${recommendation.reasoning}).
+  const hookBrief = buildHookIntelligenceBrief(request);\n\n  const prompt = `${hookBrief}\n\nFormato recomendado: ${recommendation.format} (${recommendation.reasoning}).
 Objetivo: ${request.objective}. Modo: ${request.mode}. Projeto: ${request.project}.
 Informações do produto (única fonte de verdade): ${JSON.stringify(request.productInfo)}.
 ${referenceBlock}${durationBlock}
 
-Gere 5 hooks, escolha o melhor como selectedHook, e o roteiro completo em cenas timestampadas.`;
+Gere 5 hooks, escolha o melhor como selectedHook, e o roteiro completo em cenas timestampadas.\nOs hooks devem ser instanciados a partir das mecânicas pré-selecionadas pelo KRONIA HOOK INTELLIGENCE; não produza cinco variações genéricas do mesmo gancho.`;
 
   const { decisaoResumo, motivoDecisao, alternativasDescartadas, ...draft } = await callStructuredText({
     schema: InferredSchema,
