@@ -106,7 +106,12 @@ export function TikTokPreview({ videoUrl, width = 140, height = 249 }: TikTokPre
       const iframe = document.createElement("iframe");
       iframe.src = `${TIKTOK_PLAYER_ORIGIN}/player/v1/${videoId}?autoplay=1&muted=1&loop=1&controls=0`;
       iframe.allow = "autoplay";
-      iframe.style.cssText = `position:absolute;top:0;left:0;width:${PLAYER_NATIVE_WIDTH}px;height:${PLAYER_NATIVE_HEIGHT}px;border:0;transform-origin:top left;transform:scale(${width / PLAYER_NATIVE_WIDTH});`;
+      // pointer-events:none trava clique no player — sem isso, tocar no
+      // vídeo abre o TikTok de verdade (é conteúdo deles dentro do
+      // iframe, a gente não controla o que acontece num clique lá
+      // dentro). Aqui é só prévia passiva; a única saída pro TikTok é o
+      // link "Ver no TikTok" explícito, abaixo do card.
+      iframe.style.cssText = `position:absolute;top:0;left:0;width:${PLAYER_NATIVE_WIDTH}px;height:${PLAYER_NATIVE_HEIGHT}px;border:0;transform-origin:top left;transform:scale(${width / PLAYER_NATIVE_WIDTH});pointer-events:none;`;
       iframe.addEventListener("load", () => setLoaded(true));
       el.appendChild(iframe);
       iframeRef.current = iframe;
