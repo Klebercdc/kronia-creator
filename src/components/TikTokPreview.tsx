@@ -17,6 +17,35 @@ function extractTikTokId(url: string): string | null {
   return m ? m[1] : null;
 }
 
+/**
+ * Capa estática do vídeo — é assim que catálogos de loja mostram a imagem
+ * "já ali" sem esperar o player: o endpoint oEmbed público do TikTok
+ * (CORS liberado pra qualquer site, sem chave) devolve `thumbnail_url`, uma
+ * URL assinada da CDN deles que expira em algumas horas/dias. Por isso não
+ * dá pra "gravar" essa imagem de vez no build — teria que baixar e hospedar
+ * a capa por conta própria, e o dataset de origem evita isso de propósito
+ * (ver NOTICE.md do repo: não redistribuir capa/imagem do vídeo). Em vez
+ * disso, busca ao vivo (cache em memória por aba, TTL curto) e troca pro
+ * player só quando o card fica visível — a imagem cobre o tempo até lá.
+ */
+const thumbnailCache = new Map<string, { url: string | null; expiresAt: number }>();
+const THUMBNAIL_CACHE_TTL_MS = 30 * 60 * 1000;
+
+async function fetchThumbnailUrl(videoUrl: string): Promise<string | null> {
+  const cached = thumbnailCache.get(videoUrl);
+  if (cached && cached.expiresAt > Date.now()) return cached.url;
+  try {
+    const res = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(videoUrl)}`);
+    if (!res.ok) throw new Error(String(res.status));
+    const data = (await res.json()) as { thumbnail_url?: unknown };
+    const url = typeof data.thumbnail_url === "string" && data.thumbnail_url.startsWith("https://") ? data.thumbnail_url : null;
+    thumbnailCache.set(videoUrl, { url, expiresAt: Date.now() + THUMBNAIL_CACHE_TTL_MS });
+    return url;
+  } catch {
+    return null;
+  }
+}
+
 function postToPlayer(iframe: HTMLIFrameElement, type: string, value?: number) {
   try {
     const msg: Record<string, unknown> = { "x-tiktok-player": true, type };
@@ -41,6 +70,7 @@ export function TikTokPreview({ videoUrl, width = 140, height = 249 }: TikTokPre
   const loopTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [visible, setVisible] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -48,6 +78,19 @@ export function TikTokPreview({ videoUrl, width = 140, height = 249 }: TikTokPre
     obs.observe(containerRef.current);
     return () => obs.disconnect();
   }, []);
+
+  // Busca a capa assim que o card monta (não espera ficar visível) — é o
+  // que dá a sensação de "já aparecendo a imagem" no catálogo, mesmo antes
+  // de rolar até ele.
+  useEffect(() => {
+    let cancelled = false;
+    fetchThumbnailUrl(videoUrl).then((url) => {
+      if (!cancelled) setThumbnailUrl(url);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [videoUrl]);
 
   useEffect(() => {
     if (!videoId) return;
@@ -108,9 +151,19 @@ export function TikTokPreview({ videoUrl, width = 140, height = 249 }: TikTokPre
     <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "0 0 auto" }}>
       <div
         ref={containerRef}
-        style={{ position: "relative", overflow: "hidden", width, height, borderRadius: 8, background: "#111" }}
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          width,
+          height,
+          borderRadius: 8,
+          background: "#111",
+          backgroundImage: thumbnailUrl ? `url("${thumbnailUrl}")` : undefined,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
       >
-        {!loaded && (
+        {!loaded && !thumbnailUrl && (
           <div
             style={{
               position: "absolute",
