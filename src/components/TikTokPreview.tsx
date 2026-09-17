@@ -109,8 +109,7 @@ export function TikTokPreview({ videoUrl, width = 140, height = 249 }: TikTokPre
       // pointer-events:none trava clique no player — sem isso, tocar no
       // vídeo abre o TikTok de verdade (é conteúdo deles dentro do
       // iframe, a gente não controla o que acontece num clique lá
-      // dentro). Aqui é só prévia passiva; a única saída pro TikTok é o
-      // link "Ver no TikTok" explícito, abaixo do card.
+      // dentro). O card é só prévia passiva, nunca sai do app.
       iframe.style.cssText = `position:absolute;top:0;left:0;width:${PLAYER_NATIVE_WIDTH}px;height:${PLAYER_NATIVE_HEIGHT}px;border:0;transform-origin:top left;transform:scale(${width / PLAYER_NATIVE_WIDTH});pointer-events:none;`;
       iframe.addEventListener("load", () => setLoaded(true));
       el.appendChild(iframe);
@@ -189,14 +188,6 @@ export function TikTokPreview({ videoUrl, width = 140, height = 249 }: TikTokPre
           </div>
         )}
       </div>
-      <a
-        href={videoUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{ fontSize: 11, color: "#8A8A8A", textAlign: "center" }}
-      >
-        Ver no TikTok ↗
-      </a>
     </div>
   );
 }
