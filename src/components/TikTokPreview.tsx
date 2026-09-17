@@ -106,12 +106,18 @@ export function TikTokPreview({ videoUrl, width = 140, height = 249 }: TikTokPre
       const iframe = document.createElement("iframe");
       iframe.src = `${TIKTOK_PLAYER_ORIGIN}/player/v1/${videoId}?autoplay=1&muted=1&loop=1&controls=0`;
       iframe.allow = "autoplay";
-      // pointer-events:none trava clique no player — sem isso, tocar no
-      // vídeo abre o TikTok de verdade (é conteúdo deles dentro do
-      // iframe, a gente não controla o que acontece num clique lá
-      // dentro). O card é só prévia passiva, nunca sai do app.
-      iframe.style.cssText = `position:absolute;top:0;left:0;width:${PLAYER_NATIVE_WIDTH}px;height:${PLAYER_NATIVE_HEIGHT}px;border:0;transform-origin:top left;transform:scale(${width / PLAYER_NATIVE_WIDTH});pointer-events:none;`;
-      iframe.addEventListener("load", () => setLoaded(true));
+      // Sem pointer-events:none aqui — testado com card travado (ver
+      // commit anterior): o TikTok não autoplaya de verdade em vários
+      // dispositivos/navegadores, fica esperando toque no play deles.
+      // Bloquear o clique deixava o card preso pra sempre em 00:00. O
+      // toque central (onde fica o play deles) precisa passar; quem
+      // absorve o risco de navegação são as faixas de avatar/ícones
+      // (ver overlays "toque-vivo" no JSX abaixo), não o iframe inteiro.
+      iframe.style.cssText = `position:absolute;top:0;left:0;width:${PLAYER_NATIVE_WIDTH}px;height:${PLAYER_NATIVE_HEIGHT}px;border:0;transform-origin:top left;transform:scale(${width / PLAYER_NATIVE_WIDTH});`;
+      iframe.addEventListener("load", () => {
+        setLoaded(true);
+        postToPlayer(iframe, "play");
+      });
       el.appendChild(iframe);
       iframeRef.current = iframe;
 
@@ -158,34 +164,53 @@ export function TikTokPreview({ videoUrl, width = 140, height = 249 }: TikTokPre
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "0 0 auto" }}>
-      <div
-        ref={containerRef}
-        style={{
-          position: "relative",
-          overflow: "hidden",
-          width,
-          height,
-          borderRadius: 8,
-          background: "#111",
-          backgroundImage: thumbnailUrl ? `url("${thumbnailUrl}")` : undefined,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        {!loaded && !thumbnailUrl && (
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#6B6B6B",
-              fontSize: 11,
-            }}
-          >
-            carregando…
-          </div>
+      <div style={{ position: "relative", width, height, borderRadius: 8, overflow: "hidden" }}>
+        {/* O iframe entra aqui por fora do React (appendChild), pra não
+            competir com reconciliação — os overlays abaixo são irmãos
+            NORMAIS do React, nunca filhos deste container, então nunca
+            disputam posição com o nó que o React não enxerga. */}
+        <div
+          ref={containerRef}
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "#111",
+            backgroundImage: thumbnailUrl ? `url("${thumbnailUrl}")` : undefined,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          {!loaded && !thumbnailUrl && (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#6B6B6B",
+                fontSize: 11,
+              }}
+            >
+              carregando…
+            </div>
+          )}
+        </div>
+        {/* Absorvem toque só onde o TikTok costuma linkar pra fora (avatar/
+            usuário em cima, curtir/comentar/compartilhar na lateral) — o
+            centro (onde fica o play deles) fica livre, senão o vídeo nunca
+            sai do 00:00 (autoplay deles não dispara sem toque real). */}
+        {loaded && (
+          <>
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{ position: "absolute", top: 0, left: 0, right: 0, height: "12%", cursor: "default" }}
+            />
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{ position: "absolute", top: "28%", bottom: 0, right: 0, width: "16%", cursor: "default" }}
+            />
+          </>
         )}
       </div>
     </div>
