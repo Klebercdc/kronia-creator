@@ -63,6 +63,12 @@ export interface MenuSpringLayers {
    * precisa do mesmo deslize aplicado por fora, aqui, pra não dessincronizar
    * da mola durante a animação. */
   topbar: HTMLElement | null;
+  /** Opcional: só existe fora da Home (.bottom-nav). Mesmo motivo do
+   * topbar — saiu de dentro de .kronia-app-camada (fixed quebrava lá,
+   * "flutuava" solto da borda real da tela em vez de ficar preso ao
+   * fundo — reportado com vídeo real do usuário), então precisa do mesmo
+   * deslize aplicado por fora aqui. */
+  bottomNav: HTMLElement | null;
 }
 
 /** Deslocamento real em px — min(300px, 82vw), igual ao CSS original
@@ -84,6 +90,7 @@ function pintar(c: MenuSpringLayers, p: number) {
   c.app.style.transform = t;
   c.app.style.borderRadius = (30 * Math.min(pv, 1)).toFixed(2) + "px";
   if (c.topbar) c.topbar.style.transform = t;
+  if (c.bottomNav) c.bottomNav.style.transform = t;
   c.sombra.style.transform = t;
   c.sombra.style.opacity = Math.min(pv, 1).toFixed(3);
   c.menu.style.transform = `translate3d(${(-24 * (1 - Math.min(pv, 1))).toFixed(2)}px,0,0)`;
@@ -94,6 +101,7 @@ function limpar(c: MenuSpringLayers) {
   c.app.style.transform = "";
   c.app.style.borderRadius = "";
   if (c.topbar) c.topbar.style.transform = "";
+  if (c.bottomNav) c.bottomNav.style.transform = "";
   c.sombra.style.transform = "";
   c.sombra.style.opacity = "";
   c.menu.style.transform = "";
@@ -200,14 +208,23 @@ export function useMenuSpring(
     veu: React.RefObject<HTMLElement | null>;
     /** Opcional — só existe quando a Home tá montada (ver MenuSpringLayers). */
     topbar?: React.RefObject<HTMLElement | null>;
+    /** Opcional — só existe fora da Home (ver MenuSpringLayers). */
+    bottomNav?: React.RefObject<HTMLElement | null>;
   },
 ) {
   const springRef = useRef<SpringHandle | null>(null);
   if (!springRef.current) {
     springRef.current = createSpring(() => {
-      const { app, menu, sombra, veu, topbar } = refs;
+      const { app, menu, sombra, veu, topbar, bottomNav } = refs;
       return app.current && menu.current && sombra.current && veu.current
-        ? { app: app.current, menu: menu.current, sombra: sombra.current, veu: veu.current, topbar: topbar?.current ?? null }
+        ? {
+            app: app.current,
+            menu: menu.current,
+            sombra: sombra.current,
+            veu: veu.current,
+            topbar: topbar?.current ?? null,
+            bottomNav: bottomNav?.current ?? null,
+          }
         : null;
     });
   }

@@ -850,6 +850,16 @@ a {
   transform: translate3d(min(300px, 82vw), 0, 0);
 }
 
+/* Mesmo raciocínio do topbar acima, aplicado ao .bottom-nav — ele também
+   virou irmão de .kronia-app-camada (ver comentário no JSX): dentro dela,
+   position:fixed pegava a CAMADA como base (por causa do transform
+   permanente), não o viewport real, e "flutuava" solto da borda de baixo
+   da tela durante a rolagem (visto com vídeo real do usuário — o menu
+   aparecia flutuando no meio do conteúdo, não grudado embaixo). */
+.kronia-menu-aberto .bottom-nav {
+  transform: translate3d(min(300px, 82vw), 0, 0);
+}
+
 /* Área de "tocar de lado pra fechar" — vive DENTRO da camada do app (cobre
    a tela ativa, que é o que fica visível/tocável quando o menu está
    aberto), nunca o véu (que é só visual, ver acima). pointer-events só liga
@@ -857,10 +867,12 @@ a {
 .kronia-app-back {
   position: absolute;
   inset: 0;
-  /* Acima de qualquer coisa dentro da camada do app, inclusive cabeçalho
-     sticky e bottom-nav fixo (ambos z-index:10 no CSS deles) — com o menu
-     aberto, tocar em QUALQUER ponto da tela principal fecha, mesmo que ali
-     embaixo houvesse um botão normal. */
+  /* Acima de qualquer coisa dentro da camada do app — com o menu aberto,
+     tocar em QUALQUER ponto da tela principal fecha, mesmo que ali embaixo
+     houvesse um botão normal. Cabeçalho e bottom-nav vivem FORA desta
+     camada agora (position:fixed real, ver comentário no JSX) — não
+     precisam desta área de toque, eles próprios deslizam junto com a mola
+     quando o menu abre. */
   z-index: 20;
   border: none;
   padding: 0;
