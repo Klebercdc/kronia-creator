@@ -9,7 +9,7 @@ import {
   type CreativeSpec,
 } from "./schemas";
 import { FORMAT_KNOWLEDGE } from "./format-knowledge";
-import { resolveCreativeGrammar } from "./grammar";
+import { projectGrammarToShotPattern, resolveCreativeGrammar } from "./grammar";
 
 const InferredSchema = CreativeSpecSchema.omit({ version: true, productTruth: true, creativeGrammar: true });
 
@@ -127,6 +127,10 @@ Gere a execução visual completa (formato, padrão, mecânica, shot pattern se 
     version: "v1" as const,
     productTruth,
     mechanic: creativeGrammar.mechanic,
+    shotPattern:
+      inferred.media === "video" && inferred.shotPattern
+        ? projectGrammarToShotPattern(inferred.shotPattern, creativeGrammar)
+        : inferred.shotPattern,
     creativeGrammar,
   };
 }
