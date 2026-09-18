@@ -55,6 +55,15 @@ export function getMovementsByIds(ids: string[]): MovementEntry[] {
   return ENTRIES.filter((e) => set.has(e.id));
 }
 
+/** Especificação técnica fixa que abre todo prompt composto — o que toda
+ * geração no Flow precisa não importa a combinação de movimentos, então
+ * fica declarada uma vez aqui em vez de a usuária digitar de novo a cada
+ * seleção. Os movimentos individuais entram depois, sem repetir isso. */
+const TECHNICAL_HEADER =
+  "Vídeo vertical 9:16, fotorrealista, iluminação natural, câmera fixa e estável, plano único sem cortes. " +
+  "Manter a mesma modelo, o mesmo rosto, o mesmo corpo e o mesmo cenário do início ao fim, sem deformar mãos. " +
+  "Sem fala, sem legenda, sem texto na tela, sem logo, sem marca d'água.";
+
 /** Concatena os movimentos selecionados, na ordem em que foram clicados, numa
  * única cena contínua com conectores simples — sem passar por LLM. Soma as
  * durações pra dar uma estimativa de tempo total do clipe. */
@@ -63,16 +72,36 @@ export function composeMovementPrompt(ids: string[]): { text: string; totalDurat
   const ordered = ids.map((id) => byId.get(id)).filter((e): e is MovementEntry => Boolean(e));
   if (ordered.length === 0) return null;
 
+  // Frases que só repetem instrução técnica já coberta pelo TECHNICAL_HEADER
+  // ("Sem fala...", "Câmera fixa...", "Movimento curto, câmera parada...",
+  // "Manter a mesma modelo...") — filtradas fora por SENTENÇA inteira, nunca
+  // por trecho parcial, pra nunca correr o risco de cortar uma frase que
+  // também descreve conteúdo real (ex: "...e sorri pra câmera." fica).
+  const BOILERPLATE_SENTENCE = [
+    /^Sem fala/i,
+    /^Câmera (fixa|parada|tripé|estática)/i,
+    /^Movimento[^,]*,\s*câmera/i,
+    /^Manter (a mesma modelo|fidelidade)/i,
+    /^Preservar identidade/i,
+  ];
+
+  function stripBoilerplate(body: string): string {
+    const sentences = body.match(/[^.]+\.?/g) ?? [body];
+    return sentences
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0 && !BOILERPLATE_SENTENCE.some((re) => re.test(s)))
+      .join(" ");
+  }
+
   const connectors = ["Em seguida,", "Depois,", "Na sequência,", "Logo após,", "Para finalizar,"];
   const sentences = ordered.map((entry, idx) => {
-    // Remove o prefixo de instrução técnica repetido ("Sem fala...") de
-    // todas as partes exceto a primeira, pra não repetir a cada trecho.
-    const cleaned = idx === 0 ? entry.body : entry.body.replace(/^(Sem fala[^.]*\.\s*)+/i, "");
+    const cleaned = stripBoilerplate(entry.body);
     if (idx === 0) return cleaned;
     const connector = connectors[Math.min(idx - 1, connectors.length - 1)];
     return `${connector} ${cleaned.charAt(0).toLowerCase()}${cleaned.slice(1)}`;
   });
 
   const totalDurationSec = ordered.reduce((sum, e) => sum + (e.durationSec ?? 0), 0);
-  return { text: sentences.join(" "), totalDurationSec };
+  const text = `${TECHNICAL_HEADER} Duração total: ~${totalDurationSec} segundos.\n\n${sentences.join(" ")}`;
+  return { text, totalDurationSec };
 }
