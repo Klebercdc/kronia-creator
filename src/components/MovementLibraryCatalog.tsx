@@ -10,6 +10,7 @@ import {
   type MovementFormat,
   type SubjectType,
 } from "../server/movement-library.functions";
+import { listHookTypesFn, generateHookPromptFn, type HookType } from "../server/hook-avancado.functions";
 
 const SUBJECT_OPTIONS: { value: SubjectType; label: string }[] = [
   { value: "person", label: "Avatar (pessoa)" },
@@ -121,8 +122,18 @@ export function MovementLibraryCatalog() {
   const listCategoriesRpc = useServerFn(listMovementCategoriesFn);
   const listMovementsRpc = useServerFn(listMovementsByCategoryFn);
   const composeRpc = useServerFn(composeMovementPromptFn);
+  const listHookTypesRpc = useServerFn(listHookTypesFn);
+  const generateHookRpc = useServerFn(generateHookPromptFn);
 
   const [categories, setCategories] = useState<MovementCategory[]>([]);
+  const [hookTypes, setHookTypes] = useState<{ value: HookType; label: string }[]>([]);
+  // Gancho narrativo avançado (opcional) — quando escolhido, "Gerar com IA"
+  // pega os movimentos clicados e pede pra IA costurar tudo na metodologia
+  // de abertura crítica + lista do que não mostrar (ver hook-avancado.ts).
+  // null = só o modo determinístico (Gerar prompt final) fica disponível.
+  const [hookType, setHookType] = useState<HookType | null>(null);
+  const [generatingAi, setGeneratingAi] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   // Passo 1: Sujeito + Formato decidem o que aparece no passo 2 — nada de
   // rolar 28 categorias numa fileira só pra achar a certa.
@@ -135,12 +146,13 @@ export function MovementLibraryCatalog() {
   const [loading, setLoading] = useState(false);
   // Ordem de clique preservada — é a ordem que vira a sequência da cena final.
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [composed, setComposed] = useState<{ text: string; totalDurationSec: number } | null>(null);
+  const [composed, setComposed] = useState<string | null>(null);
   const [composing, setComposing] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     listCategoriesRpc().then(setCategories);
+    listHookTypesRpc().then(setHookTypes);
   }, []);
 
   useEffect(() => {
@@ -191,16 +203,31 @@ export function MovementLibraryCatalog() {
     setCopied(false);
     try {
       const res = await composeRpc({ data: { ids: selectedIds, subjectType } });
-      setComposed(res);
+      setComposed(res?.text ?? null);
     } finally {
       setComposing(false);
+    }
+  }
+
+  async function handleGenerateAi() {
+    if (!hookType) return;
+    setGeneratingAi(true);
+    setCopied(false);
+    setAiError(null);
+    try {
+      const res = await generateHookRpc({ data: { movementIds: selectedIds, hookType, subjectType } });
+      setComposed(res.prompt);
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : "Erro ao gerar o prompt com IA");
+    } finally {
+      setGeneratingAi(false);
     }
   }
 
   async function handleCopy() {
     if (!composed) return;
     try {
-      await navigator.clipboard.writeText(composed.text);
+      await navigator.clipboard.writeText(composed);
       setCopied(true);
     } catch {
       // clipboard indisponível (ex: contexto não-seguro) — o texto já está
@@ -407,16 +434,62 @@ export function MovementLibraryCatalog() {
           </div>
 
           {!composed ? (
-            <button type="button" className="btn-primary" disabled={composing} onClick={handleGenerate}>
-              {composing ? "Montando…" : "Gerar prompt final"}
-            </button>
+            <>
+              <div>
+                <div style={{ fontSize: 11.5, color: "#8A8A8A", marginBottom: 6 }}>
+                  Gancho narrativo avançado (opcional) — abertura tipo "motoboy na porta", escrita pela IA a partir
+                  dos movimentos marcados:
+                </div>
+                <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4 }}>
+                  <button
+                    type="button"
+                    className={`pill ${hookType === null ? "active" : ""}`}
+                    style={{ flex: "0 0 auto", whiteSpace: "nowrap", fontSize: 12 }}
+                    onClick={() => setHookType(null)}
+                  >
+                    Nenhum
+                  </button>
+                  {hookTypes.map((t) => (
+                    <button
+                      key={t.value}
+                      type="button"
+                      className={`pill ${hookType === t.value ? "active" : ""}`}
+                      style={{ flex: "0 0 auto", whiteSpace: "nowrap", fontSize: 12 }}
+                      onClick={() => setHookType(t.value)}
+                    >
+                      {t.label.split("/")[0]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <button type="button" className="btn-secondary" disabled={composing} onClick={handleGenerate} style={{ flex: 1 }}>
+                  {composing ? "Montando…" : "Gerar prompt final"}
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  disabled={!hookType || generatingAi}
+                  onClick={handleGenerateAi}
+                  style={{ flex: 1 }}
+                >
+                  {generatingAi ? "Escrevendo…" : "Gerar com IA"}
+                </button>
+              </div>
+              {aiError && (
+                <div className="hint" style={{ color: "#FF6B6B", fontSize: 11.5 }}>
+                  {aiError}
+                </div>
+              )}
+            </>
           ) : (
             <>
               <textarea
                 className="input"
                 readOnly
                 rows={5}
-                value={composed.text}
+                value={composed}
                 style={{ fontSize: 12.5, resize: "vertical" }}
               />
               <div className="hint" style={{ fontSize: 11.5 }}>
