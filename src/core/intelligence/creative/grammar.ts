@@ -267,6 +267,12 @@ export const MECHANIC_BEATS: Record<string, CreativeBeat[]> = {
   ],
 };
 
+// Reusable aliases keep the public grammar vocabulary richer without
+// duplicating beat definitions.
+MECHANIC_BEATS.package_reveal = MECHANIC_BEATS.unboxing;
+MECHANIC_BEATS.layer_by_layer_reveal = MECHANIC_BEATS.unboxing;
+MECHANIC_BEATS.tabletop_demo = MECHANIC_BEATS.functional_demo;
+
 const MECHANIC_ALIASES: Record<string, keyof typeof MECHANIC_BEATS> = {
   door_to_table: "door_to_table",
   package_reveal: "unboxing",
