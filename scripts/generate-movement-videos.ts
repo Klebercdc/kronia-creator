@@ -42,7 +42,7 @@ interface MovementEntry {
 
 const DATA_PATH = join(process.cwd(), "src/data/movement-library.json");
 const OUTPUT_DIR = join(process.cwd(), "public/movements");
-const MODEL = "veo-3.0-fast-generate-001";
+const MODEL = "veo-3.1-fast-generate-preview";
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 const CONCURRENCY = 3;
 const POLL_INTERVAL_MS = 10_000;
@@ -83,7 +83,7 @@ async function startGeneration(prompt: string): Promise<string> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       instances: [{ prompt }],
-      parameters: { aspectRatio: "9:16", personGeneration: "allow_adult" },
+      parameters: { aspectRatio: "9:16" },
     }),
   });
   if (!res.ok) throw new Error(`predictLongRunning falhou (${res.status}): ${await res.text()}`);
