@@ -22,7 +22,6 @@ import {
 } from "../server/pipeline.functions";
 import { ACTOR_PRESETS } from "../core/generation/actor-presets";
 import { TikTokPreview } from "../components/TikTokPreview";
-import { ReferenceLibraryCatalog } from "../components/ReferenceLibraryCatalog";
 import { MovementLibraryCatalog } from "../components/MovementLibraryCatalog";
 import { uploadReferenceVideo } from "../lib/supabase-client";
 import type { SavedTheme, HistoryEntry, ConversationRow } from "../lib/supabase";
@@ -666,7 +665,7 @@ function OportunidadesTab({
 }) {
   const findOpportunitiesFn = useServerFn(findOpportunities);
 
-  const [mode, setMode] = useState<"ia" | "biblioteca" | "movimentos">("biblioteca");
+  const [mode, setMode] = useState<"ia" | "movimentos">("movimentos");
   const [niche, setNiche] = useState("");
   const [objective, setObjective] = useState("");
   const [product, setProduct] = useState("");
@@ -745,25 +744,12 @@ function OportunidadesTab({
         </button>
         <button
           type="button"
-          className={`pill ${mode === "biblioteca" ? "active" : ""}`}
-          onClick={() => setMode("biblioteca")}
-        >
-          Biblioteca real
-        </button>
-        <button
-          type="button"
           className={`pill ${mode === "movimentos" ? "active" : ""}`}
           onClick={() => setMode("movimentos")}
         >
           Movimentos
         </button>
       </div>
-
-      {mode === "biblioteca" && (
-        <ReferenceLibraryCatalog
-          onUseReference={(seed) => onCreateContent({ kind: "reference", ...seed })}
-        />
-      )}
 
       {mode === "movimentos" && <MovementLibraryCatalog />}
 
