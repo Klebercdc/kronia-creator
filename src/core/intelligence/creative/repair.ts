@@ -1,6 +1,6 @@
 import { callStructuredText } from "../../../lib/openai";
 import { CreativeSpecSchema, type CreativeSpec } from "./schemas";
-import { resolveCreativeGrammar } from "./grammar";
+import { projectGrammarToShotPattern, resolveCreativeGrammar } from "./grammar";
 
 const InferredSchema = CreativeSpecSchema.omit({ version: true, productTruth: true, creativeGrammar: true });
 
