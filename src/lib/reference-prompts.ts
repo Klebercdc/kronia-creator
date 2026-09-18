@@ -32,12 +32,57 @@ export interface ReferencePromptEntry {
 const ENTRIES = rawEntries as ReferencePromptEntry[];
 const BY_ID = new Map(ENTRIES.map((e) => [e.id, e]));
 
-function humanize(slug: string): string {
-  return slug
-    .split(/[-\s]+/)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
+/** Categoria original vem em inglês/slug (dataset da Clipcat) — traduzido
+ * fixo aqui pra ficar navegável em português; `painPoint` (texto livre,
+ * 387 entradas) é traduzido à parte, direto no dataset (ver script de
+ * tradução), porque não dá pra mapear frase livre com um dicionário fixo. */
+const CATEGORY_LABEL_PT: Record<string, string> = {
+  "automotive-motorcycle": "Automotivo e Motocicleta",
+  "baby-maternity": "Bebê e Maternidade",
+  "beauty-personal-care": "Beleza e Cuidados Pessoais",
+  "books-magazines-audio": "Livros, Revistas e Áudio",
+  collectibles: "Colecionáveis",
+  "computers-office-equipment": "Informática e Escritório",
+  "fashion-accessories": "Acessórios de Moda",
+  "food-beverages": "Alimentos e Bebidas",
+  furniture: "Móveis",
+  health: "Saúde",
+  "home-improvement": "Reforma e Construção",
+  "home-supplies": "Utilidades Domésticas",
+  "household-appliances": "Eletrodomésticos",
+  "jewelry-accessories-derivatives": "Joias e Bijuterias",
+  "kids-fashion": "Moda Infantil",
+  kitchenware: "Utensílios de Cozinha",
+  "luggage-bags": "Malas e Bolsas",
+  "menswear-underwear": "Moda Masculina e Íntima",
+  "pet-supplies": "Produtos para Pet",
+  "phones-electronics": "Celulares e Eletrônicos",
+  shoes: "Calçados",
+  "sports-outdoor": "Esporte e Ar Livre",
+  "textiles-soft-furnishings": "Têxteis e Cama/Mesa/Banho",
+  "tools-hardware": "Ferramentas",
+  "toys-hobbies": "Brinquedos e Hobbies",
+  "womenswear-underwear": "Moda Feminina e Íntima",
+  "pre-owned": "Usados",
+  "muslim-fashion": "Moda Muçulmana",
+  "bookings-vouchers": "Reservas e Vouchers",
+  "virtual-products": "Produtos Virtuais",
+};
+
+/** `category` (não `categorySlug`) é a chave certa aqui — o dataset usa
+ * hífen duplo em `categorySlug` pra categorias com "&" no nome original
+ * (ex: `categorySlug: "automotive--motorcycle"` vs `category:
+ * "automotive-motorcycle"`), então bater no mapa por categorySlug erra
+ * silenciosamente pra metade das categorias e cai no fallback em inglês. */
+function categoryLabelPt(category: string): string {
+  return (
+    CATEGORY_LABEL_PT[category] ??
+    category
+      .split(/[-\s]+/)
+      .filter(Boolean)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ")
+  );
 }
 
 export interface ReferencePromptCategory {
@@ -53,7 +98,7 @@ export function listReferencePromptCategories(): ReferencePromptCategory[] {
     if (existing) {
       existing.count += 1;
     } else {
-      bySlug.set(e.categorySlug, { slug: e.categorySlug, label: humanize(e.category), count: 1 });
+      bySlug.set(e.categorySlug, { slug: e.categorySlug, label: categoryLabelPt(e.category), count: 1 });
     }
   }
   return [...bySlug.values()].sort((a, b) => a.label.localeCompare(b.label));
