@@ -67,6 +67,14 @@ function subjectTypeFor(entry: MovementEntry): SubjectType {
   return entry.categorySlug.includes("pov") ? "product" : "person";
 }
 
+/** Sugestão automática de sujeito pra uma seleção — usada como valor
+ * inicial do seletor Avatar/Objeto na tela; a usuária pode trocar antes de
+ * gerar (ver `composeMovementPrompt`, parâmetro `subjectTypeOverride`). */
+export function detectSubjectType(ids: string[]): SubjectType {
+  const types = new Set(getMovementsByIds(ids).map(subjectTypeFor));
+  return types.size === 1 ? [...types][0] : "person";
+}
+
 const SUBJECT_LINE: Record<SubjectType, string> = {
   person:
     "a mesma pessoa, rosto, roupa e ambiente da foto de referência enviada — manter tudo idêntico à referência do início ao fim, sem deformar mãos",
@@ -102,8 +110,16 @@ function buildTechnicalHeader(subjectTypes: Set<SubjectType>): string {
 
 /** Concatena os movimentos selecionados, na ordem em que foram clicados, numa
  * única cena contínua com conectores simples — sem passar por LLM. Soma as
- * durações pra dar uma estimativa de tempo total do clipe. */
-export function composeMovementPrompt(ids: string[]): { text: string; totalDurationSec: number } | null {
+ * durações pra dar uma estimativa de tempo total do clipe.
+ *
+ * `subjectTypeOverride`: a usuária escolhe explicitamente "Avatar" ou
+ * "Objeto" na tela (seletor ao lado da seleção de movimentos) — quando
+ * informado, vence a detecção automática por categoria pra toda a seleção,
+ * mesmo que os movimentos escolhidos sejam de tipos diferentes. */
+export function composeMovementPrompt(
+  ids: string[],
+  subjectTypeOverride?: SubjectType,
+): { text: string; totalDurationSec: number } | null {
   const byId = new Map(getMovementsByIds(ids).map((e) => [e.id, e]));
   const ordered = ids.map((id) => byId.get(id)).filter((e): e is MovementEntry => Boolean(e));
   if (ordered.length === 0) return null;
@@ -138,7 +154,7 @@ export function composeMovementPrompt(ids: string[]): { text: string; totalDurat
   });
 
   const totalDurationSec = ordered.reduce((sum, e) => sum + (e.durationSec ?? 0), 0);
-  const subjectTypes = new Set(ordered.map(subjectTypeFor));
+  const subjectTypes = subjectTypeOverride ? new Set([subjectTypeOverride]) : new Set(ordered.map(subjectTypeFor));
   const header = buildTechnicalHeader(subjectTypes);
   const text = `${header} Duração total: ~${totalDurationSec} segundos.\n\n${sentences.join(" ")}`;
   return { text, totalDurationSec };

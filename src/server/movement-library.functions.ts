@@ -6,6 +6,7 @@ import {
   listMovementsByCategory,
   type MovementCategory,
   type MovementEntry,
+  type SubjectType,
 } from "../lib/movement-library";
 
 export const listMovementCategoriesFn = createServerFn({ method: "GET" }).handler(
@@ -17,7 +18,14 @@ export const listMovementsByCategoryFn = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<MovementEntry[]> => listMovementsByCategory(data.categorySlug));
 
 export const composeMovementPromptFn = createServerFn({ method: "POST" })
-  .validator((data: unknown) => z.object({ ids: z.array(z.string().min(1)).min(1) }).parse(data))
-  .handler(async ({ data }) => composeMovementPrompt(data.ids));
+  .validator((data: unknown) =>
+    z
+      .object({
+        ids: z.array(z.string().min(1)).min(1),
+        subjectType: z.enum(["person", "product"]).optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data }) => composeMovementPrompt(data.ids, data.subjectType));
 
-export type { MovementCategory, MovementEntry };
+export type { MovementCategory, MovementEntry, SubjectType };
