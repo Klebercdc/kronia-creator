@@ -151,6 +151,36 @@ export interface CreativeGrammar {
  * Pattern rather than stored as a giant prompt.
  */
 export const MECHANIC_BEATS: Record<string, CreativeBeat[]> = {
+  pov_use: [
+    { id: "POV_ENTRY", action: "enter the action from the user's perspective", purpose: "immerse the viewer", durationWeight: 0.9 },
+    { id: "HANDLE", action: "handle or use the product naturally", purpose: "show interaction", interaction: "USE", durationWeight: 1 },
+    { id: "DETAIL", action: "show the relevant visible detail from the same perspective", purpose: "fidelity", interaction: "SHOW_DETAIL", durationWeight: 0.8 },
+  ],
+  hand_feel: [
+    { id: "TOUCH", action: "touch the visible material or surface naturally", purpose: "sensory grounding", interaction: "TOUCH", durationWeight: 0.9 },
+    { id: "HANDLE", action: "handle the product without forcing an unsupported claim", purpose: "physical context", interaction: "HOLD", durationWeight: 1 },
+    { id: "DETAIL", action: "show the visible construction or finish", purpose: "fidelity", interaction: "SHOW_DETAIL", durationWeight: 0.8 },
+  ],
+  before_after: [
+    { id: "BEFORE", action: "establish the initial state clearly", purpose: "baseline", durationWeight: 0.8 },
+    { id: "TRANSITION", action: "perform the visible change naturally", purpose: "transformation", durationWeight: 1 },
+    { id: "AFTER", action: "show the resulting state without inventing outcomes", purpose: "payoff", durationWeight: 1 },
+  ],
+  open_close: [
+    { id: "CLOSED", action: "show the closed state", purpose: "baseline", durationWeight: 0.7 },
+    { id: "OPEN", action: "open the object naturally", purpose: "reveal", interaction: "OPEN", durationWeight: 1 },
+    { id: "DETAIL", action: "show the visible interior or detail", purpose: "fidelity", interaction: "SHOW_DETAIL", durationWeight: 0.8 },
+  ],
+  pour: [
+    { id: "SETUP", action: "position the product for the supported pour action", purpose: "clarity", durationWeight: 0.8 },
+    { id: "POUR", action: "perform the pour naturally", purpose: "demonstration", interaction: "USE", durationWeight: 1 },
+    { id: "DETAIL", action: "show the visible result of the action", purpose: "payoff", durationWeight: 0.8 },
+  ],
+  comparison: [
+    { id: "OPTION_A", action: "show the first option at natural scale", purpose: "baseline", durationWeight: 0.8 },
+    { id: "OPTION_B", action: "show the second option at natural scale", purpose: "contrast", durationWeight: 0.8 },
+    { id: "DIFFERENCE", action: "focus on a visible difference only", purpose: "decision support", interaction: "COMPARE", durationWeight: 1 },
+  ],
   unboxing: [
     { id: "RECEIVE", action: "receive the package", purpose: "establish the arrival", interaction: "RECEIVE", durationWeight: 0.8 },
     { id: "PACKAGE_LOOK", action: "look at the package before opening", purpose: "create anticipation", durationWeight: 0.7 },
