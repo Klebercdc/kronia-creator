@@ -6,7 +6,13 @@ import {
   composeMovementPromptFn,
   type MovementCategory,
   type MovementEntry,
+  type SubjectType,
 } from "../server/movement-library.functions";
+
+const SUBJECT_OPTIONS: { value: SubjectType; label: string }[] = [
+  { value: "person", label: "Avatar (pessoa)" },
+  { value: "product", label: "Objeto (produto)" },
+];
 
 /** Clipe stock do Pexels é o vídeo inteiro (pode passar de 10-30s) — corta
  * em loop de 3s a partir do início em vez de carregar/tocar tudo, tanto
@@ -118,6 +124,11 @@ export function MovementLibraryCatalog() {
   const [loading, setLoading] = useState(false);
   // Ordem de clique preservada — é a ordem que vira a sequência da cena final.
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  // Quem decide se o prompt final fala de "a mesma pessoa" ou "o mesmo
+  // produto" — a detecção automática por categoria (ver movement-library.ts)
+  // continua rodando no servidor como sugestão, mas esse toggle sempre
+  // vence quando a usuária mexe nele.
+  const [subjectType, setSubjectType] = useState<SubjectType>("person");
   const [composed, setComposed] = useState<{ text: string; totalDurationSec: number } | null>(null);
   const [composing, setComposing] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -142,7 +153,13 @@ export function MovementLibraryCatalog() {
   function toggle(id: string) {
     setComposed(null);
     setCopied(false);
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setSelectedIds((prev) => {
+      // Primeira marcação de uma seleção nova — sugere Avatar/Objeto pela
+      // categoria aberta (mesma regra do detectSubjectType no servidor,
+      // só que sem round-trip). A usuária pode trocar depois no toggle.
+      if (prev.length === 0) setSubjectType(categorySlug?.includes("pov") ? "product" : "person");
+      return prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+    });
   }
 
   function clearSelection() {
@@ -155,7 +172,7 @@ export function MovementLibraryCatalog() {
     setComposing(true);
     setCopied(false);
     try {
-      const res = await composeRpc({ data: { ids: selectedIds } });
+      const res = await composeRpc({ data: { ids: selectedIds, subjectType } });
       setComposed(res);
     } finally {
       setComposing(false);
@@ -280,6 +297,24 @@ export function MovementLibraryCatalog() {
             <button type="button" onClick={clearSelection} style={{ background: "none", border: "none", color: "#6B6B6B", fontSize: 12, cursor: "pointer" }}>
               Limpar
             </button>
+          </div>
+
+          <div style={{ display: "flex", gap: 6 }}>
+            {SUBJECT_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                className={`pill ${subjectType === opt.value ? "active" : ""}`}
+                style={{ flex: 1, padding: "8px 0", fontSize: 12 }}
+                onClick={() => {
+                  setSubjectType(opt.value);
+                  setComposed(null);
+                  setCopied(false);
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
 
           {!composed ? (
