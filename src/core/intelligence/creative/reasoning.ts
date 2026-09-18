@@ -9,8 +9,9 @@ import {
   type CreativeSpec,
 } from "./schemas";
 import { FORMAT_KNOWLEDGE } from "./format-knowledge";
+import { resolveCreativeGrammar } from "./grammar";
 
-const InferredSchema = CreativeSpecSchema.omit({ version: true, productTruth: true });
+const InferredSchema = CreativeSpecSchema.omit({ version: true, productTruth: true, creativeGrammar: true });
 
 const SYSTEM = `Você é o Creative Reasoning do KRONIA — recebe um produto (com evidências já
 classificadas), uma ideia livre e/ou o contexto de uma Oportunidade, e decide COMO executar
