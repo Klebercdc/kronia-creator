@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { EvidencedClaimSchema, type EvidencedClaim } from "../../../types/evidence";
 import { CONTENT_FORMATS } from "../../../types/taxonomy";
+import { CreativeGrammarSchema, type CreativeGrammar } from "./grammar";
 
 /**
  * Creative Pattern = intenção criativa de alto nível ("por que este vídeo
@@ -156,6 +157,8 @@ export const CreativeSpecSchema = z.object({
   format: z.enum(CONTENT_FORMATS),
   pattern: CreativePatternSchema,
   mechanic: VisualMechanicSchema,
+  /** Structured creative grammar resolved after the existing Creative Reasoning. */
+  creativeGrammar: CreativeGrammarSchema.nullable(),
   /** Nullable — shots são um conceito de VÍDEO (sequência temporal).
    * Imagem não tem "duração de shot"; forçar a LLM a inventar um sempre
    * produzia lixo real (ex.: durationSeconds:0.03, "camera: static" sem
@@ -173,6 +176,7 @@ export const CreativeSpecSchema = z.object({
   reasoning: z.string(),
 });
 export type CreativeSpec = z.infer<typeof CreativeSpecSchema>;
+export type { CreativeGrammar };
 
 /**
  * Target = model (gerador subjacente, ex. Veo/Kling) ou platform (workflow
