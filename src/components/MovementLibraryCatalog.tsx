@@ -133,6 +133,7 @@ export function MovementLibraryCatalog() {
   // null = só o modo determinístico (Gerar prompt final) fica disponível.
   const [hookType, setHookType] = useState<HookType | null>(null);
   const [generatingAi, setGeneratingAi] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   // Passo 1: Sujeito + Formato decidem o que aparece no passo 2 — nada de
   // rolar 28 categorias numa fileira só pra achar a certa.
@@ -212,9 +213,12 @@ export function MovementLibraryCatalog() {
     if (!hookType) return;
     setGeneratingAi(true);
     setCopied(false);
+    setAiError(null);
     try {
       const res = await generateHookRpc({ data: { movementIds: selectedIds, hookType, subjectType } });
       setComposed(res.prompt);
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : "Erro ao gerar o prompt com IA");
     } finally {
       setGeneratingAi(false);
     }
@@ -473,6 +477,11 @@ export function MovementLibraryCatalog() {
                   {generatingAi ? "Escrevendo…" : "Gerar com IA"}
                 </button>
               </div>
+              {aiError && (
+                <div className="hint" style={{ color: "#FF6B6B", fontSize: 11.5 }}>
+                  {aiError}
+                </div>
+              )}
             </>
           ) : (
             <>
