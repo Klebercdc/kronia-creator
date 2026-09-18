@@ -23,6 +23,7 @@ import {
 import { ACTOR_PRESETS } from "../core/generation/actor-presets";
 import { TikTokPreview } from "../components/TikTokPreview";
 import { MovementLibraryCatalog } from "../components/MovementLibraryCatalog";
+import { ReferencePromptsCatalog } from "../components/ReferencePromptsCatalog";
 import { uploadReferenceVideo } from "../lib/supabase-client";
 import type { SavedTheme, HistoryEntry, ConversationRow } from "../lib/supabase";
 import type { ContentRequest, GenerationResult, PipelineOutput, ReferenceAnalysis } from "../types/pipeline";
@@ -665,7 +666,7 @@ function OportunidadesTab({
 }) {
   const findOpportunitiesFn = useServerFn(findOpportunities);
 
-  const [mode, setMode] = useState<"ia" | "movimentos">("movimentos");
+  const [mode, setMode] = useState<"ia" | "movimentos" | "roteiros">("movimentos");
   const [niche, setNiche] = useState("");
   const [objective, setObjective] = useState("");
   const [product, setProduct] = useState("");
@@ -749,9 +750,17 @@ function OportunidadesTab({
         >
           Movimentos
         </button>
+        <button
+          type="button"
+          className={`pill ${mode === "roteiros" ? "active" : ""}`}
+          onClick={() => setMode("roteiros")}
+        >
+          Roteiros prontos
+        </button>
       </div>
 
       {mode === "movimentos" && <MovementLibraryCatalog />}
+      {mode === "roteiros" && <ReferencePromptsCatalog />}
 
       {mode === "ia" && (
       <>
