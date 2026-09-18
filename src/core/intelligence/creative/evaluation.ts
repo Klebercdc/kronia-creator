@@ -9,7 +9,16 @@ import type { CreativeEvaluation, CreativeSpec } from "./schemas";
  * não é um novo agente LLM (item 7 do adendo final).
  */
 export function evaluateCreativeSpec(spec: CreativeSpec): CreativeEvaluation {
-  const notes: string[] = [];\n\n  const grammarCoherent = Boolean(\n    spec.creativeGrammar &&\n      spec.creativeGrammar.format === spec.format &&\n      spec.creativeGrammar.pattern === spec.pattern &&\n      spec.creativeGrammar.mechanic === spec.mechanic &&\n      spec.creativeGrammar.beats.length > 0,\n  );\n  if (!grammarCoherent) notes.push("Creative Grammar ausente ou divergente da Creative Spec.");
+  const notes: string[] = [];
+
+  const grammarCoherent = Boolean(
+    spec.creativeGrammar &&
+      spec.creativeGrammar.format === spec.format &&
+      spec.creativeGrammar.pattern === spec.pattern &&
+      spec.creativeGrammar.mechanic === spec.mechanic &&
+      spec.creativeGrammar.beats.length > 0,
+  );
+  if (!grammarCoherent) notes.push("Creative Grammar ausente ou divergente da Creative Spec.");
 
   const knowledge = FORMAT_KNOWLEDGE[spec.format];
   const mechanicFitsPattern = knowledge
