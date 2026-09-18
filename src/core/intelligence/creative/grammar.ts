@@ -1,4 +1,29 @@
-import { randomUUID } from "node:crypto";
+i
+
+export const CreativeBeatSchema = z.object({
+  id: z.string(),
+  action: z.string(),
+  purpose: z.string(),
+  interaction: z.enum(PRODUCT_INTERACTION_GRAMMAR).optional(),
+  durationWeight: z.number().positive(),
+});
+
+export const CreativeGrammarSchema = z.object({
+  version: z.literal(CREATIVE_GRAMMAR_VERSION),
+  variationSeed: z.string().min(1),
+  format: z.string(),
+  pattern: z.string(),
+  mechanic: z.string(),
+  beats: z.array(CreativeBeatSchema).min(1),
+  camera: z.array(z.enum(CAMERA_GRAMMAR)).min(1),
+  performance: z.enum(PERFORMANCE_GRAMMAR),
+  environment: z.enum(ENVIRONMENT_GRAMMAR),
+  productInteraction: z.array(z.enum(PRODUCT_INTERACTION_GRAMMAR)),
+  audio: z.array(z.enum(AUDIO_GRAMMAR)).min(1),
+  realism: z.array(z.enum(VISUAL_REALISM_GRAMMAR)).min(1),
+});
+mport { randomUUID } from "node:crypto";
+import { z } from "zod";
 import type { ContentFormat } from "../../../types/taxonomy";
 import type { CreativePattern, VisualMechanic } from "./schemas";
 
