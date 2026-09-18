@@ -416,6 +416,30 @@ function normalizedMechanic(mechanic: VisualMechanic): keyof typeof MECHANIC_BEA
   return MECHANIC_ALIASES[mechanic] ?? (mechanic as keyof typeof MECHANIC_BEATS);
 }
 
+export function projectGrammarToShotPattern(
+  shotPattern: { shots: Array<{ index: number; function: string; durationSeconds: number; camera: string; action: string }>; totalDurationSeconds: number },
+  grammar: CreativeGrammar,
+) {
+  if (shotPattern.shots.length === 0 || grammar.beats.length === 0) return shotPattern;
+
+  const shots = shotPattern.shots.map((shot, index) => {
+    const beatIndex = Math.min(
+      grammar.beats.length - 1,
+      Math.floor((index * grammar.beats.length) / shotPattern.shots.length),
+    );
+    const beat = grammar.beats[beatIndex];
+    const camera = grammar.camera[index % grammar.camera.length];
+    return {
+      ...shot,
+      index,
+      camera,
+      action: beat.action,
+    };
+  });
+
+  return { ...shotPattern, shots };
+}
+
 export function resolveCreativeGrammar(args: {
   format: ContentFormat;
   pattern: CreativePattern;
