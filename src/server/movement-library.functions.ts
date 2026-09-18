@@ -4,8 +4,10 @@ import {
   composeMovementPrompt,
   listMovementCategories,
   listMovementsByCategory,
+  FORMAT_LABEL,
   type MovementCategory,
   type MovementEntry,
+  type MovementFormat,
   type SubjectType,
 } from "../lib/movement-library";
 
@@ -28,4 +30,5 @@ export const composeMovementPromptFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => composeMovementPrompt(data.ids, data.subjectType));
 
-export type { MovementCategory, MovementEntry, SubjectType };
+export { FORMAT_LABEL };
+export type { MovementCategory, MovementEntry, MovementFormat, SubjectType };
