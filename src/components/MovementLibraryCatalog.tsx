@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   listMovementCategoriesFn,
@@ -8,7 +8,22 @@ import {
   type MovementEntry,
 } from "../server/movement-library.functions";
 
+/** Clipe stock do Pexels é o vídeo inteiro (pode passar de 10-30s) — corta
+ * em loop de 3s a partir do início em vez de carregar/tocar tudo, tanto
+ * pra dar o efeito de "preview curto" quanto pra pesar menos (não faz
+ * sentido baixar um clipe de 15MB inteiro pra mostrar só o começo). */
+const PREVIEW_LOOP_SEC = 3;
+
 function MovementPreview({ entry, selected }: { entry: MovementEntry; selected: boolean }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  function handleTimeUpdate() {
+    const v = videoRef.current;
+    if (v && v.currentTime >= PREVIEW_LOOP_SEC) {
+      v.currentTime = 0;
+    }
+  }
+
   return (
     <div
       style={{
@@ -23,11 +38,12 @@ function MovementPreview({ entry, selected }: { entry: MovementEntry; selected: 
     >
       {entry.videoUrl ? (
         <video
+          ref={videoRef}
           src={entry.videoUrl}
           autoPlay
           muted
-          loop
           playsInline
+          onTimeUpdate={handleTimeUpdate}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
       ) : (
