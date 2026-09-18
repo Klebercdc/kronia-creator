@@ -115,10 +115,19 @@ Gere a execução visual completa (formato, padrão, mecânica, shot pattern se 
     toolName: "creative_spec",
   });
 
+  const creativeGrammar = resolveCreativeGrammar({
+    format: inferred.format,
+    pattern: inferred.pattern,
+    mechanic: inferred.mechanic,
+    productPresent: input.productInfo.length > 0,
+  });
+
   return {
     ...inferred,
     version: "v1" as const,
     productTruth,
+    mechanic: creativeGrammar.mechanic,
+    creativeGrammar,
   };
 }
 
