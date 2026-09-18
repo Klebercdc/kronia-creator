@@ -13,7 +13,8 @@
     "usage": "tsx scripts/usage-report.ts",
     "smoke-test:ingest": "tsx scripts/smoke-test-ingest.ts",
     "smoke-test:creative-grammar": "tsx scripts/smoke-test-creative-grammar.ts",
-    "generate-movement-videos": "tsx scripts/generate-movement-videos.ts"
+    "generate-movement-videos": "tsx scripts/generate-movement-videos.ts",
+    "match-movement-stock-videos": "tsx scripts/match-movement-stock-videos.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
