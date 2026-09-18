@@ -55,14 +55,22 @@ export function getMovementsByIds(ids: string[]): MovementEntry[] {
   return ENTRIES.filter((e) => set.has(e.id));
 }
 
-/** Especificação técnica fixa que abre todo prompt composto — o que toda
- * geração no Flow precisa não importa a combinação de movimentos, então
- * fica declarada uma vez aqui em vez de a usuária digitar de novo a cada
- * seleção. Os movimentos individuais entram depois, sem repetir isso. */
+/** Especificação técnica fixa que abre todo prompt composto — segue a
+ * estrutura oficial do guia de prompting do Veo 3.1 (Google Cloud Blog,
+ * "Ultimate prompting guide for Veo 3.1"): Cinematografia → Sujeito/Contexto
+ * → Estilo → restrições. Os movimentos selecionados entram depois como a
+ * parte de Ação.
+ *
+ * Consistência de personagem: o guia oficial recomenda NÃO tentar descrever
+ * a pessoa em texto (isso é o que causa "gente diferente em cada vídeo")
+ * — o jeito certo é subir uma FOTO de referência no Flow junto com o texto
+ * (recurso "Ingredients to Video"/imagem de referência). Por isso o texto
+ * abaixo aponta pra essa foto em vez de tentar redescrever a modelo. */
 const TECHNICAL_HEADER =
-  "Vídeo vertical 9:16, fotorrealista, iluminação natural, câmera fixa e estável, plano único sem cortes. " +
-  "Manter a mesma modelo, o mesmo rosto, o mesmo corpo e o mesmo cenário do início ao fim, sem deformar mãos. " +
-  "Sem fala, sem legenda, sem texto na tela, sem logo, sem marca d'água.";
+  "Plano fixo, câmera estável, enquadramento único sem cortes. " +
+  "Sujeito e cenário: a mesma pessoa, rosto, roupa e ambiente da foto de referência enviada — manter tudo idêntico à referência do início ao fim, sem deformar mãos. " +
+  "Estilo: fotorrealista, iluminação natural, vídeo vertical 9:16. " +
+  "Restrições: sem fala, sem legenda, sem texto na tela, sem logo, sem marca d'água.";
 
 /** Concatena os movimentos selecionados, na ordem em que foram clicados, numa
  * única cena contínua com conectores simples — sem passar por LLM. Soma as

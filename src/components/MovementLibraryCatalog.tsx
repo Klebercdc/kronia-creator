@@ -295,6 +295,10 @@ export function MovementLibraryCatalog() {
                 value={composed.text}
                 style={{ fontSize: 12.5, resize: "vertical" }}
               />
+              <div className="hint" style={{ fontSize: 11.5 }}>
+                No Flow, cole esse texto <strong>junto com a foto do seu produto/modelo como referência</strong> (recurso
+                "Ingredients to Video") — é isso que mantém o mesmo rosto e cenário, o texto sozinho não garante.
+              </div>
               <div style={{ display: "flex", gap: 8 }}>
                 <button type="button" className="btn-secondary" onClick={() => setComposed(null)}>
                   Editar seleção
