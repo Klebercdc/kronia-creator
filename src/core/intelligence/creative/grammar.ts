@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { ContentFormat } from "../../../types/taxonomy";
 import type { CreativePattern, VisualMechanic } from "./schemas";
 
@@ -226,8 +227,8 @@ const MECHANIC_ALIASES: Record<string, keyof typeof MECHANIC_BEATS> = {
   walk_and_talk: "walk_and_talk",
 };
 
-const FORMAT_MECHANICS: Partial<Record<ContentFormat, keyof typeof MECHANIC_BEATS[]>> = {
-  ugc: ["reaction", "walk_and_talk", "follow_hands", "close_up_detail"] as any,
+const FORMAT_MECHANICS: Partial<Record<ContentFormat, Array<keyof typeof MECHANIC_BEATS>>> = {
+  ugc: ["reaction", "walk_and_talk", "follow_hands", "close_up_detail"],
   pov: ["follow_hands", "pocket_reveal", "walk_and_talk"] as any,
   unboxing: ["door_to_table", "unboxing", "bag_reveal", "package_reveal"] as any,
   review: ["reaction", "close_up_detail", "product_rotation"] as any,
@@ -349,7 +350,7 @@ export function resolveCreativeGrammar(args: {
   seed?: string;
   productPresent?: boolean;
 }): CreativeGrammar {
-  const seed = args.seed ?? crypto.randomUUID();
+  const seed = args.seed ?? randomUUID();
   const numericSeed = hashSeed(seed);
   const mechanicKey = normalizedMechanic(args.mechanic);
   const beats = MECHANIC_BEATS[mechanicKey] ?? MECHANIC_BEATS.detail_reveal;
