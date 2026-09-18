@@ -9,8 +9,9 @@ import {
   type CreativeSpec,
 } from "./schemas";
 import { FORMAT_KNOWLEDGE } from "./format-knowledge";
+import { projectGrammarToShotPattern, resolveCreativeGrammar } from "./grammar";
 
-const InferredSchema = CreativeSpecSchema.omit({ version: true, productTruth: true });
+const InferredSchema = CreativeSpecSchema.omit({ version: true, productTruth: true, creativeGrammar: true });
 
 const SYSTEM = `Você é o Creative Reasoning do KRONIA — recebe um produto (com evidências já
 classificadas), uma ideia livre e/ou o contexto de uma Oportunidade, e decide COMO executar
@@ -114,10 +115,23 @@ Gere a execução visual completa (formato, padrão, mecânica, shot pattern se 
     toolName: "creative_spec",
   });
 
+  const creativeGrammar = resolveCreativeGrammar({
+    format: inferred.format,
+    pattern: inferred.pattern,
+    mechanic: inferred.mechanic,
+    productPresent: input.productInfo.length > 0,
+  });
+
   return {
     ...inferred,
     version: "v1" as const,
     productTruth,
+    mechanic: creativeGrammar.mechanic,
+    shotPattern:
+      inferred.media === "video" && inferred.shotPattern
+        ? projectGrammarToShotPattern(inferred.shotPattern, creativeGrammar)
+        : inferred.shotPattern,
+    creativeGrammar,
   };
 }
 

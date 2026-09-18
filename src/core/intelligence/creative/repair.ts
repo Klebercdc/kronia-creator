@@ -1,7 +1,8 @@
 import { callStructuredText } from "../../../lib/openai";
 import { CreativeSpecSchema, type CreativeSpec } from "./schemas";
+import { projectGrammarToShotPattern, resolveCreativeGrammar } from "./grammar";
 
-const InferredSchema = CreativeSpecSchema.omit({ version: true, productTruth: true });
+const InferredSchema = CreativeSpecSchema.omit({ version: true, productTruth: true, creativeGrammar: true });
 
 const SYSTEM = `Você corrige uma Creative Spec (execução visual de um produto) que foi reprovada no
 Prompt QC. Para cada problema listado, aplique a correção mínima necessária — não reescreva a spec
