@@ -129,7 +129,20 @@ const SUBJECT_LINE: Record<SubjectType, string> = {
  * descrever o sujeito em texto (isso é o que causa "coisa diferente em cada
  * vídeo") — o jeito certo é subir uma FOTO de referência no Flow junto com
  * o texto (recurso "Ingredients to Video"/imagem de referência). Por isso o
- * texto abaixo sempre aponta pra essa foto em vez de tentar redescrever. */
+ * texto abaixo sempre aponta pra essa foto em vez de tentar redescrever.
+ *
+ * "Enquadramento fechado (close-up)" e "autêntico" vieram de minerar os 647
+ * prompts `promptEn` da antiga Biblioteca real (removida do app, mas ainda
+ * no histórico do git — ver commit "chore: remover Biblioteca real") —
+ * prompts reverse-engineered de vídeos reais que venderam #1 no TikTok
+ * Shop. Contagem de termos na seção [Camera] desses 647: "close-up"
+ * aparece em 83% deles (vs. os outros tipos de plano somados) — bem mais
+ * dominante do que a suposição inicial de plano médio/aberto. Na seção
+ * [Style], "realistic" aparece em 71% e "authentic" em 30%. Câmera 100%
+ * travada (sem nenhum tremor) NÃO é o padrão real (só 45% usam câmera
+ * fixa; o resto tem leve textura de mão natural) — mesmo assim mantemos
+ * "câmera estável" aqui de propósito, não é erro: sem isso o Avatar Lock
+ * (mesma pessoa/produto entre gerações) fica mais instável no Veo. */
 function buildTechnicalHeader(subjectTypes: Set<SubjectType>): string {
   const subjectSentence =
     subjectTypes.size === 1
@@ -137,9 +150,9 @@ function buildTechnicalHeader(subjectTypes: Set<SubjectType>): string {
       : "a mesma pessoa e/ou o mesmo produto da foto de referência enviada — manter tudo (rosto, roupa, cor, tecido e ambiente) idêntico à referência do início ao fim, sem deformar mãos";
 
   return (
-    "Plano fixo, câmera estável, enquadramento único sem cortes. " +
+    "Plano fixo, câmera estável, enquadramento fechado (close-up) destacando a peça, sem cortes. " +
     `Sujeito e cenário: ${subjectSentence}. ` +
-    "Estilo: fotorrealista, iluminação natural, vídeo vertical 9:16. " +
+    "Estilo: fotorrealista, autêntico, iluminação natural, vídeo vertical 9:16. " +
     "Restrições: sem fala, sem legenda, sem texto na tela, sem logo, sem marca d'água."
   );
 }
