@@ -22,7 +22,7 @@ export const CreativeGrammarSchema = z.object({
   audio: z.array(z.enum(AUDIO_GRAMMAR)).min(1),
   realism: z.array(z.enum(VISUAL_REALISM_GRAMMAR)).min(1),
 });
-mport { randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { ContentFormat } from "../../../types/taxonomy";
 import type { CreativePattern, VisualMechanic } from "./schemas";

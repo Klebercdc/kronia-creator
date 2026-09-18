@@ -12,7 +12,8 @@
     "smoke-test:offline": "tsx scripts/smoke-test-offline.ts",
     "usage": "tsx scripts/usage-report.ts",
     "smoke-test:ingest": "tsx scripts/smoke-test-ingest.ts",
-    "smoke-test:creative-grammar": "tsx scripts/smoke-test-creative-grammar.ts"
+    "smoke-test:creative-grammar": "tsx scripts/smoke-test-creative-grammar.ts",
+    "generate-movement-videos": "tsx scripts/generate-movement-videos.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
