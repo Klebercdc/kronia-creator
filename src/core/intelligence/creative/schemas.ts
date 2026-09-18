@@ -24,6 +24,12 @@ export const CREATIVE_PATTERNS = [
   "reaction",
   "social_proof",
   "before_after",
+  "hook_demo_payoff",
+  "result_first_demonstration",
+  "story_discovery_product",
+  "reaction_demo_payoff",
+  "discovery_explanation",
+  "receive_open_reveal_showcase",
 ] as const;
 export const CreativePatternSchema = z.enum(CREATIVE_PATTERNS);
 export type CreativePattern = z.infer<typeof CreativePatternSchema>;
@@ -46,6 +52,15 @@ export const VISUAL_MECHANICS = [
   "comparison",
   "pov_use",
   "reaction",
+  "door_to_table",
+  "package_reveal",
+  "follow_hands",
+  "mirror_showcase",
+  "close_up_detail",
+  "pocket_reveal",
+  "bag_reveal",
+  "phone_screen_reveal",
+  "walk_and_talk",
 ] as const;
 export const VisualMechanicSchema = z.enum(VISUAL_MECHANICS);
 export type VisualMechanic = z.infer<typeof VisualMechanicSchema>;
