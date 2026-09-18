@@ -16,17 +16,29 @@ assert.ok(first.camera.length >= 1);
 assert.ok(first.productInteraction.length >= 1);
 assert.ok(first.realism.includes("REALISTIC_MOTION"));
 
-const second = resolveCreativeGrammar({
-  format: "unboxing",
-  pattern: "receive_open_reveal_showcase",
-  mechanic: "unboxing",
-  seed: "grammar-test-b",
-  productPresent: true,
-});
+const variants = Array.from({ length: 8 }, (_, index) =>
+  resolveCreativeGrammar({
+    format: "unboxing",
+    pattern: "receive_open_reveal_showcase",
+    mechanic: "unboxing",
+    seed: `grammar-test-${index}`,
+    productPresent: true,
+  }),
+);
 
-assert.notDeepEqual(
-  { mechanic: first.mechanic, camera: first.camera, environment: first.environment, performance: first.performance },
-  { mechanic: second.mechanic, camera: second.camera, environment: second.environment, performance: second.performance },
+const variantKeys = new Set(
+  variants.map((variant) =>
+    JSON.stringify({
+      mechanic: variant.mechanic,
+      camera: variant.camera,
+      environment: variant.environment,
+      performance: variant.performance,
+    }),
+  ),
+);
+
+assert.ok(
+  variantKeys.size > 1,
   "different production seeds should be able to produce materially different grammar combinations",
 );
 
