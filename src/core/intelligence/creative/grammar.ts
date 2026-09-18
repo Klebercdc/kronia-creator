@@ -352,6 +352,12 @@ const PERFORMANCE_BY_PATTERN: Partial<Record<CreativePattern, PerformanceGrammar
   reaction: ["SURPRISED", "EXCITED", "RELATABLE"],
   social_proof: ["CONVINCED", "RELATABLE", "NATURAL"],
   before_after: ["SURPRISED", "CONVINCED", "EXCITED"],
+  hook_demo_payoff: ["FOCUSED", "SPONTANEOUS", "CONVINCED"],
+  result_first_demonstration: ["SURPRISED", "FOCUSED", "CONVINCED"],
+  story_discovery_product: ["CURIOUS", "RELATABLE", "SPONTANEOUS"],
+  reaction_demo_payoff: ["SURPRISED", "EXCITED", "CONVINCED"],
+  discovery_explanation: ["CURIOUS", "FOCUSED", "NATURAL"],
+  receive_open_reveal_showcase: ["CURIOUS", "EXCITED", "SPONTANEOUS"],
 };
 
 const PRODUCT_INTERACTION_BY_PATTERN: Partial<Record<CreativePattern, ProductInteractionGrammar[]>> = {
@@ -367,6 +373,12 @@ const PRODUCT_INTERACTION_BY_PATTERN: Partial<Record<CreativePattern, ProductInt
   first_use: ["HOLD", "USE", "INSPECT"],
   reaction: ["HOLD", "SHOW_DETAIL"],
   before_after: ["PUT_ON", "WEAR", "COMPARE"],
+  hook_demo_payoff: ["HOLD", "USE", "SHOW_DETAIL"],
+  result_first_demonstration: ["HOLD", "USE", "SHOW_DETAIL"],
+  story_discovery_product: ["RECEIVE", "HOLD", "SHOW_DETAIL"],
+  reaction_demo_payoff: ["HOLD", "USE", "SHOW_DETAIL"],
+  discovery_explanation: ["OPEN", "INSPECT", "SHOW_DETAIL"],
+  receive_open_reveal_showcase: ["RECEIVE", "OPEN", "HOLD", "SHOW_DETAIL"],
 };
 
 const AUDIO_BY_MECHANIC: Partial<Record<string, AudioGrammar[]>> = {
