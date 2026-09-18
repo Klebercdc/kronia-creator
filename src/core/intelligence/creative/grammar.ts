@@ -377,11 +377,16 @@ export function resolveCreativeGrammar(args: {
 }): CreativeGrammar {
   const seed = args.seed ?? randomUUID();
   const numericSeed = hashSeed(seed);
-  const mechanicKey = normalizedMechanic(args.mechanic);
-  const beats = MECHANIC_BEATS[mechanicKey] ?? MECHANIC_BEATS.detail_reveal;
-  const compatibleMechanics = FORMAT_MECHANICS[args.format] ?? Object.keys(MECHANIC_BEATS);
-  const compatibleKey = compatibleMechanics.includes(mechanicKey) ? mechanicKey : pick(compatibleMechanics, numericSeed);
-  const finalBeats = MECHANIC_BEATS[compatibleKey] ?? beats;
+  const requestedMechanic = normalizedMechanic(args.mechanic);
+  const compatibleMechanics = FORMAT_MECHANICS[args.format] ?? (Object.keys(MECHANIC_BEATS) as Array<keyof typeof MECHANIC_BEATS>);
+  // The existing Creative Reasoning chooses the creative direction; this
+  // library chooses a concrete execution variant so similar requests do not
+  // collapse into one template. The requested mechanic remains a preference
+  // only when the target format has a single compatible variant.
+  const compatibleKey = compatibleMechanics.length === 1
+    ? compatibleMechanics[0]
+    : pick(compatibleMechanics, numericSeed + (compatibleMechanics.includes(requestedMechanic) ? 1 : 0));
+  const finalBeats = MECHANIC_BEATS[compatibleKey] ?? MECHANIC_BEATS.detail_reveal;
   const cameras = CAMERA_BY_MECHANIC[compatibleKey] ?? ["HANDHELD_SMARTPHONE", "MEDIUM"];
   const environments = ENVIRONMENT_BY_FORMAT[args.format] ?? ["HOME", "OUTDOOR"];
   const performances = PERFORMANCE_BY_PATTERN[args.pattern] ?? ["NATURAL", "SPONTANEOUS"];
@@ -393,7 +398,7 @@ export function resolveCreativeGrammar(args: {
     variationSeed: seed,
     format: args.format,
     pattern: args.pattern,
-    mechanic: args.mechanic,
+    mechanic: compatibleKey as VisualMechanic,
     beats: finalBeats,
     camera: [
       pick(cameras, numericSeed),
