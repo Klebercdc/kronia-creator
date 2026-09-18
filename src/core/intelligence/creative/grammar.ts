@@ -330,6 +330,12 @@ const ENVIRONMENT_BY_FORMAT: Partial<Record<ContentFormat, EnvironmentGrammar[]>
   storytelling: ["HOME", "STREET", "OUTDOOR", "OFFICE"],
   produto_360: ["TABLETOP_STUDIO", "HOME", "OFFICE"],
   apresentacao_por_modelo: ["HOME", "BEDROOM", "STORE", "STREET"],
+  product_demo: ["HOME", "KITCHEN", "BATHROOM", "GYM", "OFFICE"],
+  product_reveal: ["HOME", "TABLETOP_STUDIO", "STORE"],
+  try_on: ["BEDROOM", "HOME", "STORE", "STREET"],
+  walk_and_talk: ["STREET", "HOME", "OFFICE", "OUTDOOR"],
+  mirror: ["BEDROOM", "BATHROOM", "HOME", "STORE"],
+  hands_only: ["KITCHEN", "BATHROOM", "GYM", "TABLETOP_STUDIO"],
 };
 
 const PERFORMANCE_BY_PATTERN: Partial<Record<CreativePattern, PerformanceGrammar[]>> = {
