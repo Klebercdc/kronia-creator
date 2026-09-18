@@ -4,8 +4,10 @@ import {
   listMovementCategoriesFn,
   listMovementsByCategoryFn,
   composeMovementPromptFn,
+  FORMAT_LABEL,
   type MovementCategory,
   type MovementEntry,
+  type MovementFormat,
   type SubjectType,
 } from "../server/movement-library.functions";
 
@@ -13,6 +15,8 @@ const SUBJECT_OPTIONS: { value: SubjectType; label: string }[] = [
   { value: "person", label: "Avatar (pessoa)" },
   { value: "product", label: "Objeto (produto)" },
 ];
+
+const FORMAT_ORDER: MovementFormat[] = ["padrao", "pov", "ugc", "cta", "sequencia"];
 
 /** Clipe stock do Pexels é o vídeo inteiro (pode passar de 10-30s) — corta
  * em loop de 3s a partir do início em vez de carregar/tocar tudo, tanto
@@ -119,25 +123,24 @@ export function MovementLibraryCatalog() {
   const composeRpc = useServerFn(composeMovementPromptFn);
 
   const [categories, setCategories] = useState<MovementCategory[]>([]);
+
+  // Passo 1: Sujeito + Formato decidem o que aparece no passo 2 — nada de
+  // rolar 28 categorias numa fileira só pra achar a certa.
+  const [step, setStep] = useState<"config" | "browse">("config");
+  const [subjectType, setSubjectType] = useState<SubjectType>("person");
+  const [format, setFormat] = useState<MovementFormat>("padrao");
+
   const [categorySlug, setCategorySlug] = useState<string | null>(null);
   const [movements, setMovements] = useState<MovementEntry[]>([]);
   const [loading, setLoading] = useState(false);
   // Ordem de clique preservada — é a ordem que vira a sequência da cena final.
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  // Quem decide se o prompt final fala de "a mesma pessoa" ou "o mesmo
-  // produto" — a detecção automática por categoria (ver movement-library.ts)
-  // continua rodando no servidor como sugestão, mas esse toggle sempre
-  // vence quando a usuária mexe nele.
-  const [subjectType, setSubjectType] = useState<SubjectType>("person");
   const [composed, setComposed] = useState<{ text: string; totalDurationSec: number } | null>(null);
   const [composing, setComposing] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    listCategoriesRpc().then((cats) => {
-      setCategories(cats);
-      if (cats.length > 0) setCategorySlug(cats[0].slug);
-    });
+    listCategoriesRpc().then(setCategories);
   }, []);
 
   useEffect(() => {
@@ -148,18 +151,33 @@ export function MovementLibraryCatalog() {
       .finally(() => setLoading(false));
   }, [categorySlug]);
 
+  const categoriesInFormat = useMemo(() => categories.filter((c) => c.format === format), [categories, format]);
+  const formatCounts = useMemo(() => {
+    const counts = new Map<MovementFormat, number>();
+    for (const c of categories) counts.set(c.format, (counts.get(c.format) ?? 0) + c.count);
+    return counts;
+  }, [categories]);
+
   const selectedMap = useMemo(() => new Map(movements.map((m) => [m.id, m])), [movements]);
+
+  function goToBrowse() {
+    setStep("browse");
+    setCategorySlug(categoriesInFormat[0]?.slug ?? null);
+  }
+
+  function backToConfig() {
+    setStep("config");
+    setCategorySlug(null);
+    setMovements([]);
+    setSelectedIds([]);
+    setComposed(null);
+    setCopied(false);
+  }
 
   function toggle(id: string) {
     setComposed(null);
     setCopied(false);
-    setSelectedIds((prev) => {
-      // Primeira marcação de uma seleção nova — sugere Avatar/Objeto pela
-      // categoria aberta (mesma regra do detectSubjectType no servidor,
-      // só que sem round-trip). A usuária pode trocar depois no toggle.
-      if (prev.length === 0) setSubjectType(categorySlug?.includes("pov") ? "product" : "person");
-      return prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
-    });
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
   function clearSelection() {
@@ -192,24 +210,113 @@ export function MovementLibraryCatalog() {
 
   const totalSelectedDuration = selectedIds.reduce((sum, id) => sum + (selectedMap.get(id)?.durationSec ?? 0), 0);
 
+  if (step === "config") {
+    return (
+      <div>
+        <div className="hint" style={{ marginBottom: 14 }}>
+          Primeiro escolhe o sujeito e o formato do vídeo — depois a lista de movimentos já vem filtrada só pelo que
+          combina com isso.
+        </div>
+
+        <div className="section-label" style={{ marginBottom: 6 }}>
+          Sujeito
+        </div>
+        <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
+          {SUBJECT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              className={`pill ${subjectType === opt.value ? "active" : ""}`}
+              style={{ flex: 1, padding: "12px 0" }}
+              onClick={() => setSubjectType(opt.value)}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="section-label" style={{ marginBottom: 6 }}>
+          Formato
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+          {FORMAT_ORDER.map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setFormat(f)}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                width: "100%",
+                padding: "14px 16px",
+                borderRadius: 12,
+                border: format === f ? "1px solid #FF8A1A" : "1px solid #262626",
+                background: format === f ? "rgba(255,138,26,0.12)" : "#131313",
+                color: format === f ? "#FF8A1A" : "#C9C9C9",
+                fontWeight: 700,
+                fontSize: 14,
+                textAlign: "left",
+                cursor: "pointer",
+              }}
+            >
+              <span>{FORMAT_LABEL[f]}</span>
+              <span style={{ fontSize: 12, color: "#6B6B6B", fontWeight: 500 }}>
+                {formatCounts.get(f) ?? 0} movimentos
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <button type="button" className="btn-primary" disabled={categoriesInFormat.length === 0} onClick={goToBrowse}>
+          Continuar
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div>
+      <button
+        type="button"
+        onClick={backToConfig}
+        style={{ background: "none", border: "none", color: "#8A8A8A", fontSize: 12.5, cursor: "pointer", padding: 0, marginBottom: 10 }}
+      >
+        ← {SUBJECT_OPTIONS.find((o) => o.value === subjectType)?.label} · {FORMAT_LABEL[format]}
+      </button>
+
       <div className="hint" style={{ marginBottom: 10 }}>
-        Escolha a categoria da roupa, marque os movimentos que quer no vídeo (na ordem que devem acontecer) e gere o
-        prompt final pra colar no Flow.
+        Escolha a categoria, marque os movimentos que quer no vídeo (na ordem que devem acontecer) e gere o prompt
+        final pra colar no Flow.
       </div>
 
-      <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 6, marginBottom: 12 }}>
-        {categories.map((c) => (
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+        {categoriesInFormat.map((c) => (
           <button
             key={c.slug}
             type="button"
-            className={`pill ${categorySlug === c.slug ? "active" : ""}`}
             onClick={() => setCategorySlug(c.slug)}
-            style={{ flex: "0 0 auto", whiteSpace: "nowrap" }}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              width: "100%",
+              padding: "10px 14px",
+              borderRadius: 10,
+              border: categorySlug === c.slug ? "1px solid #FF8A1A" : "1px solid #232323",
+              background: categorySlug === c.slug ? "rgba(255,138,26,0.12)" : "#131313",
+              color: categorySlug === c.slug ? "#FF8A1A" : "#C9C9C9",
+              fontSize: 13,
+              fontWeight: 600,
+              textAlign: "left",
+              cursor: "pointer",
+            }}
           >
-            {c.label}
-            {c.engine === "veo3" ? " · Veo3" : ""} ({c.count})
+            <span>
+              {c.label}
+              {c.engine === "veo3" ? " · Veo3" : ""}
+            </span>
+            <span style={{ fontSize: 11.5, color: "#6B6B6B", fontWeight: 500 }}>{c.count}</span>
           </button>
         ))}
       </div>
@@ -297,24 +404,6 @@ export function MovementLibraryCatalog() {
             <button type="button" onClick={clearSelection} style={{ background: "none", border: "none", color: "#6B6B6B", fontSize: 12, cursor: "pointer" }}>
               Limpar
             </button>
-          </div>
-
-          <div style={{ display: "flex", gap: 6 }}>
-            {SUBJECT_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                className={`pill ${subjectType === opt.value ? "active" : ""}`}
-                style={{ flex: 1, padding: "8px 0", fontSize: 12 }}
-                onClick={() => {
-                  setSubjectType(opt.value);
-                  setComposed(null);
-                  setCopied(false);
-                }}
-              >
-                {opt.label}
-              </button>
-            ))}
           </div>
 
           {!composed ? (

@@ -25,11 +25,39 @@ export interface MovementEntry {
 const ENTRIES = rawEntries as MovementEntry[];
 const BY_ID = new Map(ENTRIES.map((e) => [e.id, e]));
 
+/** Formato do vídeo — um eixo diferente de "categoria de roupa", cruza
+ * com ela (ex: tem POV de blusa, POV de vestido...). Detectado pelo número
+ * do grupo, não pelo texto do rótulo, porque os grupos 18-28 ("Veo3 — X")
+ * espelham os grupos 1-11 na mesma ordem mas ALGUNS perderam o prefixo
+ * original no título (ex: grupo 8 é "Cena 1 — Hook com outra roupa", o
+ * espelho Veo3 é só "Veo3 — Hook com outra roupa", sem o "Cena 1 —") —
+ * então comparar por texto classificava esses errado. */
+export type MovementFormat = "padrao" | "pov" | "ugc" | "cta" | "sequencia";
+
+export const FORMAT_LABEL: Record<MovementFormat, string> = {
+  padrao: "Padrão",
+  pov: "POV",
+  ugc: "UGC / Selfie",
+  cta: "CTA",
+  sequencia: "Sequência",
+};
+
+function formatOf(group: number): MovementFormat {
+  const g = group >= 18 ? group - 17 : group; // Veo3 (18-28) espelha os grupos 1-11
+  if (g === 7) return "cta";
+  if (g === 8 || g === 9 || g === 11) return "sequencia";
+  if (g >= 12 && g <= 15) return "ugc";
+  if (g === 16 || g === 17) return "pov";
+  return "padrao";
+}
+
 export interface MovementCategory {
   slug: string;
   label: string;
   group: number;
   engine: MovementEntry["engine"];
+  format: MovementFormat;
+  subjectType: SubjectType;
   count: number;
 }
 
@@ -40,7 +68,15 @@ export function listMovementCategories(): MovementCategory[] {
     if (existing) {
       existing.count += 1;
     } else {
-      byGroup.set(e.group, { slug: e.categorySlug, label: e.category, group: e.group, engine: e.engine, count: 1 });
+      byGroup.set(e.group, {
+        slug: e.categorySlug,
+        label: e.category,
+        group: e.group,
+        engine: e.engine,
+        format: formatOf(e.group),
+        subjectType: subjectTypeFor(e),
+        count: 1,
+      });
     }
   }
   return [...byGroup.values()].sort((a, b) => a.group - b.group);
