@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { callStructuredVisionFromDataUrls } from "../../lib/openai";
+import { HOOK_TYPES, PERSUASION_MECHANISMS } from "../../types/taxonomy";
 
 /**
  * Preenche os 14 campos do gerador de blocos de venda a partir da foto do
@@ -29,6 +30,22 @@ const FieldsSchema = z.object({
 
 export type BlocosVendaFields = z.infer<typeof FieldsSchema>;
 
+/** Técnicas dos blocos 1–5, uma por linha — checadas contra a taxonomia real
+ * do app (types/taxonomy.ts) em vez de string solta: se um desses nomes for
+ * removido/renomeado na taxonomia, o build quebra aqui em vez de o prompt
+ * silenciosamente citar uma técnica que não existe mais. */
+function fromHookTypes(...names: (typeof HOOK_TYPES)[number][]): string {
+  return names.join(" + ");
+}
+function fromMechanisms(...names: (typeof PERSUASION_MECHANISMS)[number][]): string {
+  return names.join(" + ");
+}
+const BLOCO1_TECNICA = fromHookTypes("identity_call", "pattern_interrupt");
+const BLOCO2_TECNICA = fromMechanisms("beneficio");
+const BLOCO3_TECNICA = fromMechanisms("problema_solucao", "desejo");
+const BLOCO4_TECNICA = fromMechanisms("alivio");
+const BLOCO5_TECNICA = fromMechanisms("cta_claro");
+
 const SYSTEM = `Você preenche os campos de um gerador de vídeos de venda de ~50s (5 blocos de 10s,
 formato SCRIPT/CENA/CÂMERA/AÇÃO/FALA/VOZ) a partir de UMA foto: um personagem/avatar (pode ser
 qualquer pessoa — Jesus, uma moça com blusa, um vendedor, tanto faz) segurando ou perto de um
@@ -49,6 +66,22 @@ REGRAS DE COMPLIANCE (linguagem de venda) — pros campos publico/valores/funcao
 - "fato" tem que ser algo realmente verificável (visível na embalagem/rótulo da foto, ou uma
   característica objetiva do tipo de produto) — nunca invente número ou estatística.
 - Cada campo de fala fica curto (a frase final onde ele entra tem no máximo ~20 palavras).
+
+TÉCNICA POR BLOCO — mesma taxonomia usada pelos outros agentes de copy do KRONIA (hooks validados
+em análise de 34.635 clipes virais + mecanismos de persuasão legítimos, nunca manipulação
+enganosa, escassez inventada ou prova social sem evidência). Escreva CADA campo já pensando na
+técnica do bloco onde ele entra:
+- publico + valores (bloco 1, gancho): técnica "${BLOCO1_TECNICA}" — chama o espectador pela
+  identidade dele de um jeito específico o bastante pra interromper o scroll, não um público
+  genérico ("as pessoas", "todo mundo").
+- produto + funcao (bloco 2, revelação): mecanismo "${BLOCO2_TECNICA}" — a função emocional tem
+  que ser o benefício real que ESSE produto entrega, nunca uma característica técnica solta.
+- dor (bloco 3, uso + identificação): mecanismo "${BLOCO3_TECNICA}" — a dor tem que ser específica
+  e reconhecível no dia a dia de quem é o público do bloco 1, não uma dor genérica.
+- fato + proposito (bloco 4, experiência): mecanismo "${BLOCO4_TECNICA}" — o propósito é o
+  alívio/ganho de longo prazo que resolve a dor do bloco 3, fechando o arco emocional dos 5 blocos.
+- local (bloco 5, CTA): mecanismo "${BLOCO5_TECNICA}" — o CTA fica ligado à mensagem (não ao
+  produto isolado) e sempre diz onde clicar.
 
 SIGNIFICADO DE CADA CAMPO (como ele entra nas frases-modelo, pra você escrever no tom certo):
 - nome: primeiro nome do personagem. Se a foto sugerir claramente uma figura bíblica/religiosa
