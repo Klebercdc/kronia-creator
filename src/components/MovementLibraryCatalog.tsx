@@ -292,9 +292,9 @@ export function MovementLibraryCatalog() {
                 width: "100%",
                 padding: "14px 16px",
                 borderRadius: 12,
-                border: format === f ? "1px solid #FF8A1A" : "1px solid #262626",
-                background: format === f ? "rgba(255,138,26,0.12)" : "#131313",
-                color: format === f ? "#FF8A1A" : "#C9C9C9",
+                border: format === f ? "1px solid var(--kr-accent-2)" : "1px solid var(--kr-line)",
+                background: format === f ? "var(--kr-tint)" : "var(--kr-card)",
+                color: format === f ? "var(--kr-accent-ink)" : "var(--kr-ink)",
                 fontWeight: 700,
                 fontSize: 14,
                 textAlign: "left",
@@ -302,7 +302,7 @@ export function MovementLibraryCatalog() {
               }}
             >
               <span>{FORMAT_LABEL[f]}</span>
-              <span style={{ fontSize: 12, color: "#6B6B6B", fontWeight: 500 }}>
+              <span style={{ fontSize: 12, color: "var(--kr-muted-2)", fontWeight: 500 }}>
                 {formatCounts.get(f) ?? 0} movimentos
               </span>
             </button>
@@ -321,7 +321,7 @@ export function MovementLibraryCatalog() {
       <button
         type="button"
         onClick={backToConfig}
-        style={{ background: "none", border: "none", color: "#8A8A8A", fontSize: 12.5, cursor: "pointer", padding: 0, marginBottom: 10 }}
+        style={{ background: "none", border: "none", color: "var(--kr-muted)", fontSize: 12.5, cursor: "pointer", padding: 0, marginBottom: 10 }}
       >
         ← {SUBJECT_OPTIONS.find((o) => o.value === subjectType)?.label} · {FORMAT_LABEL[format]}
       </button>
@@ -344,9 +344,9 @@ export function MovementLibraryCatalog() {
               width: "100%",
               padding: "10px 14px",
               borderRadius: 10,
-              border: categorySlug === c.slug ? "1px solid #FF8A1A" : "1px solid #232323",
-              background: categorySlug === c.slug ? "rgba(255,138,26,0.12)" : "#131313",
-              color: categorySlug === c.slug ? "#FF8A1A" : "#C9C9C9",
+              border: categorySlug === c.slug ? "1px solid var(--kr-accent-2)" : "1px solid var(--kr-line)",
+              background: categorySlug === c.slug ? "var(--kr-tint)" : "var(--kr-card)",
+              color: categorySlug === c.slug ? "var(--kr-accent-ink)" : "var(--kr-ink)",
               fontSize: 13,
               fontWeight: 600,
               textAlign: "left",
@@ -357,7 +357,7 @@ export function MovementLibraryCatalog() {
               {c.label}
               {c.engine === "veo3" ? " · Veo3" : ""}
             </span>
-            <span style={{ fontSize: 11.5, color: "#6B6B6B", fontWeight: 500 }}>{c.count}</span>
+            <span style={{ fontSize: 11.5, color: "var(--kr-muted-2)", fontWeight: 500 }}>{c.count}</span>
           </button>
         ))}
       </div>
@@ -443,7 +443,7 @@ export function MovementLibraryCatalog() {
                   {order}
                 </div>
               )}
-              <div style={{ fontSize: 11, color: "#C9C9C9", lineHeight: 1.25 }}>{m.title}</div>
+              <div style={{ fontSize: 11, color: "var(--kr-ink)", lineHeight: 1.25 }}>{m.title}</div>
             </button>
           );
         })}
@@ -457,8 +457,9 @@ export function MovementLibraryCatalog() {
             // (ver .app/.bottom-nav em styles.css) — sem esse offset o painel
             // gruda embaixo da tela mas fica escondido atrás da nav.
             bottom: "calc(88px + env(safe-area-inset-bottom))",
-            background: "#0D0D0D",
-            border: "1px solid #232323",
+            background: "var(--kr-card)",
+            border: "1px solid var(--kr-line)",
+            boxShadow: "0 2px 10px var(--kr-shadow)",
             borderRadius: 14,
             padding: 12,
             display: "flex",
@@ -466,12 +467,12 @@ export function MovementLibraryCatalog() {
             gap: 10,
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "#8A8A8A" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "var(--kr-muted)" }}>
             <span>
               {selectedIds.length} movimento{selectedIds.length > 1 ? "s" : ""} selecionado{selectedIds.length > 1 ? "s" : ""} · ~
               {totalSelectedDuration}s
             </span>
-            <button type="button" onClick={clearSelection} style={{ background: "none", border: "none", color: "#6B6B6B", fontSize: 12, cursor: "pointer" }}>
+            <button type="button" onClick={clearSelection} style={{ background: "none", border: "none", color: "var(--kr-muted-2)", fontSize: 12, cursor: "pointer" }}>
               Limpar
             </button>
           </div>
@@ -479,7 +480,7 @@ export function MovementLibraryCatalog() {
           {!composed ? (
             <>
               <div>
-                <div style={{ fontSize: 11.5, color: "#8A8A8A", marginBottom: 6 }}>
+                <div style={{ fontSize: 11.5, color: "var(--kr-muted)", marginBottom: 6 }}>
                   Gancho narrativo avançado (opcional) — abertura tipo "motoboy na porta", escrita pela IA a partir
                   dos movimentos marcados:
                 </div>
@@ -521,7 +522,7 @@ export function MovementLibraryCatalog() {
                 </button>
               </div>
               {aiError && (
-                <div className="hint" style={{ color: "#FF6B6B", fontSize: 11.5 }}>
+                <div className="hint" style={{ color: "#DC2626", fontSize: 11.5 }}>
                   {aiError}
                 </div>
               )}

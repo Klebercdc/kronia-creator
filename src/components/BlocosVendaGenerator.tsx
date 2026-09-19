@@ -330,7 +330,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
       <div key={f.key} style={{ marginBottom: 14 }}>
         <div className="section-label" style={{ marginBottom: 4 }}>
           {f.label}
-          {f.hint && <span style={{ fontWeight: 400, color: "#6B6B6B" }}> — {f.hint}</span>}
+          {f.hint && <span style={{ fontWeight: 400, color: "var(--kr-muted-2)" }}> — {f.hint}</span>}
         </div>
         {f.textarea ? (
           <textarea
@@ -389,9 +389,9 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
                   width: 22,
                   height: 22,
                   borderRadius: "50%",
-                  background: "#1A1A1A",
-                  border: "1px solid #333",
-                  color: "#EDEDED",
+                  background: "var(--kr-card-2)",
+                  border: "1px solid var(--kr-line)",
+                  color: "var(--kr-ink)",
                   fontSize: 13,
                   lineHeight: 1,
                 }}
@@ -406,12 +406,12 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
                 width: 72,
                 height: 72,
                 borderRadius: 10,
-                border: "1px dashed #444",
+                border: "1px dashed var(--kr-line)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: 24,
-                color: "#8A8A8A",
+                color: "var(--kr-muted)",
                 cursor: "pointer",
               }}
             >
@@ -444,7 +444,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
           {aiLoading ? "Gerando com IA..." : "Gerar campos com IA"}
         </button>
         {aiError && (
-          <div className="hint" style={{ color: "#F09A72", marginTop: 8 }}>
+          <div className="hint" style={{ color: "#DC2626", marginTop: 8 }}>
             {aiError}
           </div>
         )}
@@ -477,13 +477,13 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
 
       <h2 style={{ fontSize: 16, marginBottom: 10 }}>Alertas</h2>
       {alerts.length === 0 ? (
-        <div className="hint" style={{ color: "#4E6B3A", marginBottom: 20 }}>
+        <div className="hint" style={{ color: "#166534", marginBottom: 20 }}>
           Sem alertas.
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
           {alerts.map((msg, i) => (
-            <div key={i} style={{ background: "#3C2419", color: "#F09A72", borderRadius: 10, padding: "8px 12px", fontSize: 13.5, fontWeight: 500 }}>
+            <div key={i} style={{ background: "var(--kr-tint)", color: "var(--kr-accent-ink)", borderRadius: 10, padding: "8px 12px", fontSize: 13.5, fontWeight: 500 }}>
               {msg}
             </div>
           ))}
@@ -495,9 +495,9 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
         {blocks.map((blk, i) => (
           <div key={i} className="card">
             <h3 style={{ fontSize: 15, margin: "0 0 2px" }}>{blk.def.titulo}</h3>
-            <div style={{ color: "#8A8A8A", fontSize: 12, marginBottom: 8 }}>{blk.def.tempo}</div>
-            <p style={{ fontSize: 16.5, margin: "0 0 10px", paddingLeft: 10, borderLeft: "3px solid #FF8A1A" }}>{blk.fala}</p>
-            <div style={{ fontSize: 12, fontWeight: 700, color: blk.over ? "#F09A72" : "#9CC27F", marginBottom: 10 }}>
+            <div style={{ color: "var(--kr-muted)", fontSize: 12, marginBottom: 8 }}>{blk.def.tempo}</div>
+            <p style={{ fontSize: 16.5, margin: "0 0 10px", paddingLeft: 10, borderLeft: "3px solid var(--kr-accent-2)" }}>{blk.fala}</p>
+            <div style={{ fontSize: 12, fontWeight: 700, color: blk.over ? "#DC2626" : "#166534", marginBottom: 10 }}>
               {blk.words} palavras · cerca de {blk.secs.toFixed(0)}s
             </div>
             <button
@@ -510,7 +510,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
             </button>
             <details>
               <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 700 }}>Ver prompt completo</summary>
-              <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 12, background: "#0D0D0D", border: "1px solid #232323", borderRadius: 10, padding: 12, marginTop: 8, maxHeight: 320, overflow: "auto" }}>
+              <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 12, background: "var(--kr-card-2)", border: "1px solid var(--kr-line)", borderRadius: 10, padding: 12, marginTop: 8, maxHeight: 320, overflow: "auto" }}>
                 {blk.prompt}
               </pre>
             </details>
@@ -522,6 +522,13 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
         style={{
           position: "sticky",
           bottom: "calc(88px + env(safe-area-inset-bottom))",
+          background: "var(--kr-bg)",
+          borderTop: "1px solid var(--kr-line)",
+          padding: "14px 0 10px",
+          marginLeft: -20,
+          marginRight: -20,
+          paddingLeft: 20,
+          paddingRight: 20,
         }}
       >
         <button

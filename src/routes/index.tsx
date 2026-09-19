@@ -111,16 +111,16 @@ function StageIndicator({ current }: { current: 0 | 1 | 2 }) {
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: 11,
-                border: i <= current ? "none" : "1px solid #3A3A3A",
+                border: i <= current ? "none" : "1px solid var(--kr-line)",
                 background: i <= current ? "#FF6A1A" : "transparent",
-                color: i <= current ? "#fff" : "#7A7A7A",
+                color: i <= current ? "#fff" : "var(--kr-muted-2)",
               }}
             >
               {i + 1}
             </span>
-            <span style={{ color: i <= current ? "#fff" : "#7A7A7A" }}>{label}</span>
+            <span style={{ color: i <= current ? "var(--kr-ink)" : "var(--kr-muted-2)" }}>{label}</span>
           </span>
-          {i < STAGES.length - 1 && <span style={{ width: 16, height: 1, background: "#333", flexShrink: 0 }} />}
+          {i < STAGES.length - 1 && <span style={{ width: 16, height: 1, background: "var(--kr-line)", flexShrink: 0 }} />}
         </span>
       ))}
     </div>
@@ -468,8 +468,8 @@ function PerfilTab({ onOpenMenu }: { onOpenMenu: () => void }) {
 
       <div className="card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div>
-          <div style={{ fontWeight: 700, fontSize: 14.5, color: "#fff" }}>Tema</div>
-          <div style={{ fontSize: 12.5, color: "#8A8A8A", marginTop: 2 }}>Claro ou escuro, sua escolha fica salva.</div>
+          <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--kr-ink)" }}>Tema</div>
+          <div style={{ fontSize: 12.5, color: "var(--kr-muted)", marginTop: 2 }}>Claro ou escuro, sua escolha fica salva.</div>
         </div>
         <div className="kronia-tema-toggle">
           <button
@@ -491,7 +491,7 @@ function PerfilTab({ onOpenMenu }: { onOpenMenu: () => void }) {
         </div>
       </div>
 
-      <div className="card" style={{ color: "#8A8A8A", fontSize: 14 }}>
+      <div className="card" style={{ color: "var(--kr-muted)", fontSize: 14 }}>
         Em breve: atores salvos, preferências e configurações da conta.
       </div>
     </div>
@@ -540,7 +540,7 @@ function SavedThemesDrawer({
           style={{
             marginTop: 8,
             padding: 10,
-            border: "1px solid #252525",
+            border: "1px solid var(--kr-line)",
             borderRadius: 10,
             display: "flex",
             flexDirection: "column",
@@ -550,7 +550,7 @@ function SavedThemesDrawer({
           }}
         >
           {savedThemes.length === 0 ? (
-            <div style={{ fontSize: 13.5, color: "#8A8A8A" }}>Nada salvo ainda.</div>
+            <div style={{ fontSize: 13.5, color: "var(--kr-muted)" }}>Nada salvo ainda.</div>
           ) : (
             savedThemes.map((theme) => (
               <div key={theme.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -565,7 +565,7 @@ function SavedThemesDrawer({
                 <button
                   type="button"
                   onClick={() => onRemove(theme.id)}
-                  style={{ background: "none", border: "none", color: "#8A8A8A", cursor: "pointer", fontSize: 16, padding: "0 6px" }}
+                  style={{ background: "none", border: "none", color: "var(--kr-muted)", cursor: "pointer", fontSize: 16, padding: "0 6px" }}
                   aria-label="Remover"
                 >
                   ×
@@ -830,7 +830,7 @@ function OportunidadesTab({
       </form>
 
       {errorMessage && (
-        <div className="card" style={{ marginTop: 16, color: "#E5484D" }}>
+        <div className="card" style={{ marginTop: 16, color: "#DC2626" }}>
           Algo deu errado: {errorMessage}
         </div>
       )}
@@ -850,22 +850,22 @@ function OportunidadesTab({
                   <div style={{ fontWeight: 700, fontSize: 15 }}>{opp.title}</div>
                   <div style={{ flex: "0 0 auto", fontWeight: 700, color: "#FF7A1A", textAlign: "right" }}>
                     {opp.score}/100
-                    <div style={{ fontWeight: 400, fontSize: 12, color: "#B5B5B5" }}>
+                    <div style={{ fontWeight: 400, fontSize: 12, color: "var(--kr-muted)" }}>
                       {recommendationBadge(opp.score).emoji} {recommendationBadge(opp.score).label}
                     </div>
                   </div>
                 </div>
-                <div style={{ fontSize: 13.5, color: "#B5B5B5" }}>{opp.reasoning}</div>
-                <div style={{ fontSize: 12.5, color: "#8A8A8A" }}>
+                <div style={{ fontSize: 13.5, color: "var(--kr-muted)" }}>{opp.reasoning}</div>
+                <div style={{ fontSize: 12.5, color: "var(--kr-muted)" }}>
                   Ângulo: {opp.angle} · Formato: {FORMAT_LABEL[opp.format] ?? opp.format} · Gancho:{" "}
                   {HOOK_TYPE_LABEL[opp.hookType] ?? opp.hookType}
                 </div>
                 <div style={{ fontSize: 13, fontStyle: "italic" }}>"{opp.hookText}"</div>
-                <div style={{ fontSize: 12.5, color: "#8A8A8A" }}>
-                  <strong style={{ color: "#B5B5B5" }}>CTA:</strong> {opp.cta}
+                <div style={{ fontSize: 12.5, color: "var(--kr-muted)" }}>
+                  <strong style={{ color: "var(--kr-muted)" }}>CTA:</strong> {opp.cta}
                 </div>
-                <div style={{ fontSize: 12.5, color: "#8A8A8A" }}>
-                  <strong style={{ color: "#B5B5B5" }}>Atenção:</strong> {opp.risk}
+                <div style={{ fontSize: 12.5, color: "var(--kr-muted)" }}>
+                  <strong style={{ color: "var(--kr-muted)" }}>Atenção:</strong> {opp.risk}
                 </div>
                 <button
                   type="button"
@@ -916,7 +916,7 @@ function HistoricoTab({ onOpenMenu }: { onOpenMenu: () => void }) {
 
       {entries === null && <div className="hint">Carregando...</div>}
       {entries?.length === 0 && (
-        <div className="card" style={{ color: "#8A8A8A", fontSize: 14 }}>
+        <div className="card" style={{ color: "var(--kr-muted)", fontSize: 14 }}>
           Nada gerado ainda. Vá em "Criar" pra começar.
         </div>
       )}
@@ -931,7 +931,7 @@ function HistoricoTab({ onOpenMenu }: { onOpenMenu: () => void }) {
                 {referenceVideoUrl && <TikTokPreview videoUrl={referenceVideoUrl} width={72} height={128} />}
                 <div style={{ minWidth: 0 }}>
                   <div className="scene-tag">{formatLabel(entry.format)}</div>
-                  <div style={{ fontSize: 13.5, color: "#B5B5B5" }}>
+                  <div style={{ fontSize: 13.5, color: "var(--kr-muted)" }}>
                     {entry.theme || "(sem tema)"} · {new Date(entry.createdAt).toLocaleDateString("pt-BR")}
                   </div>
                 </div>
@@ -939,7 +939,7 @@ function HistoricoTab({ onOpenMenu }: { onOpenMenu: () => void }) {
               <button
                 type="button"
                 onClick={() => handleRemove(entry.id)}
-                style={{ background: "none", border: "none", color: "#8A8A8A", cursor: "pointer", fontSize: 16 }}
+                style={{ background: "none", border: "none", color: "var(--kr-muted)", cursor: "pointer", fontSize: 16 }}
                 aria-label="Remover"
               >
                 ×
@@ -961,8 +961,8 @@ function HistoricoTab({ onOpenMenu }: { onOpenMenu: () => void }) {
                     key={s.index}
                     style={{
                       fontSize: 13,
-                      background: "#070707",
-                      border: "1px solid #252525",
+                      background: "var(--kr-bg)",
+                      border: "1px solid var(--kr-line)",
                       borderRadius: 10,
                       padding: 10,
                     }}
@@ -1167,12 +1167,21 @@ const SAUDACOES_HOME: [string, string][] = [
   ["O que sua marca", "precisa hoje?"],
 ];
 
+const HOME_QUICK_ACTIONS: { label: string; tab: AppTab; mediaHint?: "image"; Icon: () => React.JSX.Element }[] = [
+  { label: "Criar conteúdo", tab: "criar", Icon: IconSparkles },
+  { label: "Blocos de venda", tab: "prompt", Icon: IconImage },
+  { label: "Roteiros prontos", tab: "explorar", Icon: IconDocument },
+  { label: "Estratégia de crescimento", tab: "explorar", Icon: IconTarget },
+];
+
 function ConversationScreen({
   conversationId,
   onConversationChange,
+  onNavigate,
 }: {
   conversationId: string | null;
   onConversationChange: (id: string) => void;
+  onNavigate: (tab: AppTab, mediaHint?: "image") => void;
 }) {
   const createConversationRpc = useServerFn(createConversationFn);
   const getConversationRpc = useServerFn(getConversationFn);
@@ -1409,13 +1418,27 @@ function ConversationScreen({
          mais usado por este componente. */}
 
       {mostrarSaudacao ? (
-        <div className="kronia-home-hero">
+        <div className="kronia-home-hero kronia-home-hero-dashboard">
           <h1>
             {saudacao[0]}
             <br />
             <span className="accent">{saudacao[1]}</span>
           </h1>
-          <p>Sua ideia. Nossa estratégia. Conteúdo que gera resultados.</p>
+          <div className="kronia-quick-actions">
+            {HOME_QUICK_ACTIONS.map((action) => (
+              <button
+                key={action.label}
+                type="button"
+                className="kronia-quick-action"
+                onClick={() => onNavigate(action.tab, action.mediaHint)}
+              >
+                <span className="kronia-quick-action-icon">
+                  <action.Icon />
+                </span>
+                <span className="kronia-quick-action-label">{action.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       ) : isEmpty ? (
         <div className="kronia-home-hero" aria-hidden="true" />
@@ -1594,6 +1617,7 @@ function CriadorApp() {
               setActiveConversationId(id);
               refreshConversations();
             }}
+            onNavigate={navigate}
           />
         )}
         {tab === "criar" && (
@@ -2097,12 +2121,12 @@ function CriarFlow({
                 height: 130,
                 borderRadius: 14,
                 overflow: "hidden",
-                background: "#131313",
-                border: "1px solid #262626",
+                background: "var(--kr-card)",
+                border: "1px solid var(--kr-line)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "#8A8A8A",
+                color: "var(--kr-muted)",
                 fontSize: 12,
                 position: "relative",
               }}
@@ -2140,13 +2164,13 @@ function CriarFlow({
                 flex: 1,
                 height: 130,
                 borderRadius: 14,
-                border: "1.5px dashed #2E2E2E",
+                border: "1.5px dashed var(--kr-line)",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 8,
-                color: "#8A8A8A",
+                color: "var(--kr-muted)",
                 cursor: "pointer",
               }}
             >
@@ -2259,8 +2283,8 @@ function CriarFlow({
               display: "flex",
               alignItems: "center",
               gap: 12,
-              background: "#101010",
-              border: "1.5px dashed #2A2A2A",
+              background: "var(--kr-card-2)",
+              border: "1.5px dashed var(--kr-line)",
               borderRadius: 14,
               padding: 14,
               cursor: uploadingVideo ? "default" : "pointer",
@@ -2272,16 +2296,16 @@ function CriarFlow({
                 width: 38,
                 height: 38,
                 borderRadius: 999,
-                background: "#1C1C1C",
+                background: "var(--kr-card-2)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "#9A9A9A",
+                color: "var(--kr-muted)",
               }}
             >
               <IconPlay />
             </span>
-            <span style={{ flex: 1, color: "#B5B5B5", fontSize: 13.5 }}>
+            <span style={{ flex: 1, color: "var(--kr-muted)", fontSize: 13.5 }}>
               {uploadingVideo
                 ? "Enviando vídeo..."
                 : referenceVideoFile
@@ -2295,7 +2319,7 @@ function CriarFlow({
                   e.preventDefault();
                   setReferenceVideoFile(null);
                 }}
-                style={{ background: "none", border: "none", color: "#6B6B6B", flex: "0 0 auto", cursor: "pointer" }}
+                style={{ background: "none", border: "none", color: "var(--kr-muted-2)", flex: "0 0 auto", cursor: "pointer" }}
               >
                 remover
               </button>
@@ -2321,11 +2345,11 @@ function CriarFlow({
             style={{
               width: "100%",
               marginTop: 8,
-              background: "#101010",
-              border: "1.5px solid #2A2A2A",
+              background: "var(--kr-card-2)",
+              border: "1.5px solid var(--kr-line)",
               borderRadius: 12,
               padding: "10px 12px",
-              color: "#EDEDED",
+              color: "var(--kr-ink)",
               fontSize: 13.5,
             }}
           />
@@ -2371,7 +2395,7 @@ function CriarFlow({
             <div>
               <div className="section-label" style={{ display: "flex", justifyContent: "space-between" }}>
                 <span>Ator principal</span>
-                <span style={{ fontWeight: 500, color: "#7A7A7A" }}>Opcional</span>
+                <span style={{ fontWeight: 500, color: "var(--kr-muted-2)" }}>Opcional</span>
               </div>
 
               {ACTOR_PRESETS.length > 0 && (
@@ -2478,13 +2502,13 @@ function ResultadoView({
               height: 64,
               borderRadius: 12,
               flexShrink: 0,
-              background: "#131313",
-              border: "1px solid #262626",
+              background: "var(--kr-card)",
+              border: "1px solid var(--kr-line)",
               overflow: "hidden",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "#8A8A8A",
+              color: "var(--kr-muted)",
               fontSize: 11,
             }}
           >
@@ -2503,8 +2527,8 @@ function ResultadoView({
             <span className="rec-name">{formatLabel(recommendation.format)}</span>
           </div>
         </div>
-        <div style={{ color: "#fff", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Por quê?</div>
-        <div style={{ color: "#9A9A9A", fontSize: 13, lineHeight: 1.4 }}>{recommendation.reasoning}</div>
+        <div style={{ color: "var(--kr-ink)", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Por quê?</div>
+        <div style={{ color: "var(--kr-muted)", fontSize: 13, lineHeight: 1.4 }}>{recommendation.reasoning}</div>
       </div>
 
       <div>
@@ -2524,11 +2548,11 @@ function ResultadoView({
           {generation.hooks.map((h, i) => (
             <div key={i} className="hook-card">
               <div className="hook-num">{i + 1}</div>
-              <div style={{ flex: 1, color: "#E0E0E0", fontSize: 13.5, lineHeight: 1.4 }}>{h}</div>
+              <div style={{ flex: 1, color: "var(--kr-ink)", fontSize: 13.5, lineHeight: 1.4 }}>{h}</div>
               <button
                 type="button"
                 onClick={() => navigator.clipboard?.writeText(h)}
-                style={{ background: "none", border: "none", color: "#6B6B6B", cursor: "pointer", flexShrink: 0, display: "flex" }}
+                style={{ background: "none", border: "none", color: "var(--kr-muted-2)", cursor: "pointer", flexShrink: 0, display: "flex" }}
                 aria-label="Copiar hook"
               >
                 <IconCopy />
@@ -2599,17 +2623,17 @@ function FlowSegmentCard({
       </div>
       {coveredScenes.map((s) => (
         <div key={s.index} style={{ fontSize: 13.5, marginBottom: 4 }}>
-          <span style={{ color: "#9A9A9A" }}>[{s.role}]</span> {s.narration}
+          <span style={{ color: "var(--kr-muted)" }}>[{s.role}]</span> {s.narration}
           {s.onScreenText && (
-            <span style={{ color: "#B5B5B5" }}> · Texto na tela: {s.onScreenText}</span>
+            <span style={{ color: "var(--kr-muted)" }}> · Texto na tela: {s.onScreenText}</span>
           )}
         </div>
       ))}
       <div
         style={{
           fontSize: 13.5,
-          background: "#070707",
-          border: "1px solid #252525",
+          background: "var(--kr-bg)",
+          border: "1px solid var(--kr-line)",
           borderRadius: 10,
           padding: 10,
           marginTop: 6,
@@ -2676,7 +2700,7 @@ function SeoSection({ output, onSeoResult }: { output: PipelineOutput; onSeoResu
       <div>
         <div className="section-label">Legenda</div>
         <div className="card">
-          <div style={{ fontSize: 14, color: "#B5B5B5", marginBottom: 10 }}>
+          <div style={{ fontSize: 14, color: "var(--kr-muted)", marginBottom: 10 }}>
             Gerada só quando você pedir — sem hashtag (sem dado real de TikTok por trás pra confiar).
           </div>
           <button className="btn-primary" onClick={handleGenerate} disabled={loading}>
@@ -2698,7 +2722,7 @@ function SeoSection({ output, onSeoResult }: { output: PipelineOutput; onSeoResu
             {warnings.map((w, i) => (
               <div key={i} className="violation-item">
                 <div>"{w.flaggedText}"</div>
-                <div style={{ color: "#9A9A9A" }}>{w.reason}</div>
+                <div style={{ color: "var(--kr-muted)" }}>{w.reason}</div>
               </div>
             ))}
           </div>
@@ -2745,7 +2769,7 @@ function RoteiroView({
     <div className="app">
       <BrandRow onBack={onBack} />
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
-        <span style={{ color: "#fff", fontSize: 24, fontWeight: 800 }}>
+        <span style={{ color: "var(--kr-ink)", fontSize: 24, fontWeight: 800 }}>
           {approved ? "Roteiro aprovado" : "Roteiro (compliance pendente)"}
         </span>
         {approved && <IconApprovedBadge />}
@@ -2754,7 +2778,7 @@ function RoteiroView({
       <div>
         <div className="section-label">Hook selecionado</div>
         <div className="card">
-          <div style={{ color: "#E5E5E5", fontSize: 14, lineHeight: 1.5, paddingRight: 24 }}>
+          <div style={{ color: "var(--kr-ink)", fontSize: 14, lineHeight: 1.5, paddingRight: 24 }}>
             "{generation.selectedHook}"
           </div>
           <button
@@ -2773,7 +2797,7 @@ function RoteiroView({
         <div className="card">
           <div style={{ display: "flex", flexDirection: "column", paddingRight: 24 }}>
             {generation.scenes.map((s, i) => (
-              <div key={s.index} style={{ color: "#D5D5D5", fontSize: 13.5, lineHeight: 1.7 }}>
+              <div key={s.index} style={{ color: "var(--kr-ink)", fontSize: 13.5, lineHeight: 1.7 }}>
                 Cena {i + 1} – {ROLE_LABEL[s.role] ?? s.role}
               </div>
             ))}
@@ -2805,8 +2829,8 @@ function RoteiroView({
                   borderRadius: 12,
                   flexShrink: 0,
                   overflow: "hidden",
-                  background: "#131313",
-                  border: "1px solid #262626",
+                  background: "var(--kr-card)",
+                  border: "1px solid var(--kr-line)",
                 }}
               >
                 {productPhoto && (
@@ -2814,10 +2838,10 @@ function RoteiroView({
                 )}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 3 }}>
+                <div style={{ color: "var(--kr-ink)", fontSize: 14, fontWeight: 700, marginBottom: 3 }}>
                   Cena {String(i + 1).padStart(2, "0")}
                 </div>
-                <div style={{ color: "#9A9A9A", fontSize: 12, lineHeight: 1.5 }}>
+                <div style={{ color: "var(--kr-muted)", fontSize: 12, lineHeight: 1.5 }}>
                   Câmera: {s.camera}
                   <br />
                   Ação: {s.action}
@@ -2867,14 +2891,14 @@ function RoteiroView({
           {compliance.checkedGroups.map((group) => (
             <div key={group} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
               <IconCheckCircleSmall />
-              <span style={{ color: "#BFEBD1", fontSize: 13 }}>{group}</span>
+              <span style={{ color: "#166534", fontSize: 13 }}>{group}</span>
             </div>
           ))}
         </div>
       ) : (
         <div className="reject-card">
           <div style={{ fontWeight: 700, fontSize: 15 }}>Correção necessária</div>
-          <div style={{ color: "#9A9A9A", fontSize: 12.5, marginBottom: 4 }}>
+          <div style={{ color: "var(--kr-muted)", fontSize: 12.5, marginBottom: 4 }}>
             O compliance reprovou depois de {compliance.attempt} tentativas automáticas. Revise o roteiro abaixo
             antes de gerar o vídeo.
           </div>
@@ -2882,7 +2906,7 @@ function RoteiroView({
             <div key={i} className="violation-item">
               <div style={{ fontWeight: 700 }}>{v.group}</div>
               <div>"{v.flaggedText}"</div>
-              <div style={{ color: "#9A9A9A" }}>{v.reason}</div>
+              <div style={{ color: "var(--kr-muted)" }}>{v.reason}</div>
               <div style={{ color: "#FF6A1A", marginTop: 4 }}>Sugestão: {v.suggestion}</div>
             </div>
           ))}
