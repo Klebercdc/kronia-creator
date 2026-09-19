@@ -4,6 +4,20 @@ import { useState, useEffect, useRef, forwardRef, type FormEvent } from "react";
 import { useMenuSpring } from "../hooks/useMenuSpring";
 import { getStoredTema, setStoredTema, type Tema } from "../lib/theme";
 import {
+  Sparkles as LucideSparkles,
+  History as LucideHistory,
+  Compass as LucideCompass,
+  Wand2 as LucideWand2,
+  User as LucideUser,
+  BarChart3 as LucideBarChart3,
+  FileText as LucideFileText,
+  Image as LucideImage,
+  ShoppingBag as LucideShoppingBag,
+  Target as LucideTarget,
+  LayoutGrid as LucideLayoutGrid,
+  Menu as LucideMenu,
+} from "lucide-react";
+import {
   enqueueReferenceIngestion,
   advanceIngestionJob,
   enqueueContentGeneration,
@@ -72,7 +86,7 @@ function BrandRow({
     <div className="brand-row">
       {onOpenMenu && (
         <button type="button" onClick={onOpenMenu} className="brand-back" aria-label="Abrir menu">
-          <IconMenu />
+          <NavIconMenu />
         </button>
       )}
       {onBack && (
@@ -87,7 +101,7 @@ function BrandRow({
       </div>
       {onProfile && (
         <button type="button" onClick={onProfile} className="brand-avatar" aria-label="Perfil">
-          <IconUser />
+          <NavIconPerfil />
         </button>
       )}
     </div>
@@ -131,51 +145,10 @@ type AppTab = "home" | "criar" | "historico" | "explorar" | "prompt" | "perfil";
 
 /** Ícones — traçados copiados 1:1 do handoff de design (KroniaMockup.dc.html),
  * não reinventados, pra bater pixel a pixel com o mockup aprovado. */
-function IconHome() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M3 10.5L12 3l9 7.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M5 9.5V20a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V9.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
-function IconClock() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3.5 2" strokeLinecap="round" />
-    </svg>
-  );
-}
 
-function IconCompass() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M15.5 8.5l-3 5-5 3 3-5 5-3z" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
 
-function IconUser() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="8" r="3.5" />
-      <path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" strokeLinecap="round" />
-    </svg>
-  );
-}
 
-function IconWand() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M4 20L15 9" strokeLinecap="round" />
-      <path d="M15 4v3M20 9h-3M18.5 5.5l-2 2" strokeLinecap="round" />
-      <path d="M9 4v2M7 6h2" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 function IconChevronLeft() {
   return (
@@ -265,13 +238,6 @@ function IconApprovedBadge() {
 
 /** Ícones do novo shell (sidebar + home conversacional) — mesmo padrão
  * SVG traço/stroke="currentColor" já usado acima, não uma biblioteca nova. */
-function IconMenu() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 function IconChatBubble() {
   return (
@@ -285,14 +251,6 @@ function IconChatBubble() {
   );
 }
 
-function IconSparkles() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M11 3l1.4 3.6L16 8l-3.6 1.4L11 13l-1.4-3.6L6 8l3.6-1.4L11 3z" strokeLinejoin="round" />
-      <path d="M18 14l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 function IconBarChartUp() {
   return (
@@ -302,14 +260,6 @@ function IconBarChartUp() {
   );
 }
 
-function IconDocument() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M7 3h7l4 4v14a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" strokeLinejoin="round" />
-      <path d="M9 12h6M9 16h6" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 function IconImage() {
   return (
@@ -321,35 +271,8 @@ function IconImage() {
   );
 }
 
-function IconBag() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M6 8h12l1 12a1 1 0 01-1 1H6a1 1 0 01-1-1L6 8z" strokeLinejoin="round" />
-      <path d="M9 8V6a3 3 0 016 0v2" strokeLinecap="round" />
-    </svg>
-  );
-}
 
-function IconTarget() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="9" />
-      <circle cx="12" cy="12" r="4.5" />
-      <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
 
-function IconGrid() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="4" y="4" width="7" height="7" rx="1.2" />
-      <rect x="13" y="4" width="7" height="7" rx="1.2" />
-      <rect x="4" y="13" width="7" height="7" rx="1.2" />
-      <rect x="13" y="13" width="7" height="7" rx="1.2" />
-    </svg>
-  );
-}
 
 function IconChevronRight() {
   return (
@@ -418,12 +341,52 @@ function IconMoon() {
   );
 }
 
+/** Ícones da navegação (bottom nav / sidebar / atalhos da Home) — lucide-react,
+ * tamanho 20 e stroke 1.8 padronizados pra bater com o resto do traço fino
+ * dos ícones desenhados à mão que continuam em uso no app. */
+function NavIconCriar() {
+  return <LucideSparkles size={20} strokeWidth={1.8} />;
+}
+function NavIconHistorico() {
+  return <LucideHistory size={20} strokeWidth={1.8} />;
+}
+function NavIconExplorar() {
+  return <LucideCompass size={20} strokeWidth={1.8} />;
+}
+function NavIconPrompt() {
+  return <LucideWand2 size={20} strokeWidth={1.8} />;
+}
+function NavIconPerfil() {
+  return <LucideUser size={20} strokeWidth={1.8} />;
+}
+function NavIconAnalisar() {
+  return <LucideBarChart3 size={20} strokeWidth={1.8} />;
+}
+function NavIconRoteiro() {
+  return <LucideFileText size={20} strokeWidth={1.8} />;
+}
+function NavIconBlocosVenda() {
+  return <LucideImage size={20} strokeWidth={1.8} />;
+}
+function NavIconTikTokShop() {
+  return <LucideShoppingBag size={20} strokeWidth={1.8} />;
+}
+function NavIconEstrategia() {
+  return <LucideTarget size={20} strokeWidth={1.8} />;
+}
+function NavIconMaisOpcoes() {
+  return <LucideLayoutGrid size={20} strokeWidth={1.8} />;
+}
+function NavIconMenu() {
+  return <LucideMenu size={20} strokeWidth={1.8} />;
+}
+
 const TAB_ITEMS: { id: AppTab; label: string; Icon: () => React.JSX.Element }[] = [
-  { id: "criar", label: "Criar", Icon: IconHome },
-  { id: "historico", label: "Histórico", Icon: IconClock },
-  { id: "explorar", label: "Explorar", Icon: IconCompass },
-  { id: "prompt", label: "Prompt", Icon: IconWand },
-  { id: "perfil", label: "Perfil", Icon: IconUser },
+  { id: "criar", label: "Criar", Icon: NavIconCriar },
+  { id: "historico", label: "Histórico", Icon: NavIconHistorico },
+  { id: "explorar", label: "Explorar", Icon: NavIconExplorar },
+  { id: "prompt", label: "Prompt", Icon: NavIconPrompt },
+  { id: "perfil", label: "Perfil", Icon: NavIconPerfil },
 ];
 
 const BottomNav = forwardRef<HTMLElement, { active: AppTab; onChange: (tab: AppTab) => void }>(
@@ -995,13 +958,13 @@ type PendingOpportunitySeed =
  * que continua servindo as telas internas (Criar/Histórico/Explorar/Prompt/
  * Perfil) enquanto a Home não tiver equivalente pra todas elas. */
 const SIDEBAR_ITEMS: { id: AppTab; label: string; Icon: () => React.JSX.Element; mediaHint?: "image" }[] = [
-  { id: "criar", label: "Criar conteúdo", Icon: IconSparkles },
-  { id: "criar", label: "Analisar referência", Icon: IconBarChartUp },
-  { id: "criar", label: "Criar roteiro", Icon: IconDocument },
-  { id: "prompt", label: "Blocos de venda", Icon: IconImage },
-  { id: "criar", label: "TikTok Shop", Icon: IconBag },
-  { id: "explorar", label: "Estratégia de crescimento", Icon: IconTarget },
-  { id: "historico", label: "Mais opções", Icon: IconGrid },
+  { id: "criar", label: "Criar conteúdo", Icon: NavIconCriar },
+  { id: "criar", label: "Analisar referência", Icon: NavIconAnalisar },
+  { id: "criar", label: "Criar roteiro", Icon: NavIconRoteiro },
+  { id: "prompt", label: "Blocos de venda", Icon: NavIconBlocosVenda },
+  { id: "criar", label: "TikTok Shop", Icon: NavIconTikTokShop },
+  { id: "explorar", label: "Estratégia de crescimento", Icon: NavIconEstrategia },
+  { id: "historico", label: "Mais opções", Icon: NavIconMaisOpcoes },
 ];
 
 /**
@@ -1168,10 +1131,10 @@ const SAUDACOES_HOME: [string, string][] = [
 ];
 
 const HOME_QUICK_ACTIONS: { label: string; tab: AppTab; mediaHint?: "image"; Icon: () => React.JSX.Element }[] = [
-  { label: "Criar conteúdo", tab: "criar", Icon: IconSparkles },
-  { label: "Blocos de venda", tab: "prompt", Icon: IconImage },
-  { label: "Roteiros prontos", tab: "explorar", Icon: IconDocument },
-  { label: "Estratégia de crescimento", tab: "explorar", Icon: IconTarget },
+  { label: "Criar conteúdo", tab: "criar", Icon: NavIconCriar },
+  { label: "Blocos de venda", tab: "prompt", Icon: NavIconBlocosVenda },
+  { label: "Roteiros prontos", tab: "explorar", Icon: NavIconRoteiro },
+  { label: "Estratégia de crescimento", tab: "explorar", Icon: NavIconEstrategia },
 ];
 
 function ConversationScreen({
@@ -1602,7 +1565,7 @@ function CriadorApp() {
       {tab === "home" && (
         <div className="kronia-home-topbar" ref={topbarRef}>
           <button type="button" className="kronia-icon-btn" onClick={() => setSidebarOpen(true)} aria-label="Abrir menu">
-            <IconMenu />
+            <NavIconMenu />
           </button>
           <button type="button" className="kronia-icon-btn" aria-label="Assistente">
             <IconChatBubble />
