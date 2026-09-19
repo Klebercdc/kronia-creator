@@ -726,7 +726,7 @@ function OportunidadesTab({
             value={product}
             onChange={(e) => setProduct(e.target.value)}
           />
-          <div className="hint">Descreva as características reais que você sabe — nada além disso é usado.</div>
+          <div className="hint">Só as características reais que você sabe.</div>
         </div>
         <div>
           <div className="section-label">Público (opcional)</div>
@@ -736,7 +736,7 @@ function OportunidadesTab({
             value={audience}
             onChange={(e) => setAudience(e.target.value)}
           />
-          <div className="hint">Quem você quer alcançar — se não souber, a IA infere a partir do nicho e do produto.</div>
+          <div className="hint">Quem você quer alcançar (deixe em branco pra IA inferir).</div>
         </div>
         <div>
           <div className="section-label">Tendência (opcional)</div>
@@ -1828,12 +1828,9 @@ function CriarFlow({
               onChange={(e) => setProductInfoText(e.target.value)}
             />
             {project === "jeova_fala" ? (
-              <div className="hint">
-                Dica: no app do TikTok, em "Informações de pesquisas para criadores", tem assuntos reais
-                em alta (com % de crescimento de verdade) — cole um aqui em vez de inventar um tema do zero.
-              </div>
+              <div className="hint">Cole um assunto real em alta do TikTok — não invente um tema.</div>
             ) : (
-              <div className="hint">Usado apenas o que você informar aqui — nada é inventado sobre o produto.</div>
+              <div className="hint">Só o que você escrever aqui é usado.</div>
             )}
             <SavedThemesDrawer
               savedThemes={savedThemes}
@@ -1938,10 +1935,7 @@ function CriarFlow({
               />
             )}
           </label>
-          <div className="hint">
-            A primeira geração com vídeo de referência pode demorar alguns segundos a mais —
-            as ferramentas de extração são baixadas na primeira vez.
-          </div>
+          <div className="hint">A primeira vez demora mais — baixa as ferramentas de extração.</div>
           <input
             type="url"
             value={referenceVideoUrlInput}
@@ -1992,9 +1986,7 @@ function CriarFlow({
                   </button>
                 ))}
               </div>
-              <div className="hint">
-                Cada 10s vira uma submissão separada no Flow — 50s = 5 blocos de prompt pra colar um por vez.
-              </div>
+              <div className="hint">Cada 10s vira um bloco de prompt pra colar no Flow.</div>
             </div>
 
             <div>
@@ -2053,11 +2045,7 @@ function CriarFlow({
                 onChange={(e) => setActorAppearance(e.target.value)}
                 style={{ minHeight: 50 }}
               />
-              <div className="hint">
-                Enviando foto, a aparência é extraída da imagem real (não inventada) e travada em todas as
-                cenas junto com a voz. Preenchendo os 3 campos, o Cinematográfico mantém essas características
-                sem variar de cena pra cena.
-              </div>
+              <div className="hint">Foto ou os 3 campos: trava a mesma aparência em todas as cenas.</div>
             </div>
           </div>
         )}

@@ -100,10 +100,7 @@ export function ReferencePromptsCatalog() {
   if (!categorySlug) {
     return (
       <div>
-        <div className="hint" style={{ marginBottom: 10 }}>
-          Roteiros completos (10-25s) reverse-engineered de vídeos reais que venderam #1 por categoria — prontos pra
-          colar no Flow, sem precisar montar por movimento. Escolhe a categoria do seu produto.
-        </div>
+        <div className="hint" style={{ marginBottom: 10 }}>Roteiros prontos pra colar no Flow. Escolha a categoria.</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {categories.map((c) => (
             <button
@@ -147,10 +144,7 @@ export function ReferencePromptsCatalog() {
         ← {categoryLabel}
       </button>
 
-      <div className="hint" style={{ marginBottom: 10, fontSize: 11.5 }}>
-        Alguns roteiros citam a fala do vídeo original (linhas "Subject" dentro do texto) — use só como referência de
-        ritmo/estrutura, não copie a fala literal como texto final seu.
-      </div>
+      <div className="hint" style={{ marginBottom: 10, fontSize: 11.5 }}>Use como referência de ritmo — não copie a fala literal.</div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {cards.map((card) => {
