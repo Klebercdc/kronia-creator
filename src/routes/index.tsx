@@ -1107,241 +1107,12 @@ const HOME_QUICK_ACTIONS: { label: string; tab: AppTab; mediaHint?: "image"; Ico
   { label: "Estratégia de crescimento", tab: "explorar", Icon: NavIconEstrategia },
 ];
 
-function ConversationScreen({
-  conversationId,
-  onConversationChange,
-  onNavigate,
-}: {
-  conversationId: string | null;
-  onConversationChange: (id: string) => void;
-  onNavigate: (tab: AppTab, mediaHint?: "image") => void;
-}) {
-  const createConversationRpc = useServerFn(createConversationFn);
-  const getConversationRpc = useServerFn(getConversationFn);
-  const sendMessageRpc = useServerFn(sendMessageFn);
-  const appendConversationResultRpc = useServerFn(appendConversationResultFn);
-  const transcribeVoiceMessageRpc = useServerFn(transcribeVoiceMessageFn);
-  const enqueueContentGenerationRpc = useServerFn(enqueueContentGeneration);
-  const advanceContentGenerationJobRpc = useServerFn(advanceContentGenerationJob);
-
-  const [messages, setMessages] = useState<ConversationMessage[]>([]);
-  const [input, setInput] = useState("");
-  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
-  const [sending, setSending] = useState(false);
-  const [creationStatus, setCreationStatus] = useState<string | null>(null);
-  const [recording, setRecording] = useState(false);
+/** Home — dashboard de atalhos, sem chat. O chat livre com o KRONIA existiu
+ * aqui antes (composer + thread de mensagens, molde parecido com o app do
+ * Claude); o usuário pediu pra tirar de vez, então a Home agora é só
+ * saudação + os atalhos pras funções reais do app. */
+function ConversationScreen({ onNavigate }: { onNavigate: (tab: AppTab, mediaHint?: "image") => void }) {
   const [saudacao] = useState(() => SAUDACOES_HOME[Math.floor(Math.random() * SAUDACOES_HOME.length)]);
-  const mediaRecorderRef = useState<{ current: MediaRecorder | null }>(() => ({ current: null }))[0];
-  const audioChunksRef = useState<{ current: Blob[] }>(() => ({ current: [] }))[0];
-
-  useEffect(() => {
-    if (!conversationId) {
-      setMessages([]);
-      return;
-    }
-    getConversationRpc({ data: { conversationId } })
-      .then((res) => {
-        if (res) setMessages(res.messages);
-      })
-      .catch(() => {
-        // best-effort — abrir uma conversa que falhou ao carregar só fica vazia
-      });
-  }, [conversationId]);
-
-  async function runCreationJob(productInfoText: string, targetConversationId: string) {
-    setCreationStatus("Recomendando o melhor formato...");
-    try {
-      const request: ContentRequest = {
-        project: "comercial",
-        objective: "vender",
-        mode: "tiktok_shop",
-        productPhotoUrls: [],
-        productInfo: [{ text: productInfoText, kind: "fato", source: "conversa" }],
-        referenceVideoUrl: null,
-        referenceVideoStoragePath: null,
-        actorProfile: null,
-        targetDurationSeconds: 30,
-      };
-      const { jobId } = await enqueueContentGenerationRpc({ data: { request } });
-
-      let consecutiveNetworkFailures = 0;
-      for (;;) {
-        let job: Awaited<ReturnType<typeof advanceContentGenerationJobRpc>>;
-        try {
-          job = await advanceContentGenerationJobRpc({ data: { jobId } });
-          consecutiveNetworkFailures = 0;
-        } catch (err) {
-          consecutiveNetworkFailures += 1;
-          if (consecutiveNetworkFailures > 8) throw err;
-          await new Promise((resolve) => setTimeout(resolve, 1500));
-          continue;
-        }
-        if (job) {
-          setCreationStatus(CONTENT_GENERATION_STEP_LABELS_CONVERSATION[job.step] ?? "Criando...");
-          if (job.status === "succeeded") {
-            const resultMessage = await appendConversationResultRpc({ data: { conversationId: targetConversationId, jobId } });
-            if (resultMessage) setMessages((prev) => [...prev, resultMessage]);
-            setCreationStatus(null);
-            return;
-          }
-          if (job.status === "failed") {
-            setCreationStatus(null);
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: crypto.randomUUID(),
-                conversationId: targetConversationId,
-                role: "assistant",
-                content: `Não consegui terminar a criação: ${job.error ?? "erro desconhecido"}.`,
-                attachments: [],
-                jobId: null,
-                createdAt: new Date().toISOString(),
-              },
-            ]);
-            return;
-          }
-        }
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-      }
-    } catch (err) {
-      setCreationStatus(null);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          conversationId: targetConversationId,
-          role: "assistant",
-          content: `Não consegui acionar a criação: ${err instanceof Error ? err.message : "erro desconhecido"}.`,
-          attachments: [],
-          jobId: null,
-          createdAt: new Date().toISOString(),
-        },
-      ]);
-    }
-  }
-
-  async function send(rawText: string) {
-    const text = rawText.trim();
-    const attachments: Attachment[] = pendingAttachments
-      .filter((a) => a.dataUrl || a.storagePath)
-      .map((a) => ({
-        type: a.type,
-        name: a.file.name,
-        mimeType: a.file.type,
-        dataUrl: a.dataUrl,
-        storagePath: a.storagePath,
-        visualDescription: null,
-      }));
-    if (!text && attachments.length === 0) return;
-
-    setSending(true);
-    setInput("");
-    setPendingAttachments([]);
-
-    try {
-      let activeConversationId = conversationId;
-      if (!activeConversationId) {
-        const conv = await createConversationRpc();
-        activeConversationId = conv.id;
-        onConversationChange(conv.id);
-      }
-
-      const { userMessage, assistantMessage, readyToCreate, productInfoText } = await sendMessageRpc({
-        data: { conversationId: activeConversationId, content: text, attachments },
-      });
-      setMessages((prev) => [...prev, userMessage, assistantMessage]);
-
-      if (readyToCreate && productInfoText) {
-        void runCreationJob(productInfoText, activeConversationId);
-      }
-    } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          conversationId: conversationId ?? "",
-          role: "assistant",
-          content: `Não consegui responder agora: ${err instanceof Error ? err.message : "erro desconhecido"}.`,
-          attachments: [],
-          jobId: null,
-          createdAt: new Date().toISOString(),
-        },
-      ]);
-    } finally {
-      setSending(false);
-    }
-  }
-
-  async function handleAttachFiles(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []).filter((file) => attachmentKind(file) !== null);
-    e.target.value = "";
-    if (files.length === 0) return;
-
-    const staged: PendingAttachment[] = files.map((file) => ({
-      file,
-      type: attachmentKind(file)!,
-      dataUrl: null,
-      storagePath: null,
-      uploading: true,
-    }));
-    setPendingAttachments((prev) => [...prev, ...staged]);
-
-    for (const item of staged) {
-      try {
-        if (item.type === "image") {
-          // Mesmo caminho que analyzeProductPhoto/analyzeActorPhoto já usam.
-          const dataUrl = await readFileAsDataUrl(item.file);
-          setPendingAttachments((prev) => prev.map((a) => (a.file === item.file ? { ...a, dataUrl, uploading: false } : a)));
-        } else {
-          // Vídeo: mesmo bucket/função do vídeo de referência já existente.
-          const storagePath = await uploadReferenceVideo(item.file);
-          setPendingAttachments((prev) =>
-            prev.map((a) => (a.file === item.file ? { ...a, storagePath, uploading: false } : a)),
-          );
-        }
-      } catch {
-        setPendingAttachments((prev) => prev.filter((a) => a.file !== item.file));
-      }
-    }
-  }
-
-  async function toggleRecording() {
-    if (recording) {
-      mediaRecorderRef.current?.stop();
-      setRecording(false);
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      audioChunksRef.current = [];
-      recorder.ondataavailable = (e) => audioChunksRef.current.push(e.data);
-      recorder.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || "audio/webm" });
-        const arrayBuffer = await blob.arrayBuffer();
-        const audioBase64 = btoa(Array.from(new Uint8Array(arrayBuffer), (b) => String.fromCharCode(b)).join(""));
-        try {
-          const { text } = await transcribeVoiceMessageRpc({ data: { audioBase64, mimeType: blob.type } });
-          if (text.trim()) void send(text);
-        } catch {
-          // best-effort — falha de transcrição não trava a conversa
-        }
-      };
-      mediaRecorderRef.current = recorder;
-      recorder.start();
-      setRecording(true);
-    } catch {
-      // sem permissão de microfone — botão simplesmente não faz nada
-    }
-  }
-
-  const isEmpty = messages.length === 0 && !sending;
-  // Some quando tem TEXTO digitado, não no simples foco — testado contra o
-  // próprio app do Claude: a saudação continua visível com o teclado aberto
-  // e o campo focado, enquanto o campo tá vazio; só dá lugar à conversa
-  // quando você começa a escrever de verdade.
-  const mostrarSaudacao = isEmpty && !input.trim();
 
   return (
     <div className="kronia-home">
@@ -1349,109 +1120,27 @@ function ConversationScreen({
          em CriadorApp, fora do container transformado (ver comentário lá
          sobre por que position:fixed precisava disso). onOpenMenu não é
          mais usado por este componente. */}
-
-      {mostrarSaudacao ? (
-        <div className="kronia-home-hero kronia-home-hero-dashboard">
-          <h1>
-            {saudacao[0]}
-            <br />
-            <span className="accent">{saudacao[1]}</span>
-          </h1>
-          <div className="kronia-quick-actions">
-            {HOME_QUICK_ACTIONS.map((action) => (
-              <button
-                key={action.label}
-                type="button"
-                className="kronia-quick-action"
-                onClick={() => onNavigate(action.tab, action.mediaHint)}
-              >
-                <span className="kronia-quick-action-icon">
-                  <action.Icon />
-                </span>
-                <span className="kronia-quick-action-label">{action.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : isEmpty ? (
-        <div className="kronia-home-hero" aria-hidden="true" />
-      ) : (
-        <div className="kronia-conversation-thread">
-          {messages.map((m) => (
-            <div key={m.id} className={`kronia-msg kronia-msg-${m.role}`}>
-              {m.attachments.length > 0 && (
-                <div className="kronia-msg-attachments">
-                  {m.attachments.map((a, i) => (
-                    <span key={i} className="kronia-msg-attachment-chip">
-                      {a.type === "image" ? <IconImage /> : <IconBarChartUp />}
-                      {a.name}
-                    </span>
-                  ))}
-                </div>
-              )}
-              {m.content && <div className="kronia-msg-bubble">{m.content}</div>}
-            </div>
-          ))}
-          {creationStatus && (
-            <div className="kronia-msg kronia-msg-assistant">
-              <div className="kronia-msg-bubble kronia-msg-bubble-loading">
-                <span className="spinner-inline" /> {creationStatus}
-              </div>
-            </div>
-          )}
-          {sending && !creationStatus && (
-            <div className="kronia-msg kronia-msg-assistant">
-              <div className="kronia-msg-bubble kronia-msg-bubble-loading">
-                <span className="spinner-inline" /> Pensando...
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {pendingAttachments.length > 0 && (
-        <div className="kronia-pending-attachments">
-          {pendingAttachments.map((a, i) => (
-            <span key={i} className={`kronia-pending-chip ${a.uploading ? "uploading" : ""}`}>
-              {a.type === "image" ? <IconImage /> : <IconBarChartUp />}
-              {a.file.name}
-            </span>
+      <div className="kronia-home-hero kronia-home-hero-dashboard">
+        <h1>
+          {saudacao[0]}
+          <br />
+          <span className="accent">{saudacao[1]}</span>
+        </h1>
+        <div className="kronia-quick-actions">
+          {HOME_QUICK_ACTIONS.map((action) => (
+            <button
+              key={action.label}
+              type="button"
+              className="kronia-quick-action"
+              onClick={() => onNavigate(action.tab, action.mediaHint)}
+            >
+              <span className="kronia-quick-action-icon">
+                <action.Icon />
+              </span>
+              <span className="kronia-quick-action-label">{action.label}</span>
+            </button>
           ))}
         </div>
-      )}
-
-      <div className="kronia-home-inputbar">
-        <label className="kronia-icon-btn ghost" aria-label="Anexar">
-          <IconPlus />
-          <input type="file" multiple hidden onChange={handleAttachFiles} accept="image/*,video/*" />
-        </label>
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") void send(input);
-          }}
-          placeholder="Digite ou fale com o KRONIA..."
-          disabled={sending}
-        />
-        <button
-          type="button"
-          className={`kronia-icon-btn ghost ${recording ? "recording" : ""}`}
-          aria-label={recording ? "Parar gravação" : "Falar"}
-          onClick={toggleRecording}
-        >
-          <IconMic />
-        </button>
-        <button
-          type="button"
-          className="kronia-send-btn"
-          onClick={() => void send(input)}
-          aria-label="Enviar"
-          disabled={sending || (!input.trim() && pendingAttachments.every((a) => a.uploading))}
-        >
-          <IconSend />
-        </button>
       </div>
     </div>
   );
@@ -1535,21 +1224,11 @@ function CriadorApp() {
           <button type="button" className="kronia-icon-btn" onClick={() => setSidebarOpen(true)} aria-label="Abrir menu">
             <NavIconMenu />
           </button>
-          <button type="button" className="kronia-icon-btn" aria-label="Assistente">
-            <IconChatBubble />
-          </button>
         </div>
       )}
       <div className={`kronia-app-camada ${tab !== "home" ? "kronia-app-camada-escura" : ""}`} ref={appRef}>
         {tab === "home" && (
-          <ConversationScreen
-            conversationId={activeConversationId}
-            onConversationChange={(id) => {
-              setActiveConversationId(id);
-              refreshConversations();
-            }}
-            onNavigate={navigate}
-          />
+          <ConversationScreen onNavigate={navigate} />
         )}
         {tab === "criar" && (
           <CriarFlow

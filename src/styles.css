@@ -606,11 +606,14 @@ a {
 /* Home vira dashboard de atalhos por padrão (em vez do hero centralizado
    de chat vazio) — alinhado à esquerda, saudação no topo, grid ocupando o
    resto do espaço em vez de ficar centralizada no meio da tela. */
+/* Sem chat/composer embaixo (removido a pedido do usuário), o dashboard é
+ * o único conteúdo da Home — centralizado verticalmente em vez de
+ * encostado no topo, senão sobra um vão vazio grande embaixo dos cartões
+ * (a Home preenche a tela toda, ver min-height:100% em .kronia-home). */
 .kronia-home-hero-dashboard {
   align-items: stretch;
   text-align: left;
-  justify-content: flex-start;
-  padding-top: 8px;
+  justify-content: center;
 }
 
 .kronia-home-hero-dashboard h1 {
