@@ -117,9 +117,9 @@ export function ReferencePromptsCatalog() {
                 width: "100%",
                 padding: "12px 14px",
                 borderRadius: 10,
-                border: "1px solid #232323",
-                background: "#131313",
-                color: "#C9C9C9",
+                border: "1px solid var(--kr-line)",
+                background: "var(--kr-card)",
+                color: "var(--kr-ink)",
                 fontSize: 13,
                 fontWeight: 600,
                 textAlign: "left",
@@ -127,7 +127,7 @@ export function ReferencePromptsCatalog() {
               }}
             >
               <span>{c.label}</span>
-              <span style={{ fontSize: 11.5, color: "#6B6B6B", fontWeight: 500 }}>{c.count}</span>
+              <span style={{ fontSize: 11.5, color: "var(--kr-muted-2)", fontWeight: 500 }}>{c.count}</span>
             </button>
           ))}
         </div>
@@ -142,7 +142,7 @@ export function ReferencePromptsCatalog() {
       <button
         type="button"
         onClick={() => setCategorySlug(null)}
-        style={{ background: "none", border: "none", color: "#8A8A8A", fontSize: 12.5, cursor: "pointer", padding: 0, marginBottom: 10 }}
+        style={{ background: "none", border: "none", color: "var(--kr-muted)", fontSize: 12.5, cursor: "pointer", padding: 0, marginBottom: 10 }}
       >
         ← {categoryLabel}
       </button>
@@ -156,7 +156,7 @@ export function ReferencePromptsCatalog() {
         {cards.map((card) => {
           const open = openId === card.id;
           return (
-            <div key={card.id} style={{ border: "1px solid #232323", borderRadius: 12, background: "#131313", overflow: "hidden" }}>
+            <div key={card.id} style={{ border: "1px solid var(--kr-line)", borderRadius: 12, background: "var(--kr-card)", overflow: "hidden" }}>
               <button
                 type="button"
                 onClick={() => openEntry(card.id)}
@@ -170,14 +170,14 @@ export function ReferencePromptsCatalog() {
                   border: "none",
                   textAlign: "left",
                   cursor: "pointer",
-                  color: "#E5E5E5",
+                  color: "var(--kr-ink)",
                 }}
               >
                 <div style={{ fontSize: 13, fontWeight: 700 }}>{card.title}</div>
-                <div style={{ fontSize: 11, color: "#8A8A8A" }}>
+                <div style={{ fontSize: 11, color: "var(--kr-muted)" }}>
                   {card.market.toUpperCase()} · {HOOK_LABEL[card.hook] ?? card.hook} · ~{card.durationSec}s
                 </div>
-                {card.painPoint && <div style={{ fontSize: 11.5, color: "#6B6B6B" }}>{card.painPoint}</div>}
+                {card.painPoint && <div style={{ fontSize: 11.5, color: "var(--kr-muted-2)" }}>{card.painPoint}</div>}
               </button>
 
               {open && (
