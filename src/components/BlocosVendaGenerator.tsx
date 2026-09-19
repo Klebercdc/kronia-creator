@@ -518,12 +518,6 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
             >
               {copiedBlock === i ? "Copiado ✓" : "Copiar bloco"}
             </button>
-            <details>
-              <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 700 }}>Ver prompt completo</summary>
-              <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 12, background: "var(--kr-card-2)", border: "1px solid var(--kr-line)", borderRadius: 10, padding: 12, marginTop: 8, maxHeight: 320, overflow: "auto" }}>
-                {blk.prompt}
-              </pre>
-            </details>
           </div>
         ))}
       </div>
