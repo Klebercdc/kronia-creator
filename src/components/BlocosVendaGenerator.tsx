@@ -426,10 +426,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
             </label>
           )}
         </div>
-        <div className="hint" style={{ marginBottom: 10 }}>
-          Foto do avatar segurando o produto (ou uma de cada). A IA descreve o que vê e escreve os
-          textos de venda.
-        </div>
+        <div className="hint" style={{ marginBottom: 10 }}>Foto do avatar segurando o produto (ou uma de cada).</div>
         <input
           className="input"
           placeholder="Contexto opcional (ex.: nome do produto, se não estiver legível na foto)"

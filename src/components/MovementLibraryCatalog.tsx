@@ -254,10 +254,7 @@ export function MovementLibraryCatalog() {
   if (step === "config") {
     return (
       <div>
-        <div className="hint" style={{ marginBottom: 14 }}>
-          Primeiro escolhe o sujeito e o formato do vídeo — depois a lista de movimentos já vem filtrada só pelo que
-          combina com isso.
-        </div>
+        <div className="hint" style={{ marginBottom: 14 }}>Escolha o sujeito e o formato pra filtrar os movimentos.</div>
 
         <div className="section-label" style={{ marginBottom: 6 }}>
           Sujeito
@@ -326,10 +323,7 @@ export function MovementLibraryCatalog() {
         ← {SUBJECT_OPTIONS.find((o) => o.value === subjectType)?.label} · {FORMAT_LABEL[format]}
       </button>
 
-      <div className="hint" style={{ marginBottom: 10 }}>
-        Escolha a categoria, marque os movimentos que quer no vídeo (na ordem que devem acontecer) e gere o prompt
-        final pra colar no Flow.
-      </div>
+      <div className="hint" style={{ marginBottom: 10 }}>Marque os movimentos na ordem que devem acontecer.</div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
         {categoriesInFormat.map((c) => (
@@ -398,7 +392,7 @@ export function MovementLibraryCatalog() {
       >
         {!loading && visibleMovements.length === 0 && movements.length > 0 && (
           <div className="hint" style={{ gridColumn: "1 / -1" }}>
-            Nenhum movimento dessa categoria mexe nessa parte do corpo — tenta "Todos" ou outra categoria.
+            Nenhum movimento aqui mexe nessa parte do corpo.
           </div>
         )}
         {visibleMovements.map((m) => {
@@ -534,8 +528,7 @@ export function MovementLibraryCatalog() {
                 style={{ fontSize: 12.5, resize: "vertical" }}
               />
               <div className="hint" style={{ fontSize: 11.5 }}>
-                No Flow, cole esse texto <strong>junto com a foto do seu produto/modelo como referência</strong> (recurso
-                "Ingredients to Video") — é isso que mantém o mesmo rosto e cenário, o texto sozinho não garante.
+                Cole esse texto <strong>junto com a foto de referência</strong> no Flow (Ingredients to Video).
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 <button type="button" className="btn-secondary" onClick={() => setComposed(null)}>
