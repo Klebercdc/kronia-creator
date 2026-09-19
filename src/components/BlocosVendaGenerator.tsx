@@ -4,6 +4,7 @@ import logoIcon from "../assets/logo-icon.png";
 import { generateBlocosVendaFieldsFn } from "../server/blocos-venda.functions";
 import { BANNED_PHRASES, normalize as normalizeForClaimsCheck } from "../core/compliance/absolute-claims-guard";
 import { errorMessageOf } from "../lib/errors";
+import { clean, wordCount, estimateSecs, FALA_TEMPLATES } from "../core/generation/blocos-venda-fala";
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -88,21 +89,12 @@ function findBannedPhrase(texto: string): string | null {
   return BANNED_PHRASES.find((phrase) => normalized.includes(normalizeForClaimsCheck(phrase))) ?? null;
 }
 
-function clean(s: string): string {
-  return String(s || "").trim().replace(/[.…\s]+$/, "");
-}
 function cap(s: string): string {
   const c = clean(s);
   return c ? c.charAt(0).toUpperCase() + c.slice(1) : c;
 }
 function nomeDe(v: FieldValues): string {
   return clean(v.nome) || "avatar";
-}
-function wordCount(s: string): number {
-  return s.split(/\s+/).filter((w) => w && w !== "…").length;
-}
-function estimateSecs(s: string): number {
-  return wordCount(s) / 2.1 + 1.2;
 }
 
 interface BlockDef {
@@ -120,7 +112,7 @@ const BLOCKS: BlockDef[] = [
     titulo: "Bloco 1 · Gancho + interrupção",
     tempo: "0–10s",
     tempoScript: "00:00–00:10",
-    fala: (v) => `Se você é ${clean(v.publico)} que valoriza ${clean(v.valores)}… não passe esse vídeo sem ver isso.`,
+    fala: FALA_TEMPLATES[0].fala,
     cena: (v) =>
       `${cap(nomeDe(v))} está sentado em ${clean(v.cen)}. ${cap(nomeDe(v))} está com ${clean(v.produto)} fechado nas mãos.\n\nNos primeiros segundos, ${nomeDe(v)} levanta lentamente os olhos do produto e encara diretamente a câmera. Sua expressão é serena, acolhedora e profundamente humana.`,
     camera: () => `Close-up no rosto, movimento lento de aproximação. Fundo desfocado, luz dourada contornando os cabelos. ${VIDEO_SPEC}`,
@@ -131,7 +123,7 @@ const BLOCKS: BlockDef[] = [
     titulo: "Bloco 2 · Revelação do produto",
     tempo: "10–20s",
     tempoScript: "00:10–00:20",
-    fala: (v) => `Isso não é só ${clean(v.produto)}… é ${clean(v.funcao)}.`,
+    fala: FALA_TEMPLATES[1].fala,
     cena: (v) =>
       `Continuação visual do mesmo ambiente. ${cap(nomeDe(v))} pega ${clean(v.produto)} e o posiciona cuidadosamente diante da câmera. A aparência do produto deve permanecer idêntica à referência.`,
     camera: () => `Começa no rosto e faz um movimento descendente suave até o produto. Depois realiza um pequeno avanço cinematográfico no produto. ${VIDEO_SPEC}`,
@@ -142,7 +134,7 @@ const BLOCKS: BlockDef[] = [
     titulo: "Bloco 3 · Uso e identificação da dor",
     tempo: "20–30s",
     tempoScript: "00:20–00:30",
-    fala: (v) => `Na correria da vida… às vezes ${clean(v.dor)}.`,
+    fala: FALA_TEMPLATES[2].fala,
     cena: (v) =>
       `${cap(nomeDe(v))} está sentado tranquilamente em ${clean(v.cen)}, com ${clean(v.produto)}: ${clean(v.demo)}. Depois, levanta lentamente os olhos e olha diretamente para a câmera.`,
     camera: () => `Plano médio fechado e estável, com uma aproximação muito suave durante a fala. ${VIDEO_SPEC}`,
@@ -153,7 +145,7 @@ const BLOCKS: BlockDef[] = [
     titulo: "Bloco 4 · Experiência e propósito",
     tempo: "30–40s",
     tempoScript: "00:30–00:40",
-    fala: (v) => `${clean(v.fato)} para ${clean(v.proposito)}.`,
+    fala: FALA_TEMPLATES[3].fala,
     cena: (v) =>
       `Close no produto (${clean(v.produto)}) nas mãos de ${nomeDe(v)}. Ele interage com o produto por alguns segundos, depois o guarda cuidadosamente e o segura junto ao peito.`,
     camera: (v) =>
@@ -165,7 +157,7 @@ const BLOCKS: BlockDef[] = [
     titulo: "Bloco 5 · CTA e conversão",
     tempo: "40–50s",
     tempoScript: "00:40–00:50",
-    fala: (v) => `Se essa mensagem fez sentido para você… o link está no ${clean(v.local)}, aqui embaixo.`,
+    fala: FALA_TEMPLATES[4].fala,
     cena: (v) =>
       `${cap(nomeDe(v))} está de frente para a câmera, segurando ${clean(v.produto)} com a mão esquerda, mantendo-o totalmente visível. Olha diretamente para o espectador, com expressão serena e acolhedora.`,
     camera: () => `Plano médio estável, com aproximação muito suave. Sem mudança de cenário nem cortes complexos. ${VIDEO_SPEC}`,
