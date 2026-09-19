@@ -59,6 +59,21 @@ foto (cor, material, texto legível, roupa, cenário, iluminação). Nunca inven
 não dá pra confirmar olhando a imagem. Se algo não estiver claro, descreva de forma mais genérica
 em vez de arredondar pra um detalhe inventado.
 
+REGRAS DE TOM E LINGUAGEM — vale pra TODOS os campos de fala (publico, valores, produto, funcao,
+dor, fato, proposito, local):
+- Escreva como alguém fala de verdade em voz alta, não como texto de anúncio. Português falado,
+  natural, direto — não português de propaganda genérica.
+- PROIBIDO clichê de marketing solto ("milhões de porções/unidades/clientes satisfeitos", "número 1
+  em vendas", "transforma sua vida", "experiência única") a menos que esteja literalmente escrito
+  na embalagem da foto. Se não tem certeza olhando a imagem, não force um número ou superlativo —
+  descreva o produto com as palavras mais simples e concretas possíveis.
+- Nunca empilhe conectivos repetidos no mesmo campo nem entre campos vizinhos que se juntam na
+  mesma frase (ex.: "fato" + "proposito" viram "{fato} para {proposito}." — então "proposito" NUNCA
+  pode começar com "para", senão a frase final fica com "para... para..."). Leia cada par de campos
+  que se junta numa frase só (funcao dentro de "é {funcao}.", fato+proposito, dor dentro de "às
+  vezes {dor}.") e confirme que soa como UMA frase fluida, não dois pedaços colados.
+- Frases curtas e concretas. Prefira uma imagem/sensação real a uma alegação abstrata.
+
 REGRAS DE COMPLIANCE (linguagem de venda) — pros campos publico/valores/funcao/dor/fato/proposito:
 - NUNCA use nenhuma destas frases de promessa absoluta (mesma lista banida em todo o KRONIA,
   checada automaticamente no Compliance do resto do app): ${BANNED_PHRASES.join(", ")}
