@@ -100,14 +100,14 @@ body,
    sabe o quanto sobrou acima do teclado, e é isso que --vh mede (ver
    useViewportKeyboardLock). Fora do teclado, dvh acima já resolve, então
    esta regra só entra em jogo com [data-teclado]. */
-/* iOS PWA standalone: não usar 100dvh no shell principal.
-   No iPhone, o WebKit pode definir 100dvh menor que a área física capturada
-   pelo screenshot, deixando uma faixa no rodapé. Como #root já é fixed com
-   inset:0, 100vh é a referência correta para o shell inteiro no standalone.
+/* iOS PWA standalone: usar o LARGE viewport no shell.
+   O screenshot real mostrou que 100vh/100dvh termina ~67px CSS antes da
+   borda física. Em standalone, 100lvh representa a área máxima disponível
+   e elimina a faixa inferior sem criar um tamanho fixo dependente do device.
    A regra [data-teclado] abaixo continua tendo prioridade com o teclado. */
 @media (display-mode: standalone) {
   #root {
-    height: 100vh;
+    height: 100lvh;
     bottom: auto;
   }
 }
