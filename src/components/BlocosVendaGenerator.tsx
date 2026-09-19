@@ -15,6 +15,30 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
+/** Vercel recusa (413 "Request Entity Too Large") requisição de função
+ * serverless acima de ~4,5MB — foto de celular direto da câmera já passa
+ * disso sozinha, e o RPC manda até 4 de uma vez em base64 (que ainda infla
+ * ~33% o tamanho). Redimensiona pro maior lado caber em 1280px e recomprime
+ * em JPEG antes de virar data URL — a IA de visão não precisa de mais
+ * resolução que isso, e o payload cai pra uma fração do tamanho. */
+function downscaleImage(dataUrl: string, maxSide = 1280, quality = 0.82): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return resolve(dataUrl);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}
+
 /**
  * Gerador de blocos de venda — porta do artefato "Gerador de blocos de
  * venda" (Jeová Fala) enviado pelo usuário pra dentro do app, substituindo
@@ -257,7 +281,8 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
 
   async function handleAddPhotos(files: FileList | null) {
     if (!files || files.length === 0) return;
-    const dataUrls = await Promise.all(Array.from(files).slice(0, 4 - photos.length).map(readFileAsDataUrl));
+    const rawDataUrls = await Promise.all(Array.from(files).slice(0, 4 - photos.length).map(readFileAsDataUrl));
+    const dataUrls = await Promise.all(rawDataUrls.map((d) => downscaleImage(d)));
     setPhotos((prev) => [...prev, ...dataUrls].slice(0, 4));
   }
 
