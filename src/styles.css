@@ -635,7 +635,7 @@ a {
   align-items: center;
   text-align: center;
   justify-content: center;
-  transform: translateY(-20px);
+  transform: translateY(0);
 }
 
 .kronia-home-hero-dashboard .kronia-quick-actions {
