@@ -76,3 +76,37 @@ export function checkFalaLengths(fields: BlocosVendaFieldsLike): FalaCheck[] {
     return { bloco: i + 1, campos: t.campo, fala, words: wordCount(fala), secs, over: secs > 11 };
   });
 }
+
+/** Checagens estruturais determinísticas — pegam erros de gramática/
+ * repetição que a LLM comete mesmo depois de instruída a não cometer (visto
+ * na prática: "é traz porções..." com dois verbos colados, "Na correria da
+ * vida… às vezes Na correria do dia a dia…" com o campo "dor" repetindo a
+ * própria abertura fixa do bloco). Roda em código, não em julgamento de
+ * IA — mesmo princípio da checagem de duração acima. */
+const FUNCAO_VERB_START = /^(traz|oferece|ajuda|cont[ée]m|proporciona|apresenta|fornece|d[áa]|gera|promove|cria|inclui)\b/i;
+const DOR_ECHO_START = /^(na correria|no dia a dia|no corre|às vezes|as vezes)\b/i;
+const FATO_TESTIMONIAL = /(leitores?|clientes?|usu[áa]rios?|consumidores?|pessoas?) (relatam|dizem|afirmam|contam|garantem)/i;
+
+export function checkStructuralIssues(fields: BlocosVendaFieldsLike): string[] {
+  const issues: string[] = [];
+
+  if (FUNCAO_VERB_START.test(clean(fields.funcao))) {
+    issues.push(
+      `Campo "funcao" ("${fields.funcao}") começa com verbo — ele entra em "é {funcao}.", então tem que ser uma frase NOMINAL (ex.: "um guia diário de amor"), nunca outro verbo colado (ex.: "é traz..." está gramaticalmente errado). Reescreva "funcao" como frase nominal.`,
+    );
+  }
+
+  if (DOR_ECHO_START.test(clean(fields.dor))) {
+    issues.push(
+      `Campo "dor" ("${fields.dor}") repete a abertura fixa do bloco 3 ("Na correria da vida… às vezes {dor}."). "dor" tem que ir direto pra dor específica, sem repetir "na correria"/"no dia a dia"/"às vezes" — isso já está no template, repetir vira frase duplicada tipo "às vezes... às vezes...".`,
+    );
+  }
+
+  if (FATO_TESTIMONIAL.test(fields.fato)) {
+    issues.push(
+      `Campo "fato" ("${fields.fato}") é um depoimento/prova social inventada ("leitores relatam" etc.), não um fato verificável — proibido (mesma regra do resto do KRONIA: nunca prova social sem evidência real). Reescreva "fato" como uma característica objetiva e verificável do produto (visível na foto/embalagem), nunca uma citação de terceiros.`,
+    );
+  }
+
+  return issues;
+}
