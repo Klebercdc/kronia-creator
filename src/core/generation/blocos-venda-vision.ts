@@ -1,7 +1,8 @@
 import { z } from "zod";
-import { callStructuredVisionFromDataUrls } from "../../lib/openai";
+import { callStructuredText, callStructuredVisionFromDataUrls } from "../../lib/openai";
 import { HOOK_TYPES, PERSUASION_MECHANISMS } from "../../types/taxonomy";
 import { BANNED_PHRASES } from "../compliance/absolute-claims-guard";
+import { CREATIVE_QUALITY_BAR } from "./quality-bar";
 
 /**
  * Preenche os 14 campos do gerador de blocos de venda a partir da foto do
@@ -60,19 +61,16 @@ não dá pra confirmar olhando a imagem. Se algo não estiver claro, descreva de
 em vez de arredondar pra um detalhe inventado.
 
 REGRAS DE TOM E LINGUAGEM — vale pra TODOS os campos de fala (publico, valores, produto, funcao,
-dor, fato, proposito, local):
-- Escreva como alguém fala de verdade em voz alta, não como texto de anúncio. Português falado,
-  natural, direto — não português de propaganda genérica.
-- PROIBIDO clichê de marketing solto ("milhões de porções/unidades/clientes satisfeitos", "número 1
-  em vendas", "transforma sua vida", "experiência única") a menos que esteja literalmente escrito
-  na embalagem da foto. Se não tem certeza olhando a imagem, não force um número ou superlativo —
-  descreva o produto com as palavras mais simples e concretas possíveis.
+dor, fato, proposito, local). Mesma barra de qualidade usada pelos outros agentes de copy do
+KRONIA (marketing/persuasão/psicologia-compra) — Blocos de venda não é exceção:
+
+${CREATIVE_QUALITY_BAR}
+
 - Nunca empilhe conectivos repetidos no mesmo campo nem entre campos vizinhos que se juntam na
   mesma frase (ex.: "fato" + "proposito" viram "{fato} para {proposito}." — então "proposito" NUNCA
   pode começar com "para", senão a frase final fica com "para... para..."). Leia cada par de campos
   que se junta numa frase só (funcao dentro de "é {funcao}.", fato+proposito, dor dentro de "às
   vezes {dor}.") e confirme que soa como UMA frase fluida, não dois pedaços colados.
-- Frases curtas e concretas. Prefira uma imagem/sensação real a uma alegação abstrata.
 
 REGRAS DE COMPLIANCE (linguagem de venda) — pros campos publico/valores/funcao/dor/fato/proposito:
 - NUNCA use nenhuma destas frases de promessa absoluta (mesma lista banida em todo o KRONIA,
@@ -135,10 +133,63 @@ SIGNIFICADO DE CADA CAMPO (como ele entra nas frases-modelo, pra você escrever 
 
 Responda só com os 14 campos preenchidos, nada além disso.`;
 
+/** Quality Judge pros 14 campos — mesmo papel do Quality Judge do pipeline
+ * principal (quality-judge.ts): não escreve nada, só avalia com rigor
+ * procurando motivo pra reprovar texto mediano/clichê/robótico. Reaproveita
+ * a mesma barra (CREATIVE_QUALITY_BAR) em vez de duplicar critério novo. */
+const JudgmentSchema = z.object({
+  naturalidade: z.number().min(0).max(10),
+  especificidade: z.number().min(0).max(10),
+  weakestField: z.string(),
+  revisionInstruction: z.string().nullable(),
+});
+
+const JUDGE_SYSTEM = `Você é o Quality Judge dos campos de um gerador de vídeo de venda —
+não escreve nada, só avalia com rigor os 14 campos abaixo, procurando motivo pra reprovar texto
+mediano, clichê ou robótico.
+
+${CREATIVE_QUALITY_BAR}
+
+Dê nota de 0 a 10 em 2 eixos:
+- naturalidade: soa como alguém falando de verdade, ou como texto de propaganda de IA?
+- especificidade: usa o produto/personagem REAL da foto, ou serviria pra qualquer produto do
+  mesmo nicho?
+
+"weakestField": o nome do campo mais fraco (ex.: "fato", "dor").
+"revisionInstruction": se naturalidade OU especificidade estiver abaixo de 8, escreva uma
+instrução CIRÚRGICA (o que reescrever, em qual campo, por quê) — senão, null.`;
+
+async function judgeFields(fields: BlocosVendaFields) {
+  return callStructuredText({
+    schema: JudgmentSchema,
+    system: JUDGE_SYSTEM,
+    prompt: `Campos gerados:\n${JSON.stringify(fields, null, 2)}`,
+    toolName: "blocos_venda_judgment",
+  });
+}
+
+const REVISE_SYSTEM = `Você reescreve os campos de um gerador de vídeo de venda a partir de UMA
+instrução cirúrgica de qualidade. Aplique a instrução só no(s) campo(s) indicado(s), mantendo os
+outros campos exatamente como estão. Nunca invente característica, número ou prova do produto que
+não esteja nos campos já existentes. Retorne os 14 campos completos, no mesmo formato de entrada.`;
+
+async function reviseFields(fields: BlocosVendaFields, instruction: string): Promise<BlocosVendaFields> {
+  return callStructuredText({
+    schema: FieldsSchema,
+    system: REVISE_SYSTEM,
+    prompt: `Campos atuais:\n${JSON.stringify(fields, null, 2)}\n\nInstrução de revisão:\n${instruction}`,
+    toolName: "blocos_venda_fields",
+  });
+}
+
 /** Analisa a(s) foto(s) do avatar+produto e devolve os 14 campos do
  * gerador já preenchidos. `contexto` é opcional — texto livre que o
  * usuário pode digitar pra dar informação que não dá pra ver na foto
- * (nome do produto se não estiver legível, público-alvo pretendido etc). */
+ * (nome do produto se não estiver legível, público-alvo pretendido etc).
+ *
+ * Depois de gerar, passa pelo Quality Judge (mesma barra de qualidade
+ * criativa do resto do KRONIA) e, se reprovado, faz 1 revisão cirúrgica
+ * — nunca um loop, pra não empilhar custo sem ganho real. */
 export async function generateBlocosVendaFields(
   imageDataUrls: string[],
   contexto?: string,
@@ -147,11 +198,15 @@ export async function generateBlocosVendaFields(
     ? `Preencha os 14 campos a partir desta foto. Contexto adicional dado pelo usuário (use pra completar o que a foto não mostra, mas não contradiga o que está visível): ${contexto.trim()}`
     : "Preencha os 14 campos a partir desta foto.";
 
-  return callStructuredVisionFromDataUrls({
+  const fields = await callStructuredVisionFromDataUrls({
     schema: FieldsSchema,
     system: SYSTEM,
     prompt,
     images: imageDataUrls,
     toolName: "blocos_venda_fields",
   });
+
+  const judgment = await judgeFields(fields);
+  if (!judgment.revisionInstruction) return fields;
+  return reviseFields(fields, judgment.revisionInstruction);
 }
