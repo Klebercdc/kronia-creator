@@ -553,7 +553,7 @@ a {
   align-items: center;
   justify-content: space-between;
   position: fixed;
-  top: max(42px, calc(env(safe-area-inset-top, 0px) * 0.75));
+  top: max(52px, calc(env(safe-area-inset-top, 0px) * 0.75) + 10px);
   left: 0;
   right: 0;
   max-width: 480px;
@@ -632,6 +632,7 @@ a {
  * encostado no topo, senão sobra um vão vazio grande embaixo dos cartões
  * (a Home preenche a tela toda, ver min-height:100% em .kronia-home). */
 .kronia-home-hero-dashboard {
+  width: 100%;
   align-items: center;
   text-align: center;
   justify-content: center;
@@ -640,7 +641,9 @@ a {
 
 .kronia-home-hero-dashboard .kronia-quick-actions {
   width: 100%;
-  max-width: 720px;
+  max-width: 440px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .kronia-home-hero-dashboard h1 {
