@@ -111,6 +111,37 @@ export function detectSubjectType(ids: string[]): SubjectType {
   return types.size === 1 ? [...types][0] : "person";
 }
 
+/** Parte do corpo em foco no movimento — eixo que CRUZA com categoria de
+ * roupa (não substitui: dentro de "Blusas" tem movimento de Cabelo, de
+ * Mãos etc.). Um movimento pode ter mais de uma parte (ex: "mão no
+ * cabelo" é Cabelo E Mãos) — detectado por palavra-chave no texto, PT e EN
+ * (as categorias Selfie UGC estão em inglês no dataset original).
+ * Calibrado contra os 211 movimentos com pessoa: cobertura de 100% sem
+ * nenhum ficar de fora (ver commit que introduziu isso pro histórico da
+ * calibração). Só se aplica a movimento de pessoa — objeto/POV não tem
+ * "parte do corpo" nesse sentido. */
+export type BodyPart = "cabelo" | "maos" | "corpo" | "pernas" | "rosto";
+
+export const BODY_PART_LABEL: Record<BodyPart, string> = {
+  cabelo: "Cabelo",
+  maos: "Mãos",
+  corpo: "Corpo",
+  pernas: "Pernas",
+  rosto: "Rosto",
+};
+
+const BODY_PART_PATTERN: Record<BodyPart, RegExp> = {
+  cabelo: /cabelo|\bhair\b/i,
+  maos: /mão|mãos|dedo|toca|ajust|segura|puxa|solta|ziper|zíper|abre|fecha|\bhand\b|\btouch|\bhold/i,
+  corpo: /cintura|quadril|ombro|peito|busto|\bcorpo\b|vira|virada|gira|respira|\bwaist\b|\bhip\b|\bshoulder\b|\bbody\b|\bpose\b|\bpostur/i,
+  pernas: /perna|joelho|coxa|passo|anda|caminh|\bleg\b|\bstep\b|\bwalk/i,
+  rosto: /olha|olhar|express|sorri|\bsmil|\blook\b|\bface\b/i,
+};
+
+export function bodyPartsFor(entry: MovementEntry): BodyPart[] {
+  return (Object.keys(BODY_PART_PATTERN) as BodyPart[]).filter((part) => BODY_PART_PATTERN[part].test(entry.body));
+}
+
 const SUBJECT_LINE: Record<SubjectType, string> = {
   person:
     "a mesma pessoa, rosto, roupa e ambiente da foto de referência enviada — manter tudo idêntico à referência do início ao fim, sem deformar mãos",
