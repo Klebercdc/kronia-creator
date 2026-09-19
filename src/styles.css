@@ -60,6 +60,15 @@ html[data-theme="escuro"] {
   box-sizing: border-box;
 }
 
+/* html sem cor própria = transparente, mostrando o branco padrão do
+ * navegador por trás caso o body (position:fixed abaixo) não cubra 100%
+ * da tela por um instante — relatado no Safari do iPhone como uma tarja
+ * branca colada na base da tela. Mesmo --kr-bg do body, então mesmo numa
+ * fresta de 1px nunca aparece um branco destoante. */
+html {
+  background: var(--kr-bg);
+}
+
 /* html,body travados: sem isto o iOS empurra o LAYOUT viewport pra trazer um
    campo focado pra cima do teclado (overflow:hidden sozinho não impede — ele
    ignora o overflow nesse caminho), e o app inteiro sobe pra fora da tela com
@@ -744,18 +753,6 @@ a {
   touch-action: pan-y pinch-zoom;
 }
 
-/* Mesma família do fix em .kronia-app-camada-escura — .kronia-palco é o
-   CANVAS por trás de tudo (inclusive do bottom-nav, agora irmão dela), e
-   também segue --kr-bg (claro por padrão). Numa aba que não é a Home
-   (sempre escura, hex cravado), qualquer fresta — overscroll, faixa de
-   segurança embaixo do bottom-nav — mostrava esse claro por trás (print
-   do usuário: faixa branca colada no fundo da aba Prompt). Não mexe em
-   .kronia-menu-camada, que continua clara por regra própria (é o menu,
-   sempre claro por design, mesmo dentro de uma aba escura). */
-.kronia-palco-escuro {
-  background: #070707;
-}
-
 .kronia-menu-camada {
   position: absolute;
   top: 0;
@@ -834,18 +831,6 @@ a {
 .kronia-menu-aberto .kronia-app-camada {
   transform: translate3d(min(300px, 82vw), 0, 0);
   border-radius: 30px;
-}
-
-/* Criar/Histórico/Explorar/Prompt/Perfil (.app, hex cravado, sempre escuro
-   — ver comentário no topo do arquivo) vivem dentro desta camada, cujo
-   fundo por padrão segue --kr-bg (claro no tema padrão, pensado pra
-   Home/menu). Sem isto, qualquer sobra de área durante bounce/redimensão
-   do teclado/barra do navegador (a própria .app tem altura própria, a
-   camada por trás pode aparecer por baixo) mostra uma faixa clara atrás
-   de uma tela que é sempre escura — reportado como "margem branca" no
-   rodapé da aba Explorar. */
-.kronia-app-camada-escura {
-  background: #070707;
 }
 
 /* Tira a rolagem por completo enquanto o teclado tá aberto — sem

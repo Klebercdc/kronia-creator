@@ -1192,7 +1192,7 @@ function CriadorApp() {
   }
 
   return (
-    <div className={`kronia-palco ${sidebarOpen ? "kronia-menu-aberto" : ""} ${tab !== "home" ? "kronia-palco-escuro" : ""}`}>
+    <div className={`kronia-palco ${sidebarOpen ? "kronia-menu-aberto" : ""}`}>
       <div className="kronia-menu-camada" ref={menuRef} aria-hidden={!sidebarOpen} inert={!sidebarOpen}>
         <AppSidebar
           active={tab}
@@ -1226,7 +1226,7 @@ function CriadorApp() {
           </button>
         </div>
       )}
-      <div className={`kronia-app-camada ${tab !== "home" ? "kronia-app-camada-escura" : ""}`} ref={appRef}>
+      <div className="kronia-app-camada" ref={appRef}>
         {tab === "home" && (
           <ConversationScreen onNavigate={navigate} />
         )}

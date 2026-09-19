@@ -14,10 +14,15 @@ export const Route = createRootRoute({
           "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content",
       },
       { title: "KRONIA — Criador Inteligente" },
-      { name: "theme-color", content: "#17171a" },
+      // #FAF9F7 = --kr-bg claro (tema padrão do app desde o retema) — antes
+      // ficava #17171a (escuro), de quando as abas internas eram sempre
+      // escuras; destoava da barra do Safari/status bar contra o app agora
+      // claro por padrão (relatado como tarja/faixa de cor errada colada na
+      // borda da tela no iPhone).
+      { name: "theme-color", content: "#FAF9F7" },
       // iOS: faz "Adicionar à Tela de Início" abrir em tela cheia, sem a barra do Safari.
       { name: "apple-mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
       { name: "apple-mobile-web-app-title", content: "KRONIA" },
       { name: "mobile-web-app-capable", content: "yes" },
     ],
