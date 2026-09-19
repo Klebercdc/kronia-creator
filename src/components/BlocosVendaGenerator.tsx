@@ -1,5 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import logoIcon from "../assets/logo-icon.png";
+import { generateBlocosVendaFieldsFn } from "../server/blocos-venda.functions";
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 /**
  * Gerador de blocos de venda — porta do artefato "Gerador de blocos de
@@ -207,9 +218,14 @@ const FIELD_LABELS: { key: keyof FieldValues; label: string; hint: string; texta
 ];
 
 export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void }) {
+  const generateFieldsRpc = useServerFn(generateBlocosVendaFieldsFn);
   const [values, setValues] = useState<FieldValues>(DEFAULTS);
   const [copiedBlock, setCopiedBlock] = useState<number | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [contexto, setContexto] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   useEffect(() => {
     setValues(loadStoredValues());
@@ -236,6 +252,30 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
       PRODUCT_KEYS.forEach((k) => (next[k] = ""));
       return next;
     });
+  }
+
+  async function handleAddPhotos(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    const dataUrls = await Promise.all(Array.from(files).slice(0, 4 - photos.length).map(readFileAsDataUrl));
+    setPhotos((prev) => [...prev, ...dataUrls].slice(0, 4));
+  }
+
+  function removePhoto(i: number) {
+    setPhotos((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  async function handleGenerateWithAi() {
+    if (photos.length === 0) return;
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const fields = await generateFieldsRpc({ data: { imageDataUrls: photos, contexto: contexto.trim() || undefined } });
+      setValues((prev) => ({ ...prev, ...fields }));
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : "Erro ao gerar os campos com IA");
+    } finally {
+      setAiLoading(false);
+    }
   }
 
   const blocks = useMemo(
@@ -316,8 +356,90 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
         Blocos de venda
       </h1>
       <div className="hint" style={{ marginBottom: 16 }}>
-        Preencha os campos. Saem 5 blocos de cerca de 10s, no formato SCRIPT/CENA/CÂMERA/AÇÃO/FALA/VOZ — cole no Flow
-        junto com a foto do avatar e a foto do produto (anexadas por fora, não no texto).
+        Anexe a foto do avatar com o produto e deixe a IA preencher tudo — ou preencha os campos à
+        mão abaixo. Saem 5 blocos de cerca de 10s, no formato SCRIPT/CENA/CÂMERA/AÇÃO/FALA/VOZ —
+        cole no Flow junto com a foto do avatar e a foto do produto (anexadas por fora, não no
+        texto).
+      </div>
+
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="section-label" style={{ marginBottom: 8 }}>
+          Gerar tudo com IA a partir da foto
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+          {photos.map((src, i) => (
+            <div key={i} style={{ position: "relative", width: 72, height: 72 }}>
+              <img src={src} alt="" style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 10 }} />
+              <button
+                type="button"
+                onClick={() => removePhoto(i)}
+                aria-label="Remover foto"
+                style={{
+                  position: "absolute",
+                  top: -6,
+                  right: -6,
+                  width: 22,
+                  height: 22,
+                  borderRadius: "50%",
+                  background: "#1A1A1A",
+                  border: "1px solid #333",
+                  color: "#EDEDED",
+                  fontSize: 13,
+                  lineHeight: 1,
+                }}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          {photos.length < 4 && (
+            <label
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: 10,
+                border: "1px dashed #444",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 24,
+                color: "#8A8A8A",
+                cursor: "pointer",
+              }}
+            >
+              +
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  handleAddPhotos(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+          )}
+        </div>
+        <div className="hint" style={{ marginBottom: 10 }}>
+          Foto do avatar segurando o produto (ou uma de cada). A IA descreve o que vê e escreve os
+          textos de venda.
+        </div>
+        <input
+          className="input"
+          placeholder="Contexto opcional (ex.: nome do produto, se não estiver legível na foto)"
+          value={contexto}
+          onChange={(e) => setContexto(e.target.value)}
+          style={{ marginBottom: 10 }}
+        />
+        <button type="button" className="btn-primary" onClick={handleGenerateWithAi} disabled={photos.length === 0 || aiLoading}>
+          {aiLoading ? "Gerando com IA..." : "Gerar campos com IA"}
+        </button>
+        {aiError && (
+          <div className="hint" style={{ color: "#F09A72", marginTop: 8 }}>
+            {aiError}
+          </div>
+        )}
       </div>
 
       {produtoFields.map(renderField)}
