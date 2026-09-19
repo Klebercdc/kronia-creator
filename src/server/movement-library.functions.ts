@@ -4,11 +4,14 @@ import {
   composeMovementPrompt,
   listMovementCategories,
   listMovementsByCategory,
+  bodyPartsFor,
   FORMAT_LABEL,
+  BODY_PART_LABEL,
   type MovementCategory,
   type MovementEntry,
   type MovementFormat,
   type SubjectType,
+  type BodyPart,
 } from "../lib/movement-library";
 
 export const listMovementCategoriesFn = createServerFn({ method: "GET" }).handler(
@@ -30,5 +33,5 @@ export const composeMovementPromptFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => composeMovementPrompt(data.ids, data.subjectType));
 
-export { FORMAT_LABEL };
-export type { MovementCategory, MovementEntry, MovementFormat, SubjectType };
+export { FORMAT_LABEL, BODY_PART_LABEL, bodyPartsFor };
+export type { MovementCategory, MovementEntry, MovementFormat, SubjectType, BodyPart };

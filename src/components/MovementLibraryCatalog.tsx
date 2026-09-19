@@ -5,10 +5,13 @@ import {
   listMovementsByCategoryFn,
   composeMovementPromptFn,
   FORMAT_LABEL,
+  BODY_PART_LABEL,
+  bodyPartsFor,
   type MovementCategory,
   type MovementEntry,
   type MovementFormat,
   type SubjectType,
+  type BodyPart,
 } from "../server/movement-library.functions";
 import { listHookTypesFn, generateHookPromptFn, type HookType } from "../server/hook-avancado.functions";
 
@@ -18,6 +21,7 @@ const SUBJECT_OPTIONS: { value: SubjectType; label: string }[] = [
 ];
 
 const FORMAT_ORDER: MovementFormat[] = ["padrao", "pov", "ugc", "cta", "sequencia"];
+const BODY_PART_ORDER: BodyPart[] = ["cabelo", "maos", "corpo", "pernas", "rosto"];
 
 /** Clipe stock do Pexels é o vídeo inteiro (pode passar de 10-30s) — corta
  * em loop de 3s a partir do início em vez de carregar/tocar tudo, tanto
@@ -144,6 +148,10 @@ export function MovementLibraryCatalog() {
   const [categorySlug, setCategorySlug] = useState<string | null>(null);
   const [movements, setMovements] = useState<MovementEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  // Cruza com a categoria de roupa, não substitui — dentro da categoria
+  // escolhida, filtra ainda mais por qual parte do corpo é o foco do gesto.
+  // Só se aplica pra Avatar (pessoa); Objeto não tem essa dimensão.
+  const [bodyPartFilter, setBodyPartFilter] = useState<BodyPart | null>(null);
   // Ordem de clique preservada — é a ordem que vira a sequência da cena final.
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [composed, setComposed] = useState<string | null>(null);
@@ -158,6 +166,7 @@ export function MovementLibraryCatalog() {
   useEffect(() => {
     if (!categorySlug) return;
     setLoading(true);
+    setBodyPartFilter(null);
     listMovementsRpc({ data: { categorySlug } })
       .then(setMovements)
       .finally(() => setLoading(false));
@@ -171,6 +180,11 @@ export function MovementLibraryCatalog() {
   }, [categories]);
 
   const selectedMap = useMemo(() => new Map(movements.map((m) => [m.id, m])), [movements]);
+
+  const visibleMovements = useMemo(() => {
+    if (subjectType !== "person" || !bodyPartFilter) return movements;
+    return movements.filter((m) => bodyPartsFor(m).includes(bodyPartFilter));
+  }, [movements, subjectType, bodyPartFilter]);
 
   function goToBrowse() {
     setStep("browse");
@@ -350,6 +364,30 @@ export function MovementLibraryCatalog() {
 
       {loading && <div className="hint">Carregando…</div>}
 
+      {subjectType === "person" && !loading && movements.length > 0 && (
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 6, marginBottom: 10 }}>
+          <button
+            type="button"
+            className={`pill ${bodyPartFilter === null ? "active" : ""}`}
+            style={{ flex: "0 0 auto", whiteSpace: "nowrap", fontSize: 12 }}
+            onClick={() => setBodyPartFilter(null)}
+          >
+            Todos
+          </button>
+          {BODY_PART_ORDER.map((part) => (
+            <button
+              key={part}
+              type="button"
+              className={`pill ${bodyPartFilter === part ? "active" : ""}`}
+              style={{ flex: "0 0 auto", whiteSpace: "nowrap", fontSize: 12 }}
+              onClick={() => setBodyPartFilter(part)}
+            >
+              {BODY_PART_LABEL[part]}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div
         style={{
           display: "grid",
@@ -358,7 +396,12 @@ export function MovementLibraryCatalog() {
           marginBottom: selectedIds.length > 0 ? 140 : 16,
         }}
       >
-        {movements.map((m) => {
+        {!loading && visibleMovements.length === 0 && movements.length > 0 && (
+          <div className="hint" style={{ gridColumn: "1 / -1" }}>
+            Nenhum movimento dessa categoria mexe nessa parte do corpo — tenta "Todos" ou outra categoria.
+          </div>
+        )}
+        {visibleMovements.map((m) => {
           const selected = selectedIds.includes(m.id);
           const order = selected ? selectedIds.indexOf(m.id) + 1 : null;
           return (
