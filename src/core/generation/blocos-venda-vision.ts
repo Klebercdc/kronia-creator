@@ -3,6 +3,7 @@ import { callStructuredText, callStructuredVisionFromDataUrls } from "../../lib/
 import { HOOK_TYPES, PERSUASION_MECHANISMS } from "../../types/taxonomy";
 import { BANNED_PHRASES } from "../compliance/absolute-claims-guard";
 import { CREATIVE_QUALITY_BAR } from "./quality-bar";
+import { checkFalaLengths } from "./blocos-venda-fala";
 
 /**
  * Preenche os 14 campos do gerador de blocos de venda a partir da foto do
@@ -80,7 +81,11 @@ REGRAS DE COMPLIANCE (linguagem de venda) — pros campos publico/valores/funcao
   pareça uma figura religiosa — ele é sempre um mensageiro, nunca a divindade falando.
 - "fato" tem que ser algo realmente verificável (visível na embalagem/rótulo da foto, ou uma
   característica objetiva do tipo de produto) — nunca invente número ou estatística.
-- Cada campo de fala fica curto (a frase final onde ele entra tem no máximo ~20 palavras).
+- Cada bloco tem ~10s de fala (ritmo de leitura em voz alta: ~2,1 palavras/segundo). A FRASE
+  FINAL de cada bloco (o texto pronto, já com os campos encaixados no template, não só o campo
+  isolado) tem que caber em no máximo ~18 palavras no total — senão o bloco passa de 10s e alguém
+  vai precisar encurtar na mão depois. Pense na frase inteira antes de escrever cada campo, não só
+  no campo isolado.
 
 TÉCNICA POR BLOCO — mesma taxonomia usada pelos outros agentes de copy do KRONIA (hooks validados
 em análise de 34.635 clipes virais + mecanismos de persuasão legítimos, nunca manipulação
@@ -206,7 +211,22 @@ export async function generateBlocosVendaFields(
     toolName: "blocos_venda_fields",
   });
 
+  // Checagem de duração é feita em CÓDIGO, não confiada à LLM — mesma fórmula
+  // usada no componente (BlocosVendaGenerator.tsx) pros alertas de "passa de
+  // 10s". Sem isso, a IA podia gerar texto já estourado e o usuário só
+  // descobria pelo alerta depois de gerar.
+  const overBlocks = checkFalaLengths(fields).filter((c) => c.over);
+  const lengthInstruction = overBlocks.length
+    ? overBlocks
+        .map(
+          (c) =>
+            `Bloco ${c.bloco} (campo${c.campos.length > 1 ? "s" : ""} ${c.campos.join(" + ")}): a fala fica com ${c.words} palavras (~${c.secs.toFixed(0)}s), passa dos 10s do bloco. Reescreva ${c.campos.length > 1 ? "esses campos" : "esse campo"} mais curto(s) pra a fala do bloco ficar com no máximo 18 palavras no total (~10s), sem perder o sentido.`,
+        )
+        .join("\n")
+    : null;
+
   const judgment = await judgeFields(fields);
-  if (!judgment.revisionInstruction) return fields;
-  return reviseFields(fields, judgment.revisionInstruction);
+  const instruction = [lengthInstruction, judgment.revisionInstruction].filter(Boolean).join("\n");
+  if (!instruction) return fields;
+  return reviseFields(fields, instruction);
 }
