@@ -13,6 +13,7 @@ import logoIcon from "../assets/logo-icon.png";
  */
 
 interface FieldValues {
+  nome: string;
   publico: string;
   valores: string;
   produto: string;
@@ -30,6 +31,7 @@ interface FieldValues {
 const STORAGE_KEY = "jf-blocos-v2";
 
 const DEFAULTS: FieldValues = {
+  nome: "Jesus",
   publico: "uma mulher",
   valores: "sua fé, sua família e sua paz",
   produto: "um livro devocional",
@@ -42,7 +44,7 @@ const DEFAULTS: FieldValues = {
   demo: "abre o livro e folheia devagar, lendo com olhar baixo e sereno; depois fecha e o segura junto ao peito com as mãos sobrepostas",
   idv: "Homem de cerca de 35 anos, aparência semítica/mediterrânea, pele morena-oliva, cabelo castanho-escuro longo, ondulado, repartido ao centro, barba cheia castanho-escura bem aparada, olhos castanho-claros, sobrancelhas grossas, nariz reto, rosto oval-alongado. Veste túnica bege/creme de linho rústico com lenço branco no pescoço. Mesmo rosto, mesma túnica e mesmo cabelo em todos os blocos.",
   voz: "Voz masculina jovem, serena, próxima e íntima, tom acolhedor, ritmo calmo com pausas naturais, sensação de conversa particular. Não é pregação, locução nem publicidade. Sem teatralidade exagerada. Português do Brasil.",
-  cen: "Terraço de pedra ao entardecer, luz dourada de pôr do sol vindo de trás/lateral, colinas suaves ao fundo desfocadas, galho de oliveira e flores rosas no canto do quadro. Mesmo cenário, mesma hora do dia e mesma direção de luz em todos os blocos.",
+  cen: "um terraço de pedra ao entardecer, luz dourada de pôr do sol vindo de trás/lateral, colinas suaves ao fundo desfocadas, galho de oliveira e flores rosas no canto do quadro",
 };
 
 const PRODUCT_KEYS: (keyof FieldValues)[] = ["publico", "valores", "produto", "funcao", "dor", "fato", "local", "visual", "demo"];
@@ -56,6 +58,13 @@ const DIVINE_RE = /\b(eu te (aben[cç]oo|curo|liberto|perdoo|dou)|eu sou (deus|j
 function clean(s: string): string {
   return String(s || "").trim().replace(/[.…\s]+$/, "");
 }
+function cap(s: string): string {
+  const c = clean(s);
+  return c ? c.charAt(0).toUpperCase() + c.slice(1) : c;
+}
+function nomeDe(v: FieldValues): string {
+  return clean(v.nome) || "avatar";
+}
 function wordCount(s: string): number {
   return s.split(/\s+/).filter((w) => w && w !== "…").length;
 }
@@ -66,72 +75,75 @@ function estimateSecs(s: string): number {
 interface BlockDef {
   titulo: string;
   tempo: string;
+  tempoScript: string;
   fala: (v: FieldValues) => string;
-  atuacao: (v: FieldValues) => string;
-  movimento: string;
-  camera: string;
+  cena: (v: FieldValues) => string;
+  camera: (v: FieldValues) => string;
+  acao: (v: FieldValues) => string;
 }
 
 const BLOCKS: BlockDef[] = [
   {
-    titulo: "Bloco 1 · Chamada e comando",
+    titulo: "Bloco 1 · Gancho + interrupção",
     tempo: "0–10s",
+    tempoScript: "00:00–00:10",
     fala: (v) => `Se você é ${clean(v.publico)} que valoriza ${clean(v.valores)}… não passe esse vídeo sem ver.`,
-    atuacao: () =>
-      "Sentado no terraço, segura o produto junto ao peito, visível desde o primeiro frame. Olha direto para a câmera, como quem fala com uma pessoa específica. No final faz um leve gesto com a mão livre pedindo atenção.",
-    movimento: "Respiração calma, piscar natural, mão livre se abre devagar. O produto não se deforma nem troca de lugar bruscamente.",
-    camera: "Plano médio (cintura para cima), câmera na altura dos olhos, leve push-in.",
+    cena: (v) =>
+      `${cap(nomeDe(v))} está em ${clean(v.cen)}, com ${clean(v.produto)} nas mãos, junto ao peito, ainda parado.\n\nNos primeiros segundos, ${cap(nomeDe(v))} levanta lentamente o olhar e encara diretamente a câmera. Expressão serena, acolhedora e profundamente humana.`,
+    camera: () => `Close-up no rosto, com leve push-in lento (movimento de aproximação). Fundo desfocado, luz natural contornando a silhueta. ${VIDEO_SPEC}`,
+    acao: (v) =>
+      `Ao iniciar a fala, segura ${clean(v.produto)} junto ao peito. No final, estende levemente uma das mãos em direção à câmera, pedindo atenção.`,
   },
   {
-    titulo: "Bloco 2 · Produto como função",
+    titulo: "Bloco 2 · Apresentação do produto",
     tempo: "10–20s",
+    tempoScript: "00:10–00:20",
     fala: (v) => `Este é ${clean(v.produto)}… ${clean(v.funcao)}.`,
-    atuacao: () =>
-      "Mesmo cenário e posição. Aproxima o produto da câmera com as duas mãos, mostrando-o inteiro e nítido. O olhar alterna entre a câmera e o produto. Expressão terna e segura.",
-    movimento: "Rotação lenta e curta para mostrar a frente do produto; dedos nas bordas, sem cobrir título ou detalhes.",
-    camera: "Plano médio fechando para o produto em destaque; foco no produto e depois retorna ao rosto.",
+    cena: (v) =>
+      `Mesmo cenário e posição. ${cap(nomeDe(v))} aproxima ${clean(v.produto)} da câmera com as duas mãos, mostrando-o inteiro e nítido, com o olhar alternando entre a câmera e o produto. Expressão terna e segura.`,
+    camera: () => `Plano médio fechando para o produto em destaque; foco no produto e depois retorna ao rosto. ${VIDEO_SPEC}`,
+    acao: (v) =>
+      `Gira ${clean(v.produto)} devagar para mostrar a frente por completo; dedos apoiados nas bordas, sem cobrir título ou detalhes.`,
   },
   {
-    titulo: "Bloco 3 · Dor e fato",
+    titulo: "Bloco 3 · Dor e identificação",
     tempo: "20–30s",
+    tempoScript: "00:20–00:30",
     fala: (v) => `${clean(v.dor)}… ${clean(v.fato)}.`,
-    atuacao: (v) => `Ele ${clean(v.demo)}.`,
-    movimento: "Gestos com peso e velocidade reais. Sem texto legível inventado. Mãos com cinco dedos e contato correto com o produto.",
-    camera: "Plano médio, um insert fechado (macro) do detalhe e das mãos, e retorno ao plano médio-aberto.",
+    cena: (v) => `Mesmo cenário. ${cap(nomeDe(v))} ${clean(v.demo)}.`,
+    camera: () => `Plano médio, com um insert fechado (macro) do detalhe e das mãos, retornando ao plano médio-aberto. ${VIDEO_SPEC}`,
+    acao: () => "Gestos com peso e velocidade reais, mãos com cinco dedos e contato correto com o produto, sem pressa. Sem texto legível inventado.",
   },
   {
-    titulo: "Bloco 4 · CTA condicional",
+    titulo: "Bloco 4 · Chamada para ação",
     tempo: "30–40s",
+    tempoScript: "00:30–00:40",
     fala: (v) => `Se essa mensagem fez sentido pra você… o link está no ${clean(v.local)}, aqui embaixo.`,
-    atuacao: () =>
-      "Volta ao plano do bloco 1. Segura o produto com a frente virada para a câmera, expressão serena e leve sorriso. No final aponta suavemente para baixo com a mão livre.",
-    movimento: "Movimento mínimo. Produto estável e legível. Gesto para baixo lento e natural.",
-    camera: "Plano médio estável, sem push-in, para o produto ficar nítido até o último frame.",
+    cena: (v) =>
+      `Volta à postura do bloco 1. ${cap(nomeDe(v))} segura ${clean(v.produto)} com a frente virada para a câmera, expressão serena e leve sorriso.`,
+    camera: () => `Plano médio estável, sem push-in, para o produto ficar nítido até o último frame. ${VIDEO_SPEC}`,
+    acao: () => "No final da fala, aponta suavemente para baixo com a mão livre, indicando onde está o link.",
   },
 ];
 
-function buildPrompt(b: BlockDef, v: FieldValues): string {
+function buildPrompt(b: BlockDef, v: FieldValues, index: number): string {
+  const nomeCaixaAlta = nomeDe(v).toUpperCase();
   return [
-    `${b.titulo.toUpperCase()} (${b.tempo})`,
+    `SCRIPT ${String(index + 1).padStart(2, "0")} — ${b.tempoScript}`,
     "",
-    `IDENTIDADE VISUAL: ${v.idv}`,
+    b.titulo.split("·")[1]?.trim().toUpperCase() ?? b.titulo.toUpperCase(),
     "",
-    `IDENTIDADE VOCAL: ${v.voz}`,
+    `CENA: ${b.cena(v)}`,
     "",
-    `CENÁRIO: ${v.cen}`,
+    `CÂMERA: ${b.camera(v)}`,
     "",
-    `PRODUTO (TRAVA): Usar a imagem de referência do produto como fonte absoluta de verdade. ${v.visual} Não redesenhar, não inventar detalhes, não trocar cor nem proporção. Nenhum outro texto no produto.`,
+    `AÇÃO: ${b.acao(v)}`,
     "",
-    `ATUAÇÃO: ${b.atuacao(v)}`,
+    `FALA — VOZ OFICIAL DE ${nomeCaixaAlta}:`,
     "",
-    `MOVIMENTO NATURAL: ${b.movimento}`,
-    "",
-    `DIREÇÃO: ${b.camera} ${VIDEO_SPEC}`,
-    "",
-    'FALA EXATA (dizer somente isto, com pausas naturais):',
     `"${b.fala(v)}"`,
     "",
-    "CONTINUIDADE: mesmo personagem, mesma túnica, mesmo terraço, mesma luz dourada e mesmo produto (cor, forma e proporção idênticos) do primeiro ao último frame.",
+    `VOZ: ${v.voz}`,
   ].join("\n");
 }
 
@@ -150,6 +162,7 @@ function loadStoredValues(): FieldValues {
 }
 
 const FIELD_LABELS: { key: keyof FieldValues; label: string; hint: string; textarea?: boolean; rows?: number; group?: "produto" | "personagem" }[] = [
+  { key: "nome", label: "Nome do personagem/avatar", hint: 'Aparece como "VOZ OFICIAL DE ___" na fala' },
   { key: "publico", label: "Para quem", hint: "Ex.: uma mulher, um pai, quem trabalha demais" },
   { key: "valores", label: "O que essa pessoa valoriza", hint: "Ex.: sua fé, sua família e sua paz" },
   { key: "produto", label: "Produto", hint: "Com artigo. Ex.: um livro devocional" },
@@ -157,11 +170,11 @@ const FIELD_LABELS: { key: keyof FieldValues; label: string; hint: string; texta
   { key: "dor", label: "Dor do dia a dia", hint: "Curta. Máximo 10 palavras" },
   { key: "fato", label: "Fato verificável do produto", hint: "Só o que está na página do produto. Ex.: 365 dias" },
   { key: "local", label: "Onde está o link", hint: "Ex.: carrinho laranja" },
-  { key: "visual", label: "Como o produto aparece na imagem de referência", hint: "Cor, título, detalhes visíveis. Nada que não esteja na foto", textarea: true, group: "produto" },
+  { key: "visual", label: "Como o produto aparece na imagem de referência", hint: "Opcional — só se você NÃO for anexar a foto do produto no Flow", textarea: true, group: "produto" },
   { key: "demo", label: "O que ele faz com o produto no bloco 3", hint: "", textarea: true, group: "produto" },
-  { key: "idv", label: "Identidade visual", hint: "", textarea: true, rows: 5, group: "personagem" },
+  { key: "idv", label: "Identidade visual", hint: "Opcional — só se você NÃO for anexar a foto do avatar no Flow", textarea: true, rows: 5, group: "personagem" },
   { key: "voz", label: "Identidade vocal", hint: "", textarea: true, rows: 4, group: "personagem" },
-  { key: "cen", label: "Cenário", hint: "", textarea: true, rows: 4, group: "personagem" },
+  { key: "cen", label: "Cenário", hint: 'Comece com "um/uma..." — entra na frase "está em ___"', textarea: true, rows: 4, group: "personagem" },
 ];
 
 export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void }) {
@@ -198,10 +211,10 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
 
   const blocks = useMemo(
     () =>
-      BLOCKS.map((b) => {
+      BLOCKS.map((b, i) => {
         const fala = b.fala(values);
         const s = estimateSecs(fala);
-        return { def: b, fala, words: wordCount(fala), secs: s, over: s > 11, prompt: buildPrompt(b, values) };
+        return { def: b, fala, words: wordCount(fala), secs: s, over: s > 11, prompt: buildPrompt(b, values, i) };
       }),
     [values],
   );
@@ -216,7 +229,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
     if (claimMatch) msgs.push(`Palavra de promessa: "${claimMatch[0]}". Só use se estiver na página do produto.`);
     if (DIVINE_RE.test(texto)) msgs.push("O personagem não fala como Deus em 1ª pessoa. Reescreva como mensageiro.");
     if (!values.fato.trim()) msgs.push("Sem fato verificável. O bloco 3 fica só com a dor.");
-    if (!values.visual.trim()) msgs.push("Descreva o produto como aparece na referência para travar o visual.");
+    if (!values.nome.trim()) msgs.push('Sem nome de personagem — a fala vai sair como "VOZ OFICIAL DE O AVATAR".');
     return msgs;
   }, [blocks, values]);
 
@@ -273,7 +286,8 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
         Blocos de venda
       </h1>
       <div className="hint" style={{ marginBottom: 16 }}>
-        Preencha os campos. Saem 4 blocos de cerca de 10s, prontos para colar no Flow.
+        Preencha os campos. Saem 4 blocos de cerca de 10s, no formato SCRIPT/CENA/CÂMERA/AÇÃO/FALA/VOZ — cole no Flow
+        junto com a foto do avatar e a foto do produto (anexadas por fora, não no texto).
       </div>
 
       {produtoFields.map(renderField)}
