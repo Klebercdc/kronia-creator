@@ -3,7 +3,7 @@ import { callStructuredText, callStructuredVisionFromDataUrls } from "../../lib/
 import { HOOK_TYPES, PERSUASION_MECHANISMS } from "../../types/taxonomy";
 import { BANNED_PHRASES } from "../compliance/absolute-claims-guard";
 import { CREATIVE_QUALITY_BAR } from "./quality-bar";
-import { checkFalaLengths } from "./blocos-venda-fala";
+import { checkFalaLengths, checkStructuralIssues } from "./blocos-venda-fala";
 
 /**
  * Preenche os 14 campos do gerador de blocos de venda a partir da foto do
@@ -187,14 +187,31 @@ async function reviseFields(fields: BlocosVendaFields, instruction: string): Pro
   });
 }
 
+/** Junta as checagens determinísticas (duração + gramática/repetição) numa
+ * só instrução — essas nunca dependem de julgamento de IA, só de regra e
+ * fórmula em código, porque a LLM já demonstrou (na prática) não seguir
+ * essas regras de forma confiável só por estarem escritas no prompt. */
+function deterministicInstruction(fields: BlocosVendaFields): string | null {
+  const overBlocks = checkFalaLengths(fields).filter((c) => c.over);
+  const lengthIssues = overBlocks.map(
+    (c) =>
+      `Bloco ${c.bloco} (campo${c.campos.length > 1 ? "s" : ""} ${c.campos.join(" + ")}): a fala fica com ${c.words} palavras (~${c.secs.toFixed(0)}s), passa dos 10s do bloco. Reescreva ${c.campos.length > 1 ? "esses campos" : "esse campo"} mais curto(s) pra a fala do bloco ficar com no máximo 18 palavras no total (~10s), sem perder o sentido.`,
+  );
+  const structuralIssues = checkStructuralIssues(fields);
+  const all = [...lengthIssues, ...structuralIssues];
+  return all.length ? all.join("\n") : null;
+}
+
 /** Analisa a(s) foto(s) do avatar+produto e devolve os 14 campos do
  * gerador já preenchidos. `contexto` é opcional — texto livre que o
  * usuário pode digitar pra dar informação que não dá pra ver na foto
  * (nome do produto se não estiver legível, público-alvo pretendido etc).
  *
- * Depois de gerar, passa pelo Quality Judge (mesma barra de qualidade
- * criativa do resto do KRONIA) e, se reprovado, faz 1 revisão cirúrgica
- * — nunca um loop, pra não empilhar custo sem ganho real. */
+ * Depois de gerar: (1) checagens determinísticas de duração/gramática em
+ * código, (2) Quality Judge (mesma barra de qualidade criativa do resto do
+ * KRONIA). Se algo reprovar, revisa — no máximo 2 rodadas (não um loop
+ * aberto): a 1ª pega a maioria dos casos, a 2ª existe porque, na prática,
+ * uma única revisão às vezes não corrige tudo de primeira. */
 export async function generateBlocosVendaFields(
   imageDataUrls: string[],
   contexto?: string,
@@ -203,7 +220,7 @@ export async function generateBlocosVendaFields(
     ? `Preencha os 14 campos a partir desta foto. Contexto adicional dado pelo usuário (use pra completar o que a foto não mostra, mas não contradiga o que está visível): ${contexto.trim()}`
     : "Preencha os 14 campos a partir desta foto.";
 
-  const fields = await callStructuredVisionFromDataUrls({
+  let fields = await callStructuredVisionFromDataUrls({
     schema: FieldsSchema,
     system: SYSTEM,
     prompt,
@@ -211,22 +228,13 @@ export async function generateBlocosVendaFields(
     toolName: "blocos_venda_fields",
   });
 
-  // Checagem de duração é feita em CÓDIGO, não confiada à LLM — mesma fórmula
-  // usada no componente (BlocosVendaGenerator.tsx) pros alertas de "passa de
-  // 10s". Sem isso, a IA podia gerar texto já estourado e o usuário só
-  // descobria pelo alerta depois de gerar.
-  const overBlocks = checkFalaLengths(fields).filter((c) => c.over);
-  const lengthInstruction = overBlocks.length
-    ? overBlocks
-        .map(
-          (c) =>
-            `Bloco ${c.bloco} (campo${c.campos.length > 1 ? "s" : ""} ${c.campos.join(" + ")}): a fala fica com ${c.words} palavras (~${c.secs.toFixed(0)}s), passa dos 10s do bloco. Reescreva ${c.campos.length > 1 ? "esses campos" : "esse campo"} mais curto(s) pra a fala do bloco ficar com no máximo 18 palavras no total (~10s), sem perder o sentido.`,
-        )
-        .join("\n")
-    : null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const deterministic = deterministicInstruction(fields);
+    const judgment = attempt === 0 ? await judgeFields(fields) : null;
+    const instruction = [deterministic, judgment?.revisionInstruction].filter(Boolean).join("\n");
+    if (!instruction) break;
+    fields = await reviseFields(fields, instruction);
+  }
 
-  const judgment = await judgeFields(fields);
-  const instruction = [lengthInstruction, judgment.revisionInstruction].filter(Boolean).join("\n");
-  if (!instruction) return fields;
-  return reviseFields(fields, instruction);
+  return fields;
 }
