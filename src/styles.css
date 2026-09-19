@@ -534,7 +534,7 @@ a {
      redondo + 20px de padding-bottom do cabeçalho.
      Padding-bottom ZERO, sem env() nenhum: pedido explícito do usuário —
      a barra de input encosta na base de verdade, sem nenhum respiro. */
-  padding: calc(max(59px, env(safe-area-inset-top)) + 62px) 20px 0;
+  padding: 62px 20px 0;
 }
 
 /* position:FIXED, não mais sticky. Duas tentativas com sticky falharam de
@@ -553,7 +553,7 @@ a {
   align-items: center;
   justify-content: space-between;
   position: fixed;
-  top: max(59px, env(safe-area-inset-top));
+  top: max(24px, calc(env(safe-area-inset-top, 0px) * 0.5));
   left: 0;
   right: 0;
   max-width: 480px;
@@ -632,9 +632,15 @@ a {
  * encostado no topo, senão sobra um vão vazio grande embaixo dos cartões
  * (a Home preenche a tela toda, ver min-height:100% em .kronia-home). */
 .kronia-home-hero-dashboard {
-  align-items: stretch;
-  text-align: left;
+  align-items: center;
+  text-align: center;
   justify-content: center;
+  transform: translateY(-36px);
+}
+
+.kronia-home-hero-dashboard .kronia-quick-actions {
+  width: 100%;
+  max-width: 720px;
 }
 
 .kronia-home-hero-dashboard h1 {
