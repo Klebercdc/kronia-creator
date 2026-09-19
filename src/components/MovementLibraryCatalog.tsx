@@ -14,6 +14,7 @@ import {
   type BodyPart,
 } from "../server/movement-library.functions";
 import { listHookTypesFn, generateHookPromptFn, type HookType } from "../server/hook-avancado.functions";
+import { errorMessageOf } from "../lib/errors";
 
 const SUBJECT_OPTIONS: { value: SubjectType; label: string }[] = [
   { value: "person", label: "Avatar (pessoa)" },
@@ -232,7 +233,7 @@ export function MovementLibraryCatalog() {
       const res = await generateHookRpc({ data: { movementIds: selectedIds, hookType, subjectType } });
       setComposed(res.prompt);
     } catch (err) {
-      setAiError(err instanceof Error ? err.message : "Erro ao gerar o prompt com IA");
+      setAiError(errorMessageOf(err, "Erro ao gerar o prompt com IA"));
     } finally {
       setGeneratingAi(false);
     }

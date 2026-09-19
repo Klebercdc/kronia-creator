@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import logoIcon from "../assets/logo-icon.png";
 import { generateBlocosVendaFieldsFn } from "../server/blocos-venda.functions";
 import { BANNED_PHRASES, normalize as normalizeForClaimsCheck } from "../core/compliance/absolute-claims-guard";
+import { errorMessageOf } from "../lib/errors";
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -280,7 +281,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
       const fields = await generateFieldsRpc({ data: { imageDataUrls: photos, contexto: contexto.trim() || undefined } });
       setValues((prev) => ({ ...prev, ...fields }));
     } catch (err) {
-      setAiError(err instanceof Error ? err.message : "Erro ao gerar os campos com IA");
+      setAiError(errorMessageOf(err, "Erro ao gerar os campos com IA"));
     } finally {
       setAiLoading(false);
     }
