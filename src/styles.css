@@ -100,14 +100,14 @@ body,
    sabe o quanto sobrou acima do teclado, e é isso que --vh mede (ver
    useViewportKeyboardLock). Fora do teclado, dvh acima já resolve, então
    esta regra só entra em jogo com [data-teclado]. */
-/* iOS PWA standalone: o WebKit pode deixar a safe-area inferior (~34px)
-   fora de 100dvh. O #root precisa avançar até a borda física para que o
-   .kronia-palco (e o menu lateral) não termine antes do fim da tela.
-   O estado [data-teclado] abaixo continua tendo prioridade quando o teclado
-   está aberto, porque nesse caso a altura correta vem do visualViewport. */
+/* iOS PWA standalone: não usar 100dvh no shell principal.
+   No iPhone, o WebKit pode definir 100dvh menor que a área física capturada
+   pelo screenshot, deixando uma faixa no rodapé. Como #root já é fixed com
+   inset:0, 100vh é a referência correta para o shell inteiro no standalone.
+   A regra [data-teclado] abaixo continua tendo prioridade com o teclado. */
 @media (display-mode: standalone) {
   #root {
-    height: calc(100dvh + env(safe-area-inset-bottom, 0px));
+    height: 100vh;
     bottom: auto;
   }
 }
