@@ -20,6 +20,7 @@ interface FieldValues {
   funcao: string;
   dor: string;
   fato: string;
+  proposito: string;
   local: string;
   visual: string;
   demo: string;
@@ -34,20 +35,32 @@ const DEFAULTS: FieldValues = {
   nome: "Jesus",
   publico: "uma mulher",
   valores: "sua fé, sua família e sua paz",
-  produto: "um livro devocional",
-  funcao: "um lembrete diário pra você continuar firme na fé",
-  dor: "Às vezes uma palavra é tudo pra não desistir",
-  fato: "São 365 dias de força e fé",
+  produto: "o devocional Mulheres com Deus",
+  funcao: "um lembrete diário para você continuar firme na fé",
+  dor: "uma simples palavra é tudo que você precisa para não desistir",
+  fato: "São 365 dias",
+  proposito: "alimentar sua fé… encontrar força… e lembrar que Deus está com você",
   local: "carrinho laranja",
   visual:
     'Livro de capa rosa-clara com flores, palavra DEVOCIONAL no topo, título "Mulheres com DEUS" em dourado, subtítulo "365 DIAS DE FÉ", símbolo de coroa na contracapa.',
-  demo: "abre o livro e folheia devagar, lendo com olhar baixo e sereno; depois fecha e o segura junto ao peito com as mãos sobrepostas",
+  demo: "lê algumas linhas do livro com expressão serena",
   idv: "Homem de cerca de 35 anos, aparência semítica/mediterrânea, pele morena-oliva, cabelo castanho-escuro longo, ondulado, repartido ao centro, barba cheia castanho-escura bem aparada, olhos castanho-claros, sobrancelhas grossas, nariz reto, rosto oval-alongado. Veste túnica bege/creme de linho rústico com lenço branco no pescoço. Mesmo rosto, mesma túnica e mesmo cabelo em todos os blocos.",
-  voz: "Voz masculina jovem, serena, próxima e íntima, tom acolhedor, ritmo calmo com pausas naturais, sensação de conversa particular. Não é pregação, locução nem publicidade. Sem teatralidade exagerada. Português do Brasil.",
-  cen: "um terraço de pedra ao entardecer, luz dourada de pôr do sol vindo de trás/lateral, colinas suaves ao fundo desfocadas, galho de oliveira e flores rosas no canto do quadro",
+  voz: "Voz masculina jovem, serena e próxima; tom íntimo e emocional, natural e humano; compaixão e segurança; fala calma, sem pressa, com pausas naturais; como uma conversa particular, não uma pregação. Timbre masculino jovem, quente, suave e claro; interpretação com curiosidade, proximidade e preocupação genuína; sem voz grave artificial e sem teatralidade.",
+  cen: "um ambiente acolhedor, no final da tarde, com luz dourada suave atravessando o local",
 };
 
-const PRODUCT_KEYS: (keyof FieldValues)[] = ["publico", "valores", "produto", "funcao", "dor", "fato", "local", "visual", "demo"];
+const PRODUCT_KEYS: (keyof FieldValues)[] = [
+  "publico",
+  "valores",
+  "produto",
+  "funcao",
+  "dor",
+  "fato",
+  "proposito",
+  "local",
+  "visual",
+  "demo",
+];
 
 const VIDEO_SPEC =
   "Vertical 9:16, câmera estável com micro-movimento lento, foco alternando entre rosto e produto. SEM legenda, SEM texto sobreposto e SEM logotipo gerado (entram na edição). Sem música gerada.";
@@ -87,42 +100,57 @@ const BLOCKS: BlockDef[] = [
     titulo: "Bloco 1 · Gancho + interrupção",
     tempo: "0–10s",
     tempoScript: "00:00–00:10",
-    fala: (v) => `Se você é ${clean(v.publico)} que valoriza ${clean(v.valores)}… não passe esse vídeo sem ver.`,
+    fala: (v) => `Se você é ${clean(v.publico)} que valoriza ${clean(v.valores)}… não passe esse vídeo sem ver isso.`,
     cena: (v) =>
-      `${cap(nomeDe(v))} está em ${clean(v.cen)}, com ${clean(v.produto)} nas mãos, junto ao peito, ainda parado.\n\nNos primeiros segundos, ${cap(nomeDe(v))} levanta lentamente o olhar e encara diretamente a câmera. Expressão serena, acolhedora e profundamente humana.`,
-    camera: () => `Close-up no rosto, com leve push-in lento (movimento de aproximação). Fundo desfocado, luz natural contornando a silhueta. ${VIDEO_SPEC}`,
+      `${cap(nomeDe(v))} está sentado em ${clean(v.cen)}. ${cap(nomeDe(v))} está com ${clean(v.produto)} fechado nas mãos.\n\nNos primeiros segundos, ${nomeDe(v)} levanta lentamente os olhos do produto e encara diretamente a câmera. Sua expressão é serena, acolhedora e profundamente humana.`,
+    camera: () => `Close-up no rosto, movimento lento de aproximação. Fundo desfocado, luz dourada contornando os cabelos. ${VIDEO_SPEC}`,
     acao: (v) =>
-      `Ao iniciar a fala, segura ${clean(v.produto)} junto ao peito. No final, estende levemente uma das mãos em direção à câmera, pedindo atenção.`,
+      `Ao iniciar a fala, ${nomeDe(v)} segura ${clean(v.produto)} junto ao peito. No final, estende levemente uma das mãos em direção à câmera.`,
   },
   {
-    titulo: "Bloco 2 · Apresentação do produto",
+    titulo: "Bloco 2 · Revelação do produto",
     tempo: "10–20s",
     tempoScript: "00:10–00:20",
-    fala: (v) => `Este é ${clean(v.produto)}… ${clean(v.funcao)}.`,
+    fala: (v) => `Isso não é só ${clean(v.produto)}… é ${clean(v.funcao)}.`,
     cena: (v) =>
-      `Mesmo cenário e posição. ${cap(nomeDe(v))} aproxima ${clean(v.produto)} da câmera com as duas mãos, mostrando-o inteiro e nítido, com o olhar alternando entre a câmera e o produto. Expressão terna e segura.`,
-    camera: () => `Plano médio fechando para o produto em destaque; foco no produto e depois retorna ao rosto. ${VIDEO_SPEC}`,
+      `Continuação visual do mesmo ambiente. ${cap(nomeDe(v))} pega ${clean(v.produto)} e o posiciona cuidadosamente diante da câmera. A aparência do produto deve permanecer idêntica à referência.`,
+    camera: () => `Começa no rosto e faz um movimento descendente suave até o produto. Depois realiza um pequeno avanço cinematográfico no produto. ${VIDEO_SPEC}`,
     acao: (v) =>
-      `Gira ${clean(v.produto)} devagar para mostrar a frente por completo; dedos apoiados nas bordas, sem cobrir título ou detalhes.`,
+      `${cap(nomeDe(v))} olha para o produto por um instante, passa suavemente a mão pela frente dele e então olha novamente para a câmera. Sorriso muito discreto, olhar acolhedor.`,
   },
   {
-    titulo: "Bloco 3 · Dor e identificação",
+    titulo: "Bloco 3 · Uso e identificação da dor",
     tempo: "20–30s",
     tempoScript: "00:20–00:30",
-    fala: (v) => `${clean(v.dor)}… ${clean(v.fato)}.`,
-    cena: (v) => `Mesmo cenário. ${cap(nomeDe(v))} ${clean(v.demo)}.`,
-    camera: () => `Plano médio, com um insert fechado (macro) do detalhe e das mãos, retornando ao plano médio-aberto. ${VIDEO_SPEC}`,
-    acao: () => "Gestos com peso e velocidade reais, mãos com cinco dedos e contato correto com o produto, sem pressa. Sem texto legível inventado.",
+    fala: (v) => `Na correria da vida… às vezes ${clean(v.dor)}.`,
+    cena: (v) =>
+      `${cap(nomeDe(v))} está sentado tranquilamente em ${clean(v.cen)}, com ${clean(v.produto)}: ${clean(v.demo)}. Depois, levanta lentamente os olhos e olha diretamente para a câmera.`,
+    camera: () => `Plano médio fechado e estável, com uma aproximação muito suave durante a fala. ${VIDEO_SPEC}`,
+    acao: (v) =>
+      `Movimento natural dos cabelos e das roupas causado por uma leve brisa. Interpretação íntima, calma e emocional; finaliza mantendo o olhar de ${nomeDe(v)} na câmera.`,
   },
   {
-    titulo: "Bloco 4 · Chamada para ação",
+    titulo: "Bloco 4 · Experiência e propósito",
     tempo: "30–40s",
     tempoScript: "00:30–00:40",
-    fala: (v) => `Se essa mensagem fez sentido pra você… o link está no ${clean(v.local)}, aqui embaixo.`,
+    fala: (v) => `${clean(v.fato)} para ${clean(v.proposito)}.`,
     cena: (v) =>
-      `Volta à postura do bloco 1. ${cap(nomeDe(v))} segura ${clean(v.produto)} com a frente virada para a câmera, expressão serena e leve sorriso.`,
-    camera: () => `Plano médio estável, sem push-in, para o produto ficar nítido até o último frame. ${VIDEO_SPEC}`,
-    acao: () => "No final da fala, aponta suavemente para baixo com a mão livre, indicando onde está o link.",
+      `Close no produto (${clean(v.produto)}) nas mãos de ${nomeDe(v)}. Ele interage com o produto por alguns segundos, depois o guarda cuidadosamente e o segura junto ao peito.`,
+    camera: (v) =>
+      `Começa fechada (macro do detalhe) → foco nas mãos → plano médio. Quando ${nomeDe(v)} guarda o produto, a câmera começa a se afastar lentamente, revelando o cenário dourado ao redor. ${VIDEO_SPEC}`,
+    acao: (v) =>
+      `Ao dizer a última parte da fala, ${nomeDe(v)} olha diretamente para a câmera. Expressão de serenidade, segurança e acolhimento.`,
+  },
+  {
+    titulo: "Bloco 5 · CTA e conversão",
+    tempo: "40–50s",
+    tempoScript: "00:40–00:50",
+    fala: (v) => `Se essa mensagem fez sentido para você… o link está no ${clean(v.local)}, aqui embaixo.`,
+    cena: (v) =>
+      `${cap(nomeDe(v))} está de frente para a câmera, segurando ${clean(v.produto)} com a mão esquerda, mantendo-o totalmente visível. Olha diretamente para o espectador, com expressão serena e acolhedora.`,
+    camera: () => `Plano médio estável, com aproximação muito suave. Sem mudança de cenário nem cortes complexos. ${VIDEO_SPEC}`,
+    acao: (v) =>
+      `Ao mencionar "${clean(v.local)}", ${nomeDe(v)} levanta a mão direita e aponta claramente para baixo, indicando que o link está abaixo do vídeo — gesto natural e fácil de entender. Depois, mantém o produto visível, volta a mão para uma posição natural e olha para a câmera com um pequeno sorriso sereno.`,
   },
 ];
 
@@ -167,11 +195,12 @@ const FIELD_LABELS: { key: keyof FieldValues; label: string; hint: string; texta
   { key: "valores", label: "O que essa pessoa valoriza", hint: "Ex.: sua fé, sua família e sua paz" },
   { key: "produto", label: "Produto", hint: "Com artigo. Ex.: um livro devocional" },
   { key: "funcao", label: "Função emocional", hint: "O que o produto faz pela pessoa, em uma frase" },
-  { key: "dor", label: "Dor do dia a dia", hint: "Curta. Máximo 10 palavras" },
-  { key: "fato", label: "Fato verificável do produto", hint: "Só o que está na página do produto. Ex.: 365 dias" },
+  { key: "dor", label: "Dor do dia a dia", hint: 'Entra em "Na correria da vida… às vezes ___."' },
+  { key: "fato", label: "Fato verificável do produto", hint: "Só o que está na página do produto. Ex.: São 365 dias" },
+  { key: "proposito", label: "Propósito / benefício de longo prazo", hint: 'Entra em "[fato] para ___." Ex.: alimentar sua fé… encontrar força…' },
   { key: "local", label: "Onde está o link", hint: "Ex.: carrinho laranja" },
   { key: "visual", label: "Como o produto aparece na imagem de referência", hint: "Opcional — só se você NÃO for anexar a foto do produto no Flow", textarea: true, group: "produto" },
-  { key: "demo", label: "O que ele faz com o produto no bloco 3", hint: "", textarea: true, group: "produto" },
+  { key: "demo", label: "O que ele faz com o produto no bloco 3", hint: 'Ex.: "lê algumas linhas do livro com expressão serena"', textarea: true, group: "produto" },
   { key: "idv", label: "Identidade visual", hint: "Opcional — só se você NÃO for anexar a foto do avatar no Flow", textarea: true, rows: 5, group: "personagem" },
   { key: "voz", label: "Identidade vocal", hint: "", textarea: true, rows: 4, group: "personagem" },
   { key: "cen", label: "Cenário", hint: 'Comece com "um/uma..." — entra na frase "está em ___"', textarea: true, rows: 4, group: "personagem" },
@@ -224,12 +253,13 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
     blocks.forEach((blk, i) => {
       if (blk.over) msgs.push(`Bloco ${i + 1}: cerca de ${blk.secs.toFixed(0)}s, passa de 10s. Encurte a fala.`);
     });
-    const texto = [values.publico, values.valores, values.produto, values.funcao, values.dor, values.fato].join(" ");
+    const texto = [values.publico, values.valores, values.produto, values.funcao, values.dor, values.fato, values.proposito].join(" ");
     const claimMatch = texto.match(CLAIMS_RE);
     if (claimMatch) msgs.push(`Palavra de promessa: "${claimMatch[0]}". Só use se estiver na página do produto.`);
     if (DIVINE_RE.test(texto)) msgs.push("O personagem não fala como Deus em 1ª pessoa. Reescreva como mensageiro.");
-    if (!values.fato.trim()) msgs.push("Sem fato verificável. O bloco 3 fica só com a dor.");
-    if (!values.nome.trim()) msgs.push('Sem nome de personagem — a fala vai sair como "VOZ OFICIAL DE O AVATAR".');
+    if (!values.fato.trim()) msgs.push("Sem fato verificável. O bloco 4 fica incompleto.");
+    if (!values.proposito.trim()) msgs.push("Sem propósito/benefício de longo prazo. O bloco 4 fica incompleto.");
+    if (!values.nome.trim()) msgs.push('Sem nome de personagem — a fala vai sair como "VOZ OFICIAL DE AVATAR".');
     return msgs;
   }, [blocks, values]);
 
@@ -286,7 +316,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
         Blocos de venda
       </h1>
       <div className="hint" style={{ marginBottom: 16 }}>
-        Preencha os campos. Saem 4 blocos de cerca de 10s, no formato SCRIPT/CENA/CÂMERA/AÇÃO/FALA/VOZ — cole no Flow
+        Preencha os campos. Saem 5 blocos de cerca de 10s, no formato SCRIPT/CENA/CÂMERA/AÇÃO/FALA/VOZ — cole no Flow
         junto com a foto do avatar e a foto do produto (anexadas por fora, não no texto).
       </div>
 
@@ -369,7 +399,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
           className="btn-primary"
           onClick={() => copyText(blocks.map((b) => b.prompt).join("\n\n————————\n\n"), () => setCopiedAll(true))}
         >
-          {copiedAll ? "Copiado ✓" : "Copiar os 4 blocos"}
+          {copiedAll ? "Copiado ✓" : "Copiar os 5 blocos"}
         </button>
       </div>
     </div>
