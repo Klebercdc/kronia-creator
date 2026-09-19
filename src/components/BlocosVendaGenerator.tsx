@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import logoIcon from "../assets/logo-icon.png";
 import { generateBlocosVendaFieldsFn } from "../server/blocos-venda.functions";
+import { BANNED_PHRASES, normalize as normalizeForClaimsCheck } from "../core/compliance/absolute-claims-guard";
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -76,8 +77,15 @@ const PRODUCT_KEYS: (keyof FieldValues)[] = [
 const VIDEO_SPEC =
   "Vertical 9:16, câmera estável com micro-movimento lento, foco alternando entre rosto e produto. SEM legenda, SEM texto sobreposto e SEM logotipo gerado (entram na edição). Sem música gerada.";
 
-const CLAIMS_RE = /\b(melhor|garantid[oa]s?|garantia|milagre|milagros[oa]|cura|curar|todo mundo|único|comprovad[oa]|aprovad[oa]|resultado)\b/i;
 const DIVINE_RE = /\b(eu te (aben[cç]oo|curo|liberto|perdoo|dou)|eu sou (deus|jesus)|meu filho|minha filha)\b/i;
+
+/** Mesma lista de frases de promessa absoluta usada pelo Compliance do
+ * resto do app (absolute-claims-guard.ts) — importada, não reescrita aqui,
+ * pra nunca ficar desatualizada num lugar e atualizada em outro. */
+function findBannedPhrase(texto: string): string | null {
+  const normalized = normalizeForClaimsCheck(texto);
+  return BANNED_PHRASES.find((phrase) => normalized.includes(normalizeForClaimsCheck(phrase))) ?? null;
+}
 
 function clean(s: string): string {
   return String(s || "").trim().replace(/[.…\s]+$/, "");
@@ -294,8 +302,8 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
       if (blk.over) msgs.push(`Bloco ${i + 1}: cerca de ${blk.secs.toFixed(0)}s, passa de 10s. Encurte a fala.`);
     });
     const texto = [values.publico, values.valores, values.produto, values.funcao, values.dor, values.fato, values.proposito].join(" ");
-    const claimMatch = texto.match(CLAIMS_RE);
-    if (claimMatch) msgs.push(`Palavra de promessa: "${claimMatch[0]}". Só use se estiver na página do produto.`);
+    const bannedPhrase = findBannedPhrase(texto);
+    if (bannedPhrase) msgs.push(`Frase de promessa absoluta: "${bannedPhrase}". Só use se estiver na página do produto.`);
     if (DIVINE_RE.test(texto)) msgs.push("O personagem não fala como Deus em 1ª pessoa. Reescreva como mensageiro.");
     if (!values.fato.trim()) msgs.push("Sem fato verificável. O bloco 4 fica incompleto.");
     if (!values.proposito.trim()) msgs.push("Sem propósito/benefício de longo prazo. O bloco 4 fica incompleto.");

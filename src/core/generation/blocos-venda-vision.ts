@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { callStructuredVisionFromDataUrls } from "../../lib/openai";
 import { HOOK_TYPES, PERSUASION_MECHANISMS } from "../../types/taxonomy";
+import { BANNED_PHRASES } from "../compliance/absolute-claims-guard";
 
 /**
  * Preenche os 14 campos do gerador de blocos de venda a partir da foto do
@@ -59,7 +60,8 @@ não dá pra confirmar olhando a imagem. Se algo não estiver claro, descreva de
 em vez de arredondar pra um detalhe inventado.
 
 REGRAS DE COMPLIANCE (linguagem de venda) — pros campos publico/valores/funcao/dor/fato/proposito:
-- NUNCA use "melhor", "garantido(a)", "milagre(oso)", "cura", "comprovado", "aprovado", "resultado"
+- NUNCA use nenhuma destas frases de promessa absoluta (mesma lista banida em todo o KRONIA,
+  checada automaticamente no Compliance do resto do app): ${BANNED_PHRASES.join(", ")}
   — a menos que esteja literalmente escrito no produto/embalagem na foto.
 - O personagem NUNCA fala como Deus em 1ª pessoa ("eu te abençoo", "eu sou Deus" etc.), mesmo que
   pareça uma figura religiosa — ele é sempre um mensageiro, nunca a divindade falando.
