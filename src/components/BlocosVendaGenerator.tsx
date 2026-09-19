@@ -364,10 +364,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
         Blocos de venda
       </h1>
       <div className="hint" style={{ marginBottom: 16 }}>
-        Anexe a foto do avatar com o produto e deixe a IA preencher tudo — ou preencha os campos à
-        mão abaixo. Saem 5 blocos de cerca de 10s, no formato SCRIPT/CENA/CÂMERA/AÇÃO/FALA/VOZ —
-        cole no Flow junto com a foto do avatar e a foto do produto (anexadas por fora, não no
-        texto).
+        Anexe a foto do avatar com o produto e deixe a IA gerar os 5 blocos.
       </div>
 
       <div className="card" style={{ marginBottom: 20 }}>
@@ -522,19 +519,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
         ))}
       </div>
 
-      <div
-        style={{
-          position: "sticky",
-          bottom: "env(safe-area-inset-bottom)",
-          background: "var(--kr-bg)",
-          borderTop: "1px solid var(--kr-line)",
-          padding: "14px 0 10px",
-          marginLeft: -20,
-          marginRight: -20,
-          paddingLeft: 20,
-          paddingRight: 20,
-        }}
-      >
+      <div style={{ marginTop: 4, marginBottom: 24 }}>
         <button
           type="button"
           className="btn-primary"
