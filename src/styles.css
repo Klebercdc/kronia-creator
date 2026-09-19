@@ -130,7 +130,7 @@ a {
 .app {
   max-width: 480px;
   margin: 0 auto;
-  padding: 28px 20px calc(88px + env(safe-area-inset-bottom));
+  padding: 28px 20px calc(28px + env(safe-area-inset-bottom));
   min-height: 100%;
   display: flex;
   flex-direction: column;
@@ -139,47 +139,6 @@ a {
   color: var(--kr-ink);
 }
 
-.bottom-nav {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 10;
-  max-width: 480px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  background: var(--kr-header-bg);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-top: 1px solid var(--kr-line);
-  padding: 8px 26px calc(env(safe-area-inset-bottom) + 8px);
-}
-
-.bottom-nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 0;
-  background: none;
-  border: none;
-  color: var(--kr-muted-2);
-  font-family: inherit;
-  font-size: 10.5px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.bottom-nav-item.active {
-  color: var(--kr-accent);
-  font-weight: 700;
-}
-
-.bottom-nav-icon {
-  font-size: 20px;
-  line-height: 1;
-}
 
 .brand-row {
   position: sticky;
@@ -912,16 +871,6 @@ a {
    uma 4ª camada, topbar, só pra isso), que limpa o inline ao assentar e
    deixa esta regra assumir. */
 .kronia-menu-aberto .kronia-home-topbar {
-  transform: translate3d(min(300px, 82vw), 0, 0);
-}
-
-/* Mesmo raciocínio do topbar acima, aplicado ao .bottom-nav — ele também
-   virou irmão de .kronia-app-camada (ver comentário no JSX): dentro dela,
-   position:fixed pegava a CAMADA como base (por causa do transform
-   permanente), não o viewport real, e "flutuava" solto da borda de baixo
-   da tela durante a rolagem (visto com vídeo real do usuário — o menu
-   aparecia flutuando no meio do conteúdo, não grudado embaixo). */
-.kronia-menu-aberto .bottom-nav {
   transform: translate3d(min(300px, 82vw), 0, 0);
 }
 

@@ -521,7 +521,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
       <div
         style={{
           position: "sticky",
-          bottom: "calc(88px + env(safe-area-inset-bottom))",
+          bottom: "env(safe-area-inset-bottom)",
           background: "var(--kr-bg)",
           borderTop: "1px solid var(--kr-line)",
           padding: "14px 0 10px",

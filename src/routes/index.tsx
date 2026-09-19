@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState, useEffect, useRef, forwardRef, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import { useMenuSpring } from "../hooks/useMenuSpring";
 import { getStoredTema, setStoredTema, type Tema } from "../lib/theme";
 import {
@@ -380,36 +380,6 @@ function NavIconMaisOpcoes() {
 function NavIconMenu() {
   return <LucideMenu size={20} strokeWidth={1.8} />;
 }
-
-const TAB_ITEMS: { id: AppTab; label: string; Icon: () => React.JSX.Element }[] = [
-  { id: "criar", label: "Criar", Icon: NavIconCriar },
-  { id: "historico", label: "Histórico", Icon: NavIconHistorico },
-  { id: "explorar", label: "Explorar", Icon: NavIconExplorar },
-  { id: "prompt", label: "Prompt", Icon: NavIconPrompt },
-  { id: "perfil", label: "Perfil", Icon: NavIconPerfil },
-];
-
-const BottomNav = forwardRef<HTMLElement, { active: AppTab; onChange: (tab: AppTab) => void }>(
-  function BottomNav({ active, onChange }, ref) {
-    return (
-      <nav className="bottom-nav" ref={ref}>
-        {TAB_ITEMS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={`bottom-nav-item ${active === item.id ? "active" : ""}`}
-            onClick={() => onChange(item.id)}
-          >
-            <span className="bottom-nav-icon">
-              <item.Icon />
-            </span>
-            {item.label}
-          </button>
-        ))}
-      </nav>
-    );
-  },
-);
 
 /** Perfil — hoje só o toggle de tema é funcionalidade real, o resto ainda é
  * placeholder. Mesmo desenho de agenda-/mobile-perfil.js: pílula sol/lua,
@@ -1510,14 +1480,12 @@ function CriadorApp() {
   const sombraRef = useRef<HTMLDivElement>(null);
   const veuRef = useRef<HTMLDivElement>(null);
   const topbarRef = useRef<HTMLDivElement>(null);
-  const bottomNavRef = useRef<HTMLElement>(null);
   useMenuSpring(sidebarOpen, {
     app: appRef,
     menu: menuRef,
     sombra: sombraRef,
     veu: veuRef,
     topbar: topbarRef,
-    bottomNav: bottomNavRef,
   });
 
   const refreshConversations = () => {
@@ -1611,11 +1579,6 @@ function CriadorApp() {
           tabIndex={sidebarOpen ? 0 : -1}
         />
       </div>
-      {/* FORA de .kronia-app-camada de propósito, mesmo motivo do topbar
-          acima (transform permanente na camada quebra position:fixed dos
-          filhos — o menu "flutuava" solto da borda de baixo real da tela
-          em vez de ficar preso nela, visto com vídeo real do usuário). */}
-      {tab !== "home" && <BottomNav ref={bottomNavRef} active={tab} onChange={(next) => navigate(next)} />}
       <div className="kronia-app-sombra" ref={sombraRef} />
     </div>
   );

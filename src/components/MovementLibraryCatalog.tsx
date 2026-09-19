@@ -453,10 +453,7 @@ export function MovementLibraryCatalog() {
         <div
           style={{
             position: "sticky",
-            // .app reserva 88px de padding-bottom pra caber a bottom-nav fixa
-            // (ver .app/.bottom-nav em styles.css) — sem esse offset o painel
-            // gruda embaixo da tela mas fica escondido atrás da nav.
-            bottom: "calc(88px + env(safe-area-inset-bottom))",
+            bottom: "env(safe-area-inset-bottom)",
             background: "var(--kr-card)",
             border: "1px solid var(--kr-line)",
             boxShadow: "0 2px 10px var(--kr-shadow)",
