@@ -450,30 +450,40 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
         )}
       </div>
 
-      {produtoFields.map(renderField)}
-
-      <details style={{ marginBottom: 14 }}>
-        <summary style={{ cursor: "pointer", fontWeight: 700, fontSize: 14, padding: "4px 0" }}>
-          Produto na imagem e demonstração
+      {/* Campos manuais escondidos por padrão — o fluxo principal é só
+          anexar a foto e deixar a IA preencher tudo; quem quiser mexer
+          campo a campo abre aqui. */}
+      <details style={{ marginBottom: 24 }}>
+        <summary style={{ cursor: "pointer", fontWeight: 700, fontSize: 14.5, padding: "4px 0" }}>
+          Editar campos manualmente
         </summary>
-        <div style={{ marginTop: 12 }}>{produtoDetalhado.map(renderField)}</div>
-      </details>
+        <div style={{ marginTop: 14 }}>
+          {produtoFields.map(renderField)}
 
-      <details style={{ marginBottom: 18 }}>
-        <summary style={{ cursor: "pointer", fontWeight: 700, fontSize: 14, padding: "4px 0" }}>
-          Personagem e cenário
-        </summary>
-        <div style={{ marginTop: 12 }}>{personagemFields.map(renderField)}</div>
-      </details>
+          <details style={{ marginBottom: 14 }}>
+            <summary style={{ cursor: "pointer", fontWeight: 700, fontSize: 14, padding: "4px 0" }}>
+              Produto na imagem e demonstração
+            </summary>
+            <div style={{ marginTop: 12 }}>{produtoDetalhado.map(renderField)}</div>
+          </details>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-        <button type="button" className="btn-secondary" onClick={voltarAoExemplo}>
-          Voltar ao exemplo
-        </button>
-        <button type="button" className="btn-secondary" onClick={limparCamposDoProduto}>
-          Limpar campos do produto
-        </button>
-      </div>
+          <details style={{ marginBottom: 18 }}>
+            <summary style={{ cursor: "pointer", fontWeight: 700, fontSize: 14, padding: "4px 0" }}>
+              Personagem e cenário
+            </summary>
+            <div style={{ marginTop: 12 }}>{personagemFields.map(renderField)}</div>
+          </details>
+
+          <div style={{ display: "flex", gap: 8 }}>
+            <button type="button" className="btn-secondary" onClick={voltarAoExemplo}>
+              Voltar ao exemplo
+            </button>
+            <button type="button" className="btn-secondary" onClick={limparCamposDoProduto}>
+              Limpar campos do produto
+            </button>
+          </div>
+        </div>
+      </details>
 
       <h2 style={{ fontSize: 16, marginBottom: 10 }}>Alertas</h2>
       {alerts.length === 0 ? (
