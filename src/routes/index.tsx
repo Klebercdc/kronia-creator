@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState, useEffect, useRef, type FormEvent } from "react";
 import { useMenuSpring } from "../hooks/useMenuSpring";
 import { getStoredTema, setStoredTema, type Tema } from "../lib/theme";
+import { errorMessageOf } from "../lib/errors";
 import {
   Sparkles as LucideSparkles,
   History as LucideHistory,
@@ -632,7 +633,7 @@ function OportunidadesTab({
       });
       setResult(res);
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Erro ao buscar oportunidades");
+      setErrorMessage(errorMessageOf(err, "Erro ao buscar oportunidades"));
     } finally {
       setLoading(false);
     }
@@ -1364,7 +1365,7 @@ function CriarFlow({
       const { appearanceDescription } = await analyzeActorPhotoFn({ data: { imageDataUrl } });
       setActorAppearance(appearanceDescription);
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Erro ao analisar a foto");
+      setErrorMessage(errorMessageOf(err, "Erro ao analisar a foto"));
     } finally {
       setAnalyzingPhoto(false);
     }
@@ -1491,7 +1492,7 @@ function CriarFlow({
       const storagePath = await uploadReferenceVideo(file);
       setReferenceVideoFile({ name: file.name, storagePath });
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Erro ao enviar o vídeo");
+      setErrorMessage(errorMessageOf(err, "Erro ao enviar o vídeo"));
     } finally {
       setUploadingVideo(false);
     }
@@ -1516,7 +1517,7 @@ function CriarFlow({
       const { visualDescription } = await analyzeProductPhotoFn({ data: { imageDataUrls: nextPhotos } });
       setProductPhotoDescription(visualDescription);
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Erro ao analisar a foto do produto");
+      setErrorMessage(errorMessageOf(err, "Erro ao analisar a foto do produto"));
     } finally {
       setAnalyzingProductPhoto(false);
     }
@@ -1596,7 +1597,7 @@ function CriarFlow({
         // best-effort — não salvar histórico não deve travar o fluxo principal
       }
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido");
+      setErrorMessage(errorMessageOf(err, "Erro desconhecido"));
       setStep("error");
     }
   }
