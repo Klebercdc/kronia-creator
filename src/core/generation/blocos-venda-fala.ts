@@ -302,7 +302,7 @@ const LOCAL_ARTICLE_START = /^(um|uma|o|a)\s/i;
 const GANCHO_FORMULA_ANTIGA = /^se você é .+\bque valoriza\b/i;
 
 export function checkStructuralIssues(fields: BlocosVendaFieldsLike, variant: BlocosVendaVariant): string[] {
-  const intent = fields.strategy?.intent ?? fields.intent ?? "sales";
+  const intent = fields.strategy?.intent ?? fields.intent ?? "custom";
   const used = fieldsUsedBy(variant, intent);
   const issues: string[] = [];
 
