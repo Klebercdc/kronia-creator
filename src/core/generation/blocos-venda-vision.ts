@@ -140,40 +140,60 @@ SIGNIFICADO DE CADA CAMPO (como ele entra nas frases-modelo, pra você escrever 
 
 Responda só com os 14 campos preenchidos, nada além disso.`;
 
-/** Quality Judge pros 14 campos — mesmo papel do Quality Judge do pipeline
- * principal (quality-judge.ts): não escreve nada, só avalia com rigor
- * procurando motivo pra reprovar texto mediano/clichê/robótico. Reaproveita
- * a mesma barra (CREATIVE_QUALITY_BAR) em vez de duplicar critério novo. */
+/** Revisor de Roteiro do Blocos de venda — mesmo papel do Quality Judge do
+ * pipeline principal (quality-judge.ts), mas julgando as 5 FRASES FINAIS
+ * MONTADAS como um roteiro só (não os 14 campos isolados): gramática,
+ * persuasão (a técnica de cada bloco realmente convence, ou é só bonito?)
+ * e direcionamento (os 5 blocos formam um arco coerente — gancho → revelação
+ * → dor → alívio → CTA — ou parecem 5 frases soltas coladas sem conexão?).
+ * Reaproveita a mesma barra de qualidade criativa (CREATIVE_QUALITY_BAR) e
+ * a mesma taxonomia de técnica por bloco (BLOCO1_TECNICA..BLOCO5_TECNICA)
+ * já usadas no prompt de geração, em vez de duplicar critério novo. */
 const JudgmentSchema = z.object({
   naturalidade: z.number().min(0).max(10),
   especificidade: z.number().min(0).max(10),
+  persuasao: z.number().min(0).max(10),
+  direcionamento: z.number().min(0).max(10),
   weakestField: z.string(),
   revisionInstruction: z.string().nullable(),
 });
 
-const JUDGE_SYSTEM = `Você é o Quality Judge dos campos de um gerador de vídeo de venda —
-não escreve nada, só avalia com rigor os 14 campos abaixo, procurando motivo pra reprovar texto
-mediano, clichê ou robótico.
+const JUDGE_SYSTEM = `Você é o Revisor de Roteiro do Blocos de venda — não escreve nada, só avalia
+com rigor as 5 FRASES FINAIS MONTADAS do roteiro (cada campo já encaixado no template, exatamente
+como o usuário vai ler/falar), como um roteiro único e contínuo, procurando motivo pra reprovar
+texto mediano, clichê, robótico, gramaticalmente quebrado, ou que não persuade de verdade.
 
-Você recebe os campos crus E as 5 frases finais já montadas (campo dentro do template, exatamente
-como o usuário vai ler/falar). Julgue pela FRASE MONTADA, não só pelo campo isolado — um campo pode
-parecer certo sozinho e ainda quebrar a gramática quando entra no template (ex.: campo "para quem
-busca X" bota na frase "Se você é para quem busca X…", que está gramaticalmente errado mesmo se o
-campo isolado parecer razoável).
+Você recebe os 14 campos crus E as 5 frases montadas. Julgue SEMPRE pela frase montada, não só pelo
+campo isolado — um campo pode parecer certo sozinho e ainda quebrar a gramática ou o sentido quando
+entra no template (ex.: campo "para quem busca X" vira "Se você é para quem busca X…", errado,
+mesmo que o campo isolado parecesse razoável).
 
 ${CREATIVE_QUALITY_BAR}
 
-Dê nota de 0 a 10 em 2 eixos:
+Técnica esperada de cada bloco (mesma taxonomia usada na geração):
+- Bloco 1 (gancho): "${BLOCO1_TECNICA}" — precisa realmente interromper o scroll de alguém
+  específico, não soar genérico.
+- Bloco 2 (revelação): "${BLOCO2_TECNICA}" — a função tem que ser o benefício real desse produto.
+- Bloco 3 (dor): "${BLOCO3_TECNICA}" — dor específica e reconhecível, não genérica.
+- Bloco 4 (alívio): "${BLOCO4_TECNICA}" — fecha o arco emocional aberto no bloco 3.
+- Bloco 5 (CTA): "${BLOCO5_TECNICA}" — liga o CTA à mensagem inteira, não só ao produto solto.
+
+Dê nota de 0 a 10 em 4 eixos:
 - naturalidade: as 5 frases MONTADAS soam como alguém falando de verdade em português correto, ou
   tem erro de concordância/verbo duplicado/preposição sobrando? Qualquer erro gramatical na frase
   montada derruba essa nota pra abaixo de 5, mesmo que o resto do texto esteja bom.
 - especificidade: usa o produto/personagem REAL da foto, ou serviria pra qualquer produto do
   mesmo nicho?
+- persuasao: cada bloco realmente aplica a técnica esperada dele (acima) de um jeito que convenceria
+  alguém de verdade, ou é só um enfeite de linguagem sem força persuasiva real?
+- direcionamento: os 5 blocos, lidos em sequência, formam UM arco coerente (o público do bloco 1 é
+  o mesmo que sente a dor do bloco 3 e recebe o alívio do bloco 4; o CTA do bloco 5 fecha a mensagem
+  do bloco 1), ou parecem 5 frases soltas coladas sem conexão entre si?
 
 "weakestField": o nome do campo mais fraco (ex.: "fato", "dor").
-"revisionInstruction": se naturalidade OU especificidade estiver abaixo de 8, escreva uma
-instrução CIRÚRGICA (o que reescrever, em qual campo, por quê, citando a frase montada quebrada se
-for o caso) — senão, null.`;
+"revisionInstruction": se QUALQUER eixo estiver abaixo de 8, escreva uma instrução CIRÚRGICA (o que
+reescrever, em qual campo, por quê, citando a frase montada quebrada ou o ponto do arco que não
+conecta) — senão, null.`;
 
 async function judgeFields(fields: BlocosVendaFields) {
   const falasMontadas = checkFalaLengths(fields)
@@ -182,7 +202,7 @@ async function judgeFields(fields: BlocosVendaFields) {
   return callStructuredText({
     schema: JudgmentSchema,
     system: JUDGE_SYSTEM,
-    prompt: `Campos gerados:\n${JSON.stringify(fields, null, 2)}\n\nFrases finais montadas:\n${falasMontadas}`,
+    prompt: `Campos gerados:\n${JSON.stringify(fields, null, 2)}\n\nFrases finais montadas (roteiro completo, leia em sequência):\n${falasMontadas}`,
     toolName: "blocos_venda_judgment",
   });
 }
