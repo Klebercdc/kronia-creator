@@ -39,7 +39,7 @@ export async function generate(
   draft = await marketing(draft, request, recommendation);
 
   if (shouldRunTeologo(request)) {
-    draft = await teologo(draft);
+    draft = await teologo(draft, request.ministryTheme);
   }
 
   draft = await psicologiaDeCompra(draft);

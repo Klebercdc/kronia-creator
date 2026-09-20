@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, type FormEvent } from "react";
 import { useMenuSpring } from "../hooks/useMenuSpring";
 import { getStoredTema, setStoredTema, type Tema } from "../lib/theme";
 import { errorMessageOf } from "../lib/errors";
+import { MINISTRY_THEMES } from "../core/generation/ministry-themes";
 import {
   Sparkles as LucideSparkles,
   History as LucideHistory,
@@ -1295,6 +1296,9 @@ function CriarFlow({
   const [project, setProject] = useState<ContentRequest["project"]>("comercial");
   const [objective, setObjective] = useState<ContentRequest["objective"]>("vender");
   const [mode, setMode] = useState<ContentRequest["mode"]>("tiktok_shop");
+  // Tema ministerial (Consolo, Coragem...) — só usado no Jeová Fala. null =
+  // deixa o Teólogo identificar o tema mais próximo sozinho.
+  const [ministryTheme, setMinistryTheme] = useState<string | null>(null);
   const [productInfoText, setProductInfoText] = useState(() => initialIdea ?? "");
   const [productPhotoDataUrls, setProductPhotoDataUrls] = useState<string[]>([]);
   const [productPhotoDescription, setProductPhotoDescription] = useState<string | null>(null);
@@ -1554,6 +1558,7 @@ function CriarFlow({
           }
         : null,
       targetDurationSeconds,
+      ministryTheme: project === "jeova_fala" ? ministryTheme : null,
     };
 
     try {
@@ -1841,6 +1846,32 @@ function CriarFlow({
               onRemove={removeSavedTheme}
             />
           </div>
+
+          {project === "jeova_fala" && (
+            <div style={{ marginTop: 16 }}>
+              <div className="section-label">Categoria temática (biblioteca)</div>
+              <div className="pill-row" style={{ flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  className={`pill ${ministryTheme === null ? "active" : ""}`}
+                  onClick={() => setMinistryTheme(null)}
+                >
+                  IA escolhe
+                </button>
+                {MINISTRY_THEMES.map((t) => (
+                  <button
+                    key={t.tema}
+                    type="button"
+                    className={`pill ${ministryTheme === t.tema ? "active" : ""}`}
+                    onClick={() => setMinistryTheme(t.tema)}
+                  >
+                    {t.tema}
+                  </button>
+                ))}
+              </div>
+              <div className="hint">Trava o vocabulário do Teólogo nesse tema, em vez de deixar a IA identificar sozinha.</div>
+            </div>
+          )}
         </div>
 
         <div>
