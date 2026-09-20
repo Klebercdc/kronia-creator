@@ -4,7 +4,7 @@ import logoIcon from "../assets/logo-icon.png";
 import { generateBlocosVendaFieldsFn } from "../server/blocos-venda.functions";
 import { BANNED_PHRASES, normalize as normalizeForClaimsCheck } from "../core/compliance/absolute-claims-guard";
 import { errorMessageOf } from "../lib/errors";
-import { clean, wordCount, estimateSecs, FALA_TEMPLATES } from "../core/generation/blocos-venda-fala";
+import { clean, wordCount, charCount, estimateSecs, FALA_TEMPLATES } from "../core/generation/blocos-venda-fala";
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -309,7 +309,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
       BLOCKS.map((b, i) => {
         const fala = b.fala(values);
         const s = estimateSecs(fala);
-        return { def: b, fala, words: wordCount(fala), secs: s, over: s > 11, prompt: buildPrompt(b, values, i) };
+        return { def: b, fala, words: wordCount(fala), chars: charCount(fala), secs: s, over: s > 11, prompt: buildPrompt(b, values, i) };
       }),
     [values],
   );
@@ -520,7 +520,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
             <div style={{ color: "var(--kr-muted)", fontSize: 12, marginBottom: 8 }}>{blk.def.tempo}</div>
             <p style={{ fontSize: 16.5, margin: "0 0 10px", paddingLeft: 10, borderLeft: "3px solid var(--kr-accent-2)" }}>{blk.fala}</p>
             <div style={{ fontSize: 12, fontWeight: 700, color: blk.over ? "#DC2626" : "#166534", marginBottom: 10 }}>
-              {blk.words} palavras · cerca de {blk.secs.toFixed(0)}s
+              {blk.words} palavras · {blk.chars} letras · cerca de {blk.secs.toFixed(0)}s
             </div>
             <button
               type="button"
