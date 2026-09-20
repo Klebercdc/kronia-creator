@@ -44,6 +44,10 @@ export function clean(s: string): string {
   return String(s || "").trim().replace(/[.…\s]+$/, "");
 }
 
+function cap(s: string): string {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
 export function wordCount(s: string): number {
   return s.split(/\s+/).filter((w) => w && w !== "…").length;
 }
@@ -71,20 +75,36 @@ interface TemplateEntry {
   fala: (v: BlocosVendaFieldsLike) => string;
 }
 
+/** Hash simples e estável (mesmo texto sempre cai na mesma variação —
+ * preview/edição manual não fica "piscando" entre gerações diferentes,
+ * mas produtos diferentes tendem a cair em ganchos diferentes). */
+function stableIndex(s: string, count: number): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h) % count;
+}
+
 /** "publico" às vezes vem como cláusula relativa ("quem busca consolo e
  * fé") em vez de frase nominal ("uma mulher") — nesse caso "Se você é
  * quem busca..." soa estranho (repete "é quem"). Detecta esse formato e
- * troca pra "Se você busca..." (tira o "quem", ajusta o verbo), variação
- * pedida diretamente pelo usuário. Fora esse caso, mantém o molde padrão. */
+ * alterna entre 2 variações sem esse problema (pedido direto: "mude a
+ * lógica... busque outras entradas também", não só uma alternativa fixa).
+ * Fora esse caso (publico é frase nominal normal), mantém o molde padrão. */
 const GANCHO: TemplateEntry = {
   campo: ["publico", "valores"],
   fala: (v) => {
     const publico = clean(v.publico);
+    const valores = clean(v.valores);
     const semQuem = publico.match(/^quem\s+(.+)/i);
     if (semQuem) {
-      return `Se você ${semQuem[1]} e valoriza ${clean(v.valores)}… não passe esse vídeo sem ver isso.`;
+      const acao = semQuem[1];
+      const variantes = [
+        `Se você ${acao} e valoriza ${valores}… não passe esse vídeo sem ver isso.`,
+        `${cap(acao)}? Se também valoriza ${valores}… não passe esse vídeo sem ver isso.`,
+      ];
+      return variantes[stableIndex(publico + valores, variantes.length)];
     }
-    return `Se você é ${publico} que valoriza ${clean(v.valores)}… não passe esse vídeo sem ver isso.`;
+    return `Se você é ${publico} que valoriza ${valores}… não passe esse vídeo sem ver isso.`;
   },
 };
 const REVELACAO: TemplateEntry = {
