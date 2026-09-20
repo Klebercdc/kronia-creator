@@ -122,8 +122,15 @@ export function validateIntentSemantics(fields: BlocosVendaFieldsLike, intent: C
   return issues;
 }
 
+/** Só os campos de FALA (texto) — exclui "intent"/"strategy"/"roteiro",
+ * que não são strings. Os moldes/orçamento de corte só operam sobre
+ * texto; sem isso, atribuir "" ou o resultado de .join(" ") a um campo
+ * genérico "keyof BlocosVendaFieldsLike" quebra o typecheck (a chave
+ * genérica também cobre campos não-string). */
+type BlocosVendaTextField = keyof Omit<BlocosVendaFieldsLike, "intent" | "strategy" | "roteiro">;
+
 interface TemplateEntry {
-  campo: (keyof BlocosVendaFieldsLike)[];
+  campo: BlocosVendaTextField[];
   fala: (v: BlocosVendaFieldsLike) => string;
 }
 
@@ -293,7 +300,14 @@ const DANGLING_END_WORDS = new Set([
 ]);
 
 export function enforceFalaBudgets<T extends BlocosVendaFieldsLike>(fields: T, variant: BlocosVendaVariant): T {
-  if (hasCreativeScript(fields)) return fields;
+  // Checagem equivalente a hasCreativeScript(fields), mas sem usar o type
+  // guard exportado (que narrowa "fields" pra um tipo fixo não-genérico e
+  // quebra o spread abaixo — "Spread types may only be created from
+  // object types" — porque TS perde a referência ao parâmetro genérico T).
+  const roteiro = fields.roteiro;
+  if (Array.isArray(roteiro) && roteiro.length > 0 && roteiro.every((b) => Boolean(b?.fala?.trim()))) {
+    return fields;
+  }
   const result: T = { ...fields };
 
   for (const t of FALA_TEMPLATES_BY_VARIANT[variant]) {
