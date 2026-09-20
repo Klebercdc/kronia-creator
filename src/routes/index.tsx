@@ -1429,7 +1429,7 @@ function CriarFlow({
         if (job.status === "failed") {
           setIngestionStep(null);
           setIngestionProgressPercent(null);
-          throw new Error(job.error ?? "Falha ao analisar o vídeo de referência.");
+          throw new Error(job.error || "Falha ao analisar o vídeo de referência.");
         }
       }
       await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -1475,7 +1475,7 @@ function CriarFlow({
         if (job.status === "failed") {
           setIngestionStep(null);
           setIngestionProgressPercent(null);
-          throw new Error(job.error ?? "Falha ao gerar o conteúdo.");
+          throw new Error(job.error || "Falha ao gerar o conteúdo.");
         }
       }
       await new Promise((resolve) => setTimeout(resolve, 1500));

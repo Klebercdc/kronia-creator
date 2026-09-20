@@ -47,7 +47,15 @@ async function runStep(job: JobRow): Promise<void> {
   try {
     await step(job);
   } catch (err) {
-    const finalStatus = await failJobStep(job, err instanceof Error ? err.message : String(err));
+    // `err.message` pode ser string vazia (algumas libs lançam `new Error()`
+    // sem argumento) — checagem só por `instanceof Error` deixava essa
+    // string vazia passar pro banco, e o cliente não tinha como distinguir
+    // "sem mensagem" de "mensagem vazia real", caindo no fallback genérico
+    // "Erro desconhecido" mesmo sem nenhuma falha de serialização (raiz real
+    // do bug, achada em produção via Vercel logs: toda chamada retornava
+    // 200, o job é que guardava error="" no banco).
+    const message = err instanceof Error && err.message ? err.message : String(err) || "Erro sem mensagem (falha desconhecida)";
+    const finalStatus = await failJobStep(job, message);
     if (finalStatus === "failed" && handlers.onPermanentFailure) {
       await handlers.onPermanentFailure(job);
     }
