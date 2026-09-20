@@ -137,14 +137,21 @@ export interface FalaCheck {
   chars: number;
   secs: number;
   over: boolean;
+  /** Sobrou tempo demais no bloco (s < 8 = mais de 2s do bloco de 10s
+   * desperdiçados) — pedido direto: "faça aproveitar bem os 10 segundos".
+   * Só sinaliza; nunca alonga sozinho em código (isso exigiria inventar
+   * conteúdo) — vira instrução pra LLM elaborar mais o campo. */
+  under: boolean;
 }
 
-/** Mesmo limiar usado no componente (s > 11 = estourou o bloco de 10s). */
+/** Mesmo limiar usado no componente (s > 11 = estourou o bloco de 10s).
+ * "under" (s < 8) é o oposto: bloco curto demais, desperdiçando o tempo
+ * disponível do slot de 10s. */
 export function checkFalaLengths(fields: BlocosVendaFieldsLike, variant: BlocosVendaVariant): FalaCheck[] {
   return FALA_TEMPLATES_BY_VARIANT[variant].map((t, i) => {
     const fala = t.fala(fields);
     const secs = estimateSecs(fala);
-    return { bloco: i + 1, campos: t.campo, fala, words: wordCount(fala), chars: charCount(fala), secs, over: secs > 11 };
+    return { bloco: i + 1, campos: t.campo, fala, words: wordCount(fala), chars: charCount(fala), secs, over: secs > 11, under: secs < 8 };
   });
 }
 
@@ -197,10 +204,11 @@ export function checkStructuralIssues(fields: BlocosVendaFieldsLike, variant: Bl
   return issues;
 }
 
-/** Orçamento por bloco em LETRAS (não palavras) — equivalente aos ~18
- * palavras/~10s antigos pra uma frase de palavras médias, mas agora
- * sensível ao tamanho real de cada uma. */
-const TARGET_CHARS_PER_BLOCK = 108;
+/** Orçamento por bloco em LETRAS (não palavras) — perto do teto real do
+ * bloco de 10s (over dispara em s>11, ou seja, ~127 letras), não no
+ * mínimo aceitável: cortar até aqui ainda aproveita quase todo o slot de
+ * 10s, em vez de deixar o bloco curto demais depois do corte. */
+const TARGET_CHARS_PER_BLOCK = 114;
 
 /** Último recurso, determinístico — corta palavra por palavra (a unidade
  * que se corta continua sendo a palavra inteira, pra não quebrar no meio
