@@ -29,7 +29,7 @@ import {
 const FieldsSchema = z.object({
   nome: z.string(),
   gancho: z.string(),
-  produto: z.string(),
+  produto: z.string().min(1),
   funcao: z.string(),
   dor: z.string(),
   fato: z.string(),
@@ -110,6 +110,9 @@ custom = seguir o briefing.
 
 EVIDÊNCIA:
 Não invente números, prova social, depoimentos, eficácia, resultados, preço, promoção ou características não verificáveis.
+
+FIDELIDADE AO PRODUTO:
+Preserve o nome do produto exatamente como aparece na referência ou no contexto fornecido. Não substitua, traduza, simplifique ou rebatize o produto por uma descrição emocional como "palavra de esperança". Se o nome não estiver legível, use a descrição mais literal possível e não invente um nome comercial.
 
 COMPLIANCE:
 Não use alegações como "transformou vidas" ou "tem ajudado gerações" sem evidência fornecida. Em conteúdo cristão, o personagem não fala como Deus em primeira pessoa.
