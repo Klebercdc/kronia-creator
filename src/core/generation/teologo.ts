@@ -1,6 +1,7 @@
 import { callStructuredText } from "../../lib/openai";
 import { type ContentRequest, type GenerationResult } from "../../types/pipeline";
 import { RevisionInferredSchema, DECISION_LOG_PROMPT_BLOCK, appendDecisionLog } from "./decision-log";
+import { MINISTRY_THEMES } from "./ministry-themes";
 
 /** Termos que indicam referência religiosa explícita no produto/briefing —
  * checagem determinística (sem LLM), rodada em CIMA do que já existe em
@@ -85,6 +86,11 @@ significado espiritual real que ele carrega pra quem usa (fé, proteção, lembr
 com a mesma exigência de base bíblica real das outras regras acima, nunca um significado
 inventado só pra soar bonito.
 
+BIBLIOTECA TEMÁTICA — identifique o tema mais próximo do roteiro (não force um tema que não é o
+real) e use o vocabulário dele pra ancorar a linguagem, em vez de vocabulário genérico de "fé" que
+serviria pra qualquer tema:
+${MINISTRY_THEMES.map((t) => `- ${t.tema} (${t.subtemas.join(", ")}): ${t.vocabulario.join(", ")}`).join("\n")}
+
 ${DECISION_LOG_PROMPT_BLOCK}
 
 Retorne o roteiro revisado completo, no mesmo formato de entrada.`;
@@ -93,9 +99,16 @@ Retorne o roteiro revisado completo, no mesmo formato de entrada.`;
  * quando o produto tem referência religiosa explícita (ver roteamento em
  * generate.ts / content-generation.ts). Roda na OpenAI (não na Groq):
  * doutrina errada tem custo reputacional alto demais pra arriscar num
- * modelo mais barato. */
-export async function teologo(draft: GenerationResult): Promise<GenerationResult> {
-  const prompt = `Roteiro para debate e aprofundamento teológico:\n${JSON.stringify(draft, null, 2)}`;
+ * modelo mais barato.
+ *
+ * `ministryTheme` — quando o usuário escolhe um tema da biblioteca na tela
+ * (em vez de deixar a IA identificar sozinha), o nome exato entra aqui e
+ * vira uma instrução direta, não mais "identifique o tema mais próximo". */
+export async function teologo(draft: GenerationResult, ministryTheme?: string | null): Promise<GenerationResult> {
+  const themeInstruction = ministryTheme
+    ? `\n\nTEMA ESCOLHIDO PELO USUÁRIO: "${ministryTheme}" — use esse tema específico da biblioteca acima (e o vocabulário dele) pra ancorar a linguagem, não identifique outro tema por conta própria.`
+    : "";
+  const prompt = `Roteiro para debate e aprofundamento teológico:\n${JSON.stringify(draft, null, 2)}${themeInstruction}`;
 
   const inferred = await callStructuredText({
     schema: RevisionInferredSchema,

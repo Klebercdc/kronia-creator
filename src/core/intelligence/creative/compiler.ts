@@ -47,6 +47,22 @@ export function compilePrompt({ spec, targetConstraints, targetId }: TargetSpeci
   if (spec.brandConstraints) lines.push(`Produto — invariantes: ${spec.brandConstraints}.`);
   if (spec.directorSpec.continuityNotes) lines.push(`Continuidade: ${spec.directorSpec.continuityNotes}.`);
 
+  if (spec.creativeGrammar) {
+    const grammar = spec.creativeGrammar;
+    lines.push(
+      `Creative Grammar: ${grammar.format} / ${grammar.pattern} / ${grammar.mechanic}.`,
+    );
+    lines.push(`Beat Sequence: ${grammar.beats.map((beat) => beat.id).join(" -> ")}.`);
+    lines.push(`Camera Grammar: ${grammar.camera.join(" + ")}.`);
+    lines.push(`Performance Grammar: ${grammar.performance}.`);
+    lines.push(`Environment Grammar: ${grammar.environment}.`);
+    if (grammar.productInteraction.length > 0) {
+      lines.push(`Product Interaction Grammar: ${grammar.productInteraction.join(" -> ")}.`);
+    }
+    lines.push(`Audio Grammar: ${grammar.audio.join(" + ")}.`);
+    lines.push(`Visual Realism Grammar: ${grammar.realism.join(" + ")}.`);
+  }
+
   if (spec.directorSpec.framing) lines.push(`Enquadramento: ${spec.directorSpec.framing}.`);
   if (spec.directorSpec.cameraMovement) lines.push(`Movimento de câmera: ${spec.directorSpec.cameraMovement}.`);
   if (spec.directorSpec.lighting) lines.push(`Iluminação: ${spec.directorSpec.lighting}.`);

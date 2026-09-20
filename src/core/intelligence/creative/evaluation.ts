@@ -11,6 +11,15 @@ import type { CreativeEvaluation, CreativeSpec } from "./schemas";
 export function evaluateCreativeSpec(spec: CreativeSpec): CreativeEvaluation {
   const notes: string[] = [];
 
+  const grammarCoherent = Boolean(
+    spec.creativeGrammar &&
+      spec.creativeGrammar.format === spec.format &&
+      spec.creativeGrammar.pattern === spec.pattern &&
+      spec.creativeGrammar.mechanic === spec.mechanic &&
+      spec.creativeGrammar.beats.length > 0,
+  );
+  if (!grammarCoherent) notes.push("Creative Grammar ausente ou divergente da Creative Spec.");
+
   const knowledge = FORMAT_KNOWLEDGE[spec.format];
   const mechanicFitsPattern = knowledge
     ? knowledge.typicalPatterns.includes(spec.pattern) && knowledge.compatibleMechanics.includes(spec.mechanic)
@@ -42,7 +51,7 @@ export function evaluateCreativeSpec(spec: CreativeSpec): CreativeEvaluation {
   const objectiveFit = spec.reasoning.trim().length > 0;
   if (!objectiveFit) notes.push("Reasoning vazio — não é possível avaliar adequação ao objetivo.");
 
-  const coherent = mechanicFitsPattern && shotSequenceFeasible && productTruthRespected && objectiveFit;
+  const coherent = grammarCoherent && mechanicFitsPattern && shotSequenceFeasible && productTruthRespected && objectiveFit;
 
   let verdict: CreativeEvaluation["verdict"] = "pass";
   if (!productTruthRespected) verdict = "fail";

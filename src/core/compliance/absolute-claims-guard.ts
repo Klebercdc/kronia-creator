@@ -8,7 +8,11 @@ import type { ComplianceViolation } from "../../types/compliance";
  * junto com numeric-guard.ts: nenhuma dessas frases deveria escapar dos 6
  * agentes de texto, mas aqui pegamos em código puro, sem gastar IA.
  */
-const BANNED_PHRASES = [
+/** Exportado — é a mesma lista usada pelo gate de Compliance do pipeline
+ * completo E por features leves fora do pipeline (ex: Blocos de Venda) que
+ * precisam da mesma checagem sem reimplementar a lista à mão. Uma fonte só,
+ * pra ela nunca ficar desatualizada num lugar e atualizada em outro. */
+export const BANNED_PHRASES = [
   "garantido",
   "garantia total",
   "100% eficaz",
@@ -28,7 +32,7 @@ const BANNED_PHRASES = [
   "milagre",
 ] as const;
 
-function normalize(text: string): string {
+export function normalize(text: string): string {
   return text
     .toLowerCase()
     .normalize("NFD")

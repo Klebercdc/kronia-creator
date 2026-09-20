@@ -1,8 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState, useEffect, useRef, forwardRef, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import { useMenuSpring } from "../hooks/useMenuSpring";
 import { getStoredTema, setStoredTema, type Tema } from "../lib/theme";
+import { errorMessageOf } from "../lib/errors";
+import { MINISTRY_THEMES } from "../core/generation/ministry-themes";
+import {
+  Sparkles as LucideSparkles,
+  History as LucideHistory,
+  Compass as LucideCompass,
+  Wand2 as LucideWand2,
+  User as LucideUser,
+  BarChart3 as LucideBarChart3,
+  FileText as LucideFileText,
+  Image as LucideImage,
+  ShoppingBag as LucideShoppingBag,
+  Target as LucideTarget,
+  LayoutGrid as LucideLayoutGrid,
+  Menu as LucideMenu,
+} from "lucide-react";
 import {
   enqueueReferenceIngestion,
   advanceIngestionJob,
@@ -22,8 +38,10 @@ import {
 } from "../server/pipeline.functions";
 import { ACTOR_PRESETS } from "../core/generation/actor-presets";
 import { TikTokPreview } from "../components/TikTokPreview";
-import { ReferenceLibraryCatalog } from "../components/ReferenceLibraryCatalog";
 import { ReferenceStudioPanel } from "../components/ReferenceStudioPanel";
+import { MovementLibraryCatalog } from "../components/MovementLibraryCatalog";
+import { ReferencePromptsCatalog } from "../components/ReferencePromptsCatalog";
+import { BlocosVendaGenerator } from "../components/BlocosVendaGenerator";
 import { uploadReferenceVideo } from "../lib/supabase-client";
 import type { SavedTheme, HistoryEntry, ConversationRow } from "../lib/supabase";
 import type { ContentRequest, GenerationResult, PipelineOutput, ReferenceAnalysis } from "../types/pipeline";
@@ -72,7 +90,7 @@ function BrandRow({
     <div className="brand-row">
       {onOpenMenu && (
         <button type="button" onClick={onOpenMenu} className="brand-back" aria-label="Abrir menu">
-          <IconMenu />
+          <NavIconMenu />
         </button>
       )}
       {onBack && (
@@ -87,7 +105,7 @@ function BrandRow({
       </div>
       {onProfile && (
         <button type="button" onClick={onProfile} className="brand-avatar" aria-label="Perfil">
-          <IconUser />
+          <NavIconPerfil />
         </button>
       )}
     </div>
@@ -111,71 +129,30 @@ function StageIndicator({ current }: { current: 0 | 1 | 2 }) {
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: 11,
-                border: i <= current ? "none" : "1px solid #3A3A3A",
+                border: i <= current ? "none" : "1px solid var(--kr-line)",
                 background: i <= current ? "#FF6A1A" : "transparent",
-                color: i <= current ? "#fff" : "#7A7A7A",
+                color: i <= current ? "#fff" : "var(--kr-muted-2)",
               }}
             >
               {i + 1}
             </span>
-            <span style={{ color: i <= current ? "#fff" : "#7A7A7A" }}>{label}</span>
+            <span style={{ color: i <= current ? "var(--kr-ink)" : "var(--kr-muted-2)" }}>{label}</span>
           </span>
-          {i < STAGES.length - 1 && <span style={{ width: 16, height: 1, background: "#333", flexShrink: 0 }} />}
+          {i < STAGES.length - 1 && <span style={{ width: 16, height: 1, background: "var(--kr-line)", flexShrink: 0 }} />}
         </span>
       ))}
     </div>
   );
 }
 
-type AppTab = "home" | "criar" | "historico" | "explorar" | "prompt" | "perfil";
+type AppTab = "home" | "criar" | "historico" | "explorar" | "prompt" | "reference" | "perfil";
 
 /** Ícones — traçados copiados 1:1 do handoff de design (KroniaMockup.dc.html),
  * não reinventados, pra bater pixel a pixel com o mockup aprovado. */
-function IconHome() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M3 10.5L12 3l9 7.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M5 9.5V20a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V9.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
-function IconClock() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3.5 2" strokeLinecap="round" />
-    </svg>
-  );
-}
 
-function IconCompass() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M15.5 8.5l-3 5-5 3 3-5 5-3z" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
 
-function IconUser() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="8" r="3.5" />
-      <path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" strokeLinecap="round" />
-    </svg>
-  );
-}
 
-function IconWand() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M4 20L15 9" strokeLinecap="round" />
-      <path d="M15 4v3M20 9h-3M18.5 5.5l-2 2" strokeLinecap="round" />
-      <path d="M9 4v2M7 6h2" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 function IconChevronLeft() {
   return (
@@ -265,13 +242,6 @@ function IconApprovedBadge() {
 
 /** Ícones do novo shell (sidebar + home conversacional) — mesmo padrão
  * SVG traço/stroke="currentColor" já usado acima, não uma biblioteca nova. */
-function IconMenu() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 function IconChatBubble() {
   return (
@@ -285,14 +255,6 @@ function IconChatBubble() {
   );
 }
 
-function IconSparkles() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M11 3l1.4 3.6L16 8l-3.6 1.4L11 13l-1.4-3.6L6 8l3.6-1.4L11 3z" strokeLinejoin="round" />
-      <path d="M18 14l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 function IconBarChartUp() {
   return (
@@ -302,14 +264,6 @@ function IconBarChartUp() {
   );
 }
 
-function IconDocument() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M7 3h7l4 4v14a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" strokeLinejoin="round" />
-      <path d="M9 12h6M9 16h6" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 function IconImage() {
   return (
@@ -321,35 +275,8 @@ function IconImage() {
   );
 }
 
-function IconBag() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M6 8h12l1 12a1 1 0 01-1 1H6a1 1 0 01-1-1L6 8z" strokeLinejoin="round" />
-      <path d="M9 8V6a3 3 0 016 0v2" strokeLinecap="round" />
-    </svg>
-  );
-}
 
-function IconTarget() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="9" />
-      <circle cx="12" cy="12" r="4.5" />
-      <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
 
-function IconGrid() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="4" y="4" width="7" height="7" rx="1.2" />
-      <rect x="13" y="4" width="7" height="7" rx="1.2" />
-      <rect x="4" y="13" width="7" height="7" rx="1.2" />
-      <rect x="13" y="13" width="7" height="7" rx="1.2" />
-    </svg>
-  );
-}
 
 function IconChevronRight() {
   return (
@@ -418,35 +345,45 @@ function IconMoon() {
   );
 }
 
-const TAB_ITEMS: { id: AppTab; label: string; Icon: () => React.JSX.Element }[] = [
-  { id: "criar", label: "Criar", Icon: IconHome },
-  { id: "historico", label: "Histórico", Icon: IconClock },
-  { id: "explorar", label: "Explorar", Icon: IconCompass },
-  { id: "prompt", label: "Prompt", Icon: IconWand },
-  { id: "perfil", label: "Perfil", Icon: IconUser },
-];
-
-const BottomNav = forwardRef<HTMLElement, { active: AppTab; onChange: (tab: AppTab) => void }>(
-  function BottomNav({ active, onChange }, ref) {
-    return (
-      <nav className="bottom-nav" ref={ref}>
-        {TAB_ITEMS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={`bottom-nav-item ${active === item.id ? "active" : ""}`}
-            onClick={() => onChange(item.id)}
-          >
-            <span className="bottom-nav-icon">
-              <item.Icon />
-            </span>
-            {item.label}
-          </button>
-        ))}
-      </nav>
-    );
-  },
-);
+/** Ícones da navegação (bottom nav / sidebar / atalhos da Home) — lucide-react,
+ * tamanho 20 e stroke 1.8 padronizados pra bater com o resto do traço fino
+ * dos ícones desenhados à mão que continuam em uso no app. */
+function NavIconCriar() {
+  return <LucideSparkles size={20} strokeWidth={1.8} />;
+}
+function NavIconHistorico() {
+  return <LucideHistory size={20} strokeWidth={1.8} />;
+}
+function NavIconExplorar() {
+  return <LucideCompass size={20} strokeWidth={1.8} />;
+}
+function NavIconPrompt() {
+  return <LucideWand2 size={20} strokeWidth={1.8} />;
+}
+function NavIconPerfil() {
+  return <LucideUser size={20} strokeWidth={1.8} />;
+}
+function NavIconAnalisar() {
+  return <LucideBarChart3 size={20} strokeWidth={1.8} />;
+}
+function NavIconRoteiro() {
+  return <LucideFileText size={20} strokeWidth={1.8} />;
+}
+function NavIconBlocosVenda() {
+  return <LucideImage size={20} strokeWidth={1.8} />;
+}
+function NavIconTikTokShop() {
+  return <LucideShoppingBag size={20} strokeWidth={1.8} />;
+}
+function NavIconEstrategia() {
+  return <LucideTarget size={20} strokeWidth={1.8} />;
+}
+function NavIconMaisOpcoes() {
+  return <LucideLayoutGrid size={20} strokeWidth={1.8} />;
+}
+function NavIconMenu() {
+  return <LucideMenu size={20} strokeWidth={1.8} />;
+}
 
 /** Perfil — hoje só o toggle de tema é funcionalidade real, o resto ainda é
  * placeholder. Mesmo desenho de agenda-/mobile-perfil.js: pílula sol/lua,
@@ -468,8 +405,8 @@ function PerfilTab({ onOpenMenu }: { onOpenMenu: () => void }) {
 
       <div className="card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div>
-          <div style={{ fontWeight: 700, fontSize: 14.5, color: "#fff" }}>Tema</div>
-          <div style={{ fontSize: 12.5, color: "#8A8A8A", marginTop: 2 }}>Claro ou escuro, sua escolha fica salva.</div>
+          <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--kr-ink)" }}>Tema</div>
+          <div style={{ fontSize: 12.5, color: "var(--kr-muted)", marginTop: 2 }}>Claro ou escuro, sua escolha fica salva.</div>
         </div>
         <div className="kronia-tema-toggle">
           <button
@@ -491,7 +428,7 @@ function PerfilTab({ onOpenMenu }: { onOpenMenu: () => void }) {
         </div>
       </div>
 
-      <div className="card" style={{ color: "#8A8A8A", fontSize: 14 }}>
+      <div className="card" style={{ color: "var(--kr-muted)", fontSize: 14 }}>
         Em breve: atores salvos, preferências e configurações da conta.
       </div>
     </div>
@@ -540,7 +477,7 @@ function SavedThemesDrawer({
           style={{
             marginTop: 8,
             padding: 10,
-            border: "1px solid #252525",
+            border: "1px solid var(--kr-line)",
             borderRadius: 10,
             display: "flex",
             flexDirection: "column",
@@ -550,7 +487,7 @@ function SavedThemesDrawer({
           }}
         >
           {savedThemes.length === 0 ? (
-            <div style={{ fontSize: 13.5, color: "#8A8A8A" }}>Nada salvo ainda.</div>
+            <div style={{ fontSize: 13.5, color: "var(--kr-muted)" }}>Nada salvo ainda.</div>
           ) : (
             savedThemes.map((theme) => (
               <div key={theme.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -565,7 +502,7 @@ function SavedThemesDrawer({
                 <button
                   type="button"
                   onClick={() => onRemove(theme.id)}
-                  style={{ background: "none", border: "none", color: "#8A8A8A", cursor: "pointer", fontSize: 16, padding: "0 6px" }}
+                  style={{ background: "none", border: "none", color: "var(--kr-muted)", cursor: "pointer", fontSize: 16, padding: "0 6px" }}
                   aria-label="Remover"
                 >
                   ×
@@ -667,7 +604,7 @@ function OportunidadesTab({
 }) {
   const findOpportunitiesFn = useServerFn(findOpportunities);
 
-  const [mode, setMode] = useState<"ia" | "biblioteca">("biblioteca");
+  const [mode, setMode] = useState<"ia" | "movimentos" | "roteiros">("movimentos");
   const [niche, setNiche] = useState("");
   const [objective, setObjective] = useState("");
   const [product, setProduct] = useState("");
@@ -699,7 +636,7 @@ function OportunidadesTab({
       });
       setResult(res);
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Erro ao buscar oportunidades");
+      setErrorMessage(errorMessageOf(err, "Erro ao buscar oportunidades"));
     } finally {
       setLoading(false);
     }
@@ -746,18 +683,22 @@ function OportunidadesTab({
         </button>
         <button
           type="button"
-          className={`pill ${mode === "biblioteca" ? "active" : ""}`}
-          onClick={() => setMode("biblioteca")}
+          className={`pill ${mode === "movimentos" ? "active" : ""}`}
+          onClick={() => setMode("movimentos")}
         >
-          Biblioteca real
+          Movimentos
+        </button>
+        <button
+          type="button"
+          className={`pill ${mode === "roteiros" ? "active" : ""}`}
+          onClick={() => setMode("roteiros")}
+        >
+          Roteiros prontos
         </button>
       </div>
 
-      {mode === "biblioteca" && (
-        <ReferenceLibraryCatalog
-          onUseReference={(seed) => onCreateContent({ kind: "reference", ...seed })}
-        />
-      )}
+      {mode === "movimentos" && <MovementLibraryCatalog />}
+      {mode === "roteiros" && <ReferencePromptsCatalog />}
 
       {mode === "ia" && (
       <>
@@ -789,7 +730,7 @@ function OportunidadesTab({
             value={product}
             onChange={(e) => setProduct(e.target.value)}
           />
-          <div className="hint">Descreva as características reais que você sabe — nada além disso é usado.</div>
+          <div className="hint">Só as características reais que você sabe.</div>
         </div>
         <div>
           <div className="section-label">Público (opcional)</div>
@@ -799,7 +740,7 @@ function OportunidadesTab({
             value={audience}
             onChange={(e) => setAudience(e.target.value)}
           />
-          <div className="hint">Quem você quer alcançar — se não souber, a IA infere a partir do nicho e do produto.</div>
+          <div className="hint">Quem você quer alcançar (deixe em branco pra IA inferir).</div>
         </div>
         <div>
           <div className="section-label">Tendência (opcional)</div>
@@ -826,7 +767,7 @@ function OportunidadesTab({
       </form>
 
       {errorMessage && (
-        <div className="card" style={{ marginTop: 16, color: "#E5484D" }}>
+        <div className="card" style={{ marginTop: 16, color: "#DC2626" }}>
           Algo deu errado: {errorMessage}
         </div>
       )}
@@ -846,22 +787,22 @@ function OportunidadesTab({
                   <div style={{ fontWeight: 700, fontSize: 15 }}>{opp.title}</div>
                   <div style={{ flex: "0 0 auto", fontWeight: 700, color: "#FF7A1A", textAlign: "right" }}>
                     {opp.score}/100
-                    <div style={{ fontWeight: 400, fontSize: 12, color: "#B5B5B5" }}>
+                    <div style={{ fontWeight: 400, fontSize: 12, color: "var(--kr-muted)" }}>
                       {recommendationBadge(opp.score).emoji} {recommendationBadge(opp.score).label}
                     </div>
                   </div>
                 </div>
-                <div style={{ fontSize: 13.5, color: "#B5B5B5" }}>{opp.reasoning}</div>
-                <div style={{ fontSize: 12.5, color: "#8A8A8A" }}>
+                <div style={{ fontSize: 13.5, color: "var(--kr-muted)" }}>{opp.reasoning}</div>
+                <div style={{ fontSize: 12.5, color: "var(--kr-muted)" }}>
                   Ângulo: {opp.angle} · Formato: {FORMAT_LABEL[opp.format] ?? opp.format} · Gancho:{" "}
                   {HOOK_TYPE_LABEL[opp.hookType] ?? opp.hookType}
                 </div>
                 <div style={{ fontSize: 13, fontStyle: "italic" }}>"{opp.hookText}"</div>
-                <div style={{ fontSize: 12.5, color: "#8A8A8A" }}>
-                  <strong style={{ color: "#B5B5B5" }}>CTA:</strong> {opp.cta}
+                <div style={{ fontSize: 12.5, color: "var(--kr-muted)" }}>
+                  <strong style={{ color: "var(--kr-muted)" }}>CTA:</strong> {opp.cta}
                 </div>
-                <div style={{ fontSize: 12.5, color: "#8A8A8A" }}>
-                  <strong style={{ color: "#B5B5B5" }}>Atenção:</strong> {opp.risk}
+                <div style={{ fontSize: 12.5, color: "var(--kr-muted)" }}>
+                  <strong style={{ color: "var(--kr-muted)" }}>Atenção:</strong> {opp.risk}
                 </div>
                 <button
                   type="button"
@@ -912,7 +853,7 @@ function HistoricoTab({ onOpenMenu }: { onOpenMenu: () => void }) {
 
       {entries === null && <div className="hint">Carregando...</div>}
       {entries?.length === 0 && (
-        <div className="card" style={{ color: "#8A8A8A", fontSize: 14 }}>
+        <div className="card" style={{ color: "var(--kr-muted)", fontSize: 14 }}>
           Nada gerado ainda. Vá em "Criar" pra começar.
         </div>
       )}
@@ -927,7 +868,7 @@ function HistoricoTab({ onOpenMenu }: { onOpenMenu: () => void }) {
                 {referenceVideoUrl && <TikTokPreview videoUrl={referenceVideoUrl} width={72} height={128} />}
                 <div style={{ minWidth: 0 }}>
                   <div className="scene-tag">{formatLabel(entry.format)}</div>
-                  <div style={{ fontSize: 13.5, color: "#B5B5B5" }}>
+                  <div style={{ fontSize: 13.5, color: "var(--kr-muted)" }}>
                     {entry.theme || "(sem tema)"} · {new Date(entry.createdAt).toLocaleDateString("pt-BR")}
                   </div>
                 </div>
@@ -935,7 +876,7 @@ function HistoricoTab({ onOpenMenu }: { onOpenMenu: () => void }) {
               <button
                 type="button"
                 onClick={() => handleRemove(entry.id)}
-                style={{ background: "none", border: "none", color: "#8A8A8A", cursor: "pointer", fontSize: 16 }}
+                style={{ background: "none", border: "none", color: "var(--kr-muted)", cursor: "pointer", fontSize: 16 }}
                 aria-label="Remover"
               >
                 ×
@@ -957,8 +898,8 @@ function HistoricoTab({ onOpenMenu }: { onOpenMenu: () => void }) {
                     key={s.index}
                     style={{
                       fontSize: 13,
-                      background: "#070707",
-                      border: "1px solid #252525",
+                      background: "var(--kr-bg)",
+                      border: "1px solid var(--kr-line)",
                       borderRadius: 10,
                       padding: 10,
                     }}
@@ -1298,13 +1239,14 @@ type PendingOpportunitySeed =
  * que continua servindo as telas internas (Criar/Histórico/Explorar/Prompt/
  * Perfil) enquanto a Home não tiver equivalente pra todas elas. */
 const SIDEBAR_ITEMS: { id: AppTab; label: string; Icon: () => React.JSX.Element; mediaHint?: "image" }[] = [
-  { id: "criar", label: "Criar conteúdo", Icon: IconSparkles },
-  { id: "criar", label: "Analisar referência", Icon: IconBarChartUp },
-  { id: "criar", label: "Criar roteiro", Icon: IconDocument },
-  { id: "prompt", label: "Gerar imagem", Icon: IconImage, mediaHint: "image" },
-  { id: "criar", label: "TikTok Shop", Icon: IconBag },
-  { id: "explorar", label: "Estratégia de crescimento", Icon: IconTarget },
-  { id: "historico", label: "Mais opções", Icon: IconGrid },
+  { id: "criar", label: "Criar conteúdo", Icon: NavIconCriar },
+  { id: "criar", label: "Analisar referência", Icon: NavIconAnalisar },
+  { id: "reference", label: "Reference Studio", Icon: NavIconAnalisar },
+  { id: "criar", label: "Criar roteiro", Icon: NavIconRoteiro },
+  { id: "prompt", label: "Blocos de venda", Icon: NavIconBlocosVenda },
+  { id: "criar", label: "TikTok Shop", Icon: NavIconTikTokShop },
+  { id: "explorar", label: "Estratégia de crescimento", Icon: NavIconEstrategia },
+  { id: "historico", label: "Mais opções", Icon: NavIconMaisOpcoes },
 ];
 
 /**
@@ -1470,239 +1412,19 @@ const SAUDACOES_HOME: [string, string][] = [
   ["O que sua marca", "precisa hoje?"],
 ];
 
-function ConversationScreen({
-  conversationId,
-  onConversationChange,
-}: {
-  conversationId: string | null;
-  onConversationChange: (id: string) => void;
-}) {
-  const createConversationRpc = useServerFn(createConversationFn);
-  const getConversationRpc = useServerFn(getConversationFn);
-  const sendMessageRpc = useServerFn(sendMessageFn);
-  const appendConversationResultRpc = useServerFn(appendConversationResultFn);
-  const transcribeVoiceMessageRpc = useServerFn(transcribeVoiceMessageFn);
-  const enqueueContentGenerationRpc = useServerFn(enqueueContentGeneration);
-  const advanceContentGenerationJobRpc = useServerFn(advanceContentGenerationJob);
+const HOME_QUICK_ACTIONS: { label: string; tab: AppTab; mediaHint?: "image"; Icon: () => React.JSX.Element }[] = [
+  { label: "Criar conteúdo", tab: "criar", Icon: NavIconCriar },
+  { label: "Blocos de venda", tab: "prompt", Icon: NavIconBlocosVenda },
+  { label: "Roteiros prontos", tab: "explorar", Icon: NavIconRoteiro },
+  { label: "Estratégia de crescimento", tab: "explorar", Icon: NavIconEstrategia },
+];
 
-  const [messages, setMessages] = useState<ConversationMessage[]>([]);
-  const [input, setInput] = useState("");
-  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
-  const [sending, setSending] = useState(false);
-  const [creationStatus, setCreationStatus] = useState<string | null>(null);
-  const [recording, setRecording] = useState(false);
+/** Home — dashboard de atalhos, sem chat. O chat livre com o KRONIA existiu
+ * aqui antes (composer + thread de mensagens, molde parecido com o app do
+ * Claude); o usuário pediu pra tirar de vez, então a Home agora é só
+ * saudação + os atalhos pras funções reais do app. */
+function ConversationScreen({ onNavigate }: { onNavigate: (tab: AppTab, mediaHint?: "image") => void }) {
   const [saudacao] = useState(() => SAUDACOES_HOME[Math.floor(Math.random() * SAUDACOES_HOME.length)]);
-  const mediaRecorderRef = useState<{ current: MediaRecorder | null }>(() => ({ current: null }))[0];
-  const audioChunksRef = useState<{ current: Blob[] }>(() => ({ current: [] }))[0];
-
-  useEffect(() => {
-    if (!conversationId) {
-      setMessages([]);
-      return;
-    }
-    getConversationRpc({ data: { conversationId } })
-      .then((res) => {
-        if (res) setMessages(res.messages);
-      })
-      .catch(() => {
-        // best-effort — abrir uma conversa que falhou ao carregar só fica vazia
-      });
-  }, [conversationId]);
-
-  async function runCreationJob(productInfoText: string, targetConversationId: string) {
-    setCreationStatus("Recomendando o melhor formato...");
-    try {
-      const request: ContentRequest = {
-        project: "comercial",
-        objective: "vender",
-        mode: "tiktok_shop",
-        productPhotoUrls: [],
-        productInfo: [{ text: productInfoText, kind: "fato", source: "conversa" }],
-        referenceVideoUrl: null,
-        referenceVideoStoragePath: null,
-        actorProfile: null,
-        targetDurationSeconds: 30,
-      };
-      const { jobId } = await enqueueContentGenerationRpc({ data: { request } });
-
-      let consecutiveNetworkFailures = 0;
-      for (;;) {
-        let job: Awaited<ReturnType<typeof advanceContentGenerationJobRpc>>;
-        try {
-          job = await advanceContentGenerationJobRpc({ data: { jobId } });
-          consecutiveNetworkFailures = 0;
-        } catch (err) {
-          consecutiveNetworkFailures += 1;
-          if (consecutiveNetworkFailures > 8) throw err;
-          await new Promise((resolve) => setTimeout(resolve, 1500));
-          continue;
-        }
-        if (job) {
-          setCreationStatus(CONTENT_GENERATION_STEP_LABELS_CONVERSATION[job.step] ?? "Criando...");
-          if (job.status === "succeeded") {
-            const resultMessage = await appendConversationResultRpc({ data: { conversationId: targetConversationId, jobId } });
-            if (resultMessage) setMessages((prev) => [...prev, resultMessage]);
-            setCreationStatus(null);
-            return;
-          }
-          if (job.status === "failed") {
-            setCreationStatus(null);
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: crypto.randomUUID(),
-                conversationId: targetConversationId,
-                role: "assistant",
-                content: `Não consegui terminar a criação: ${job.error ?? "erro desconhecido"}.`,
-                attachments: [],
-                jobId: null,
-                createdAt: new Date().toISOString(),
-              },
-            ]);
-            return;
-          }
-        }
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-      }
-    } catch (err) {
-      setCreationStatus(null);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          conversationId: targetConversationId,
-          role: "assistant",
-          content: `Não consegui acionar a criação: ${err instanceof Error ? err.message : "erro desconhecido"}.`,
-          attachments: [],
-          jobId: null,
-          createdAt: new Date().toISOString(),
-        },
-      ]);
-    }
-  }
-
-  async function send(rawText: string) {
-    const text = rawText.trim();
-    const attachments: Attachment[] = pendingAttachments
-      .filter((a) => a.dataUrl || a.storagePath)
-      .map((a) => ({
-        type: a.type,
-        name: a.file.name,
-        mimeType: a.file.type,
-        dataUrl: a.dataUrl,
-        storagePath: a.storagePath,
-        visualDescription: null,
-      }));
-    if (!text && attachments.length === 0) return;
-
-    setSending(true);
-    setInput("");
-    setPendingAttachments([]);
-
-    try {
-      let activeConversationId = conversationId;
-      if (!activeConversationId) {
-        const conv = await createConversationRpc();
-        activeConversationId = conv.id;
-        onConversationChange(conv.id);
-      }
-
-      const { userMessage, assistantMessage, readyToCreate, productInfoText } = await sendMessageRpc({
-        data: { conversationId: activeConversationId, content: text, attachments },
-      });
-      setMessages((prev) => [...prev, userMessage, assistantMessage]);
-
-      if (readyToCreate && productInfoText) {
-        void runCreationJob(productInfoText, activeConversationId);
-      }
-    } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          conversationId: conversationId ?? "",
-          role: "assistant",
-          content: `Não consegui responder agora: ${err instanceof Error ? err.message : "erro desconhecido"}.`,
-          attachments: [],
-          jobId: null,
-          createdAt: new Date().toISOString(),
-        },
-      ]);
-    } finally {
-      setSending(false);
-    }
-  }
-
-  async function handleAttachFiles(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []).filter((file) => attachmentKind(file) !== null);
-    e.target.value = "";
-    if (files.length === 0) return;
-
-    const staged: PendingAttachment[] = files.map((file) => ({
-      file,
-      type: attachmentKind(file)!,
-      dataUrl: null,
-      storagePath: null,
-      uploading: true,
-    }));
-    setPendingAttachments((prev) => [...prev, ...staged]);
-
-    for (const item of staged) {
-      try {
-        if (item.type === "image") {
-          // Mesmo caminho que analyzeProductPhoto/analyzeActorPhoto já usam.
-          const dataUrl = await readFileAsDataUrl(item.file);
-          setPendingAttachments((prev) => prev.map((a) => (a.file === item.file ? { ...a, dataUrl, uploading: false } : a)));
-        } else {
-          // Vídeo: mesmo bucket/função do vídeo de referência já existente.
-          const storagePath = await uploadReferenceVideo(item.file);
-          setPendingAttachments((prev) =>
-            prev.map((a) => (a.file === item.file ? { ...a, storagePath, uploading: false } : a)),
-          );
-        }
-      } catch {
-        setPendingAttachments((prev) => prev.filter((a) => a.file !== item.file));
-      }
-    }
-  }
-
-  async function toggleRecording() {
-    if (recording) {
-      mediaRecorderRef.current?.stop();
-      setRecording(false);
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      audioChunksRef.current = [];
-      recorder.ondataavailable = (e) => audioChunksRef.current.push(e.data);
-      recorder.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || "audio/webm" });
-        const arrayBuffer = await blob.arrayBuffer();
-        const audioBase64 = btoa(Array.from(new Uint8Array(arrayBuffer), (b) => String.fromCharCode(b)).join(""));
-        try {
-          const { text } = await transcribeVoiceMessageRpc({ data: { audioBase64, mimeType: blob.type } });
-          if (text.trim()) void send(text);
-        } catch {
-          // best-effort — falha de transcrição não trava a conversa
-        }
-      };
-      mediaRecorderRef.current = recorder;
-      recorder.start();
-      setRecording(true);
-    } catch {
-      // sem permissão de microfone — botão simplesmente não faz nada
-    }
-  }
-
-  const isEmpty = messages.length === 0 && !sending;
-  // Some quando tem TEXTO digitado, não no simples foco — testado contra o
-  // próprio app do Claude: a saudação continua visível com o teclado aberto
-  // e o campo focado, enquanto o campo tá vazio; só dá lugar à conversa
-  // quando você começa a escrever de verdade.
-  const mostrarSaudacao = isEmpty && !input.trim();
 
   return (
     <div className="kronia-home">
@@ -1710,95 +1432,27 @@ function ConversationScreen({
          em CriadorApp, fora do container transformado (ver comentário lá
          sobre por que position:fixed precisava disso). onOpenMenu não é
          mais usado por este componente. */}
-
-      {mostrarSaudacao ? (
-        <div className="kronia-home-hero">
-          <h1>
-            {saudacao[0]}
-            <br />
-            <span className="accent">{saudacao[1]}</span>
-          </h1>
-          <p>Sua ideia. Nossa estratégia. Conteúdo que gera resultados.</p>
-        </div>
-      ) : isEmpty ? (
-        <div className="kronia-home-hero" aria-hidden="true" />
-      ) : (
-        <div className="kronia-conversation-thread">
-          {messages.map((m) => (
-            <div key={m.id} className={`kronia-msg kronia-msg-${m.role}`}>
-              {m.attachments.length > 0 && (
-                <div className="kronia-msg-attachments">
-                  {m.attachments.map((a, i) => (
-                    <span key={i} className="kronia-msg-attachment-chip">
-                      {a.type === "image" ? <IconImage /> : <IconBarChartUp />}
-                      {a.name}
-                    </span>
-                  ))}
-                </div>
-              )}
-              {m.content && <div className="kronia-msg-bubble">{m.content}</div>}
-            </div>
-          ))}
-          {creationStatus && (
-            <div className="kronia-msg kronia-msg-assistant">
-              <div className="kronia-msg-bubble kronia-msg-bubble-loading">
-                <span className="spinner-inline" /> {creationStatus}
-              </div>
-            </div>
-          )}
-          {sending && !creationStatus && (
-            <div className="kronia-msg kronia-msg-assistant">
-              <div className="kronia-msg-bubble kronia-msg-bubble-loading">
-                <span className="spinner-inline" /> Pensando...
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {pendingAttachments.length > 0 && (
-        <div className="kronia-pending-attachments">
-          {pendingAttachments.map((a, i) => (
-            <span key={i} className={`kronia-pending-chip ${a.uploading ? "uploading" : ""}`}>
-              {a.type === "image" ? <IconImage /> : <IconBarChartUp />}
-              {a.file.name}
-            </span>
+      <div className="kronia-home-hero kronia-home-hero-dashboard">
+        <h1>
+          {saudacao[0]}
+          <br />
+          <span className="accent">{saudacao[1]}</span>
+        </h1>
+        <div className="kronia-quick-actions">
+          {HOME_QUICK_ACTIONS.map((action) => (
+            <button
+              key={action.label}
+              type="button"
+              className="kronia-quick-action"
+              onClick={() => onNavigate(action.tab, action.mediaHint)}
+            >
+              <span className="kronia-quick-action-icon">
+                <action.Icon />
+              </span>
+              <span className="kronia-quick-action-label">{action.label}</span>
+            </button>
           ))}
         </div>
-      )}
-
-      <div className="kronia-home-inputbar">
-        <label className="kronia-icon-btn ghost" aria-label="Anexar">
-          <IconPlus />
-          <input type="file" multiple hidden onChange={handleAttachFiles} accept="image/*,video/*" />
-        </label>
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") void send(input);
-          }}
-          placeholder="Digite ou fale com o KRONIA..."
-          disabled={sending}
-        />
-        <button
-          type="button"
-          className={`kronia-icon-btn ghost ${recording ? "recording" : ""}`}
-          aria-label={recording ? "Parar gravação" : "Falar"}
-          onClick={toggleRecording}
-        >
-          <IconMic />
-        </button>
-        <button
-          type="button"
-          className="kronia-send-btn"
-          onClick={() => void send(input)}
-          aria-label="Enviar"
-          disabled={sending || (!input.trim() && pendingAttachments.every((a) => a.uploading))}
-        >
-          <IconSend />
-        </button>
       </div>
     </div>
   );
@@ -1827,14 +1481,12 @@ function CriadorApp() {
   const sombraRef = useRef<HTMLDivElement>(null);
   const veuRef = useRef<HTMLDivElement>(null);
   const topbarRef = useRef<HTMLDivElement>(null);
-  const bottomNavRef = useRef<HTMLElement>(null);
   useMenuSpring(sidebarOpen, {
     app: appRef,
     menu: menuRef,
     sombra: sombraRef,
     veu: veuRef,
     topbar: topbarRef,
-    bottomNav: bottomNavRef,
   });
 
   const refreshConversations = () => {
@@ -1852,7 +1504,7 @@ function CriadorApp() {
   }
 
   return (
-    <div className={`kronia-palco ${sidebarOpen ? "kronia-menu-aberto" : ""} ${tab !== "home" ? "kronia-palco-escuro" : ""}`}>
+    <div className={`kronia-palco ${sidebarOpen ? "kronia-menu-aberto" : ""}`}>
       <div className="kronia-menu-camada" ref={menuRef} aria-hidden={!sidebarOpen} inert={!sidebarOpen}>
         <AppSidebar
           active={tab}
@@ -1882,22 +1534,13 @@ function CriadorApp() {
       {tab === "home" && (
         <div className="kronia-home-topbar" ref={topbarRef}>
           <button type="button" className="kronia-icon-btn" onClick={() => setSidebarOpen(true)} aria-label="Abrir menu">
-            <IconMenu />
-          </button>
-          <button type="button" className="kronia-icon-btn" aria-label="Assistente">
-            <IconChatBubble />
+            <NavIconMenu />
           </button>
         </div>
       )}
-      <div className={`kronia-app-camada ${tab !== "home" ? "kronia-app-camada-escura" : ""}`} ref={appRef}>
+      <div className="kronia-app-camada" ref={appRef}>
         {tab === "home" && (
-          <ConversationScreen
-            conversationId={activeConversationId}
-            onConversationChange={(id) => {
-              setActiveConversationId(id);
-              refreshConversations();
-            }}
-          />
+          <ConversationScreen onNavigate={navigate} />
         )}
         {tab === "criar" && (
           <CriarFlow
@@ -1917,7 +1560,8 @@ function CriadorApp() {
             onOpenMenu={() => setSidebarOpen(true)}
           />
         )}
-        {tab === "prompt" && <PromptTab initialMedia={initialMedia} onOpenMenu={() => setSidebarOpen(true)} />}
+        {tab === "prompt" && <BlocosVendaGenerator onOpenMenu={() => setSidebarOpen(true)} />}
+        {tab === "reference" && <PromptTab onOpenMenu={() => setSidebarOpen(true)} />}
         {tab === "perfil" && <PerfilTab onOpenMenu={() => setSidebarOpen(true)} />}
         <button
           type="button"
@@ -1927,11 +1571,6 @@ function CriadorApp() {
           tabIndex={sidebarOpen ? 0 : -1}
         />
       </div>
-      {/* FORA de .kronia-app-camada de propósito, mesmo motivo do topbar
-          acima (transform permanente na camada quebra position:fixed dos
-          filhos — o menu "flutuava" solto da borda de baixo real da tela
-          em vez de ficar preso nela, visto com vídeo real do usuário). */}
-      {tab !== "home" && <BottomNav ref={bottomNavRef} active={tab} onChange={(next) => navigate(next)} />}
       <div className="kronia-app-sombra" ref={sombraRef} />
     </div>
   );
@@ -1968,6 +1607,9 @@ function CriarFlow({
   const [project, setProject] = useState<ContentRequest["project"]>("comercial");
   const [objective, setObjective] = useState<ContentRequest["objective"]>("vender");
   const [mode, setMode] = useState<ContentRequest["mode"]>("tiktok_shop");
+  // Tema ministerial (Consolo, Coragem...) — só usado no Jeová Fala. null =
+  // deixa o Teólogo identificar o tema mais próximo sozinho.
+  const [ministryTheme, setMinistryTheme] = useState<string | null>(null);
   const [productInfoText, setProductInfoText] = useState(() => initialIdea ?? "");
   const [productPhotoDataUrls, setProductPhotoDataUrls] = useState<string[]>([]);
   const [productPhotoDescription, setProductPhotoDescription] = useState<string | null>(null);
@@ -2038,7 +1680,7 @@ function CriarFlow({
       const { appearanceDescription } = await analyzeActorPhotoFn({ data: { imageDataUrl } });
       setActorAppearance(appearanceDescription);
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Erro ao analisar a foto");
+      setErrorMessage(errorMessageOf(err, "Erro ao analisar a foto"));
     } finally {
       setAnalyzingPhoto(false);
     }
@@ -2102,7 +1744,7 @@ function CriarFlow({
         if (job.status === "failed") {
           setIngestionStep(null);
           setIngestionProgressPercent(null);
-          throw new Error(job.error ?? "Falha ao analisar o vídeo de referência.");
+          throw new Error(job.error || "Falha ao analisar o vídeo de referência.");
         }
       }
       await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -2148,7 +1790,7 @@ function CriarFlow({
         if (job.status === "failed") {
           setIngestionStep(null);
           setIngestionProgressPercent(null);
-          throw new Error(job.error ?? "Falha ao gerar o conteúdo.");
+          throw new Error(job.error || "Falha ao gerar o conteúdo.");
         }
       }
       await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -2165,7 +1807,7 @@ function CriarFlow({
       const storagePath = await uploadReferenceVideo(file);
       setReferenceVideoFile({ name: file.name, storagePath });
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Erro ao enviar o vídeo");
+      setErrorMessage(errorMessageOf(err, "Erro ao enviar o vídeo"));
     } finally {
       setUploadingVideo(false);
     }
@@ -2190,7 +1832,7 @@ function CriarFlow({
       const { visualDescription } = await analyzeProductPhotoFn({ data: { imageDataUrls: nextPhotos } });
       setProductPhotoDescription(visualDescription);
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Erro ao analisar a foto do produto");
+      setErrorMessage(errorMessageOf(err, "Erro ao analisar a foto do produto"));
     } finally {
       setAnalyzingProductPhoto(false);
     }
@@ -2227,6 +1869,7 @@ function CriarFlow({
           }
         : null,
       targetDurationSeconds,
+      ministryTheme: project === "jeova_fala" ? ministryTheme : null,
     };
 
     try {
@@ -2270,7 +1913,7 @@ function CriarFlow({
         // best-effort — não salvar histórico não deve travar o fluxo principal
       }
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido");
+      setErrorMessage(errorMessageOf(err, "Erro desconhecido"));
       setStep("error");
     }
   }
@@ -2400,12 +2043,12 @@ function CriarFlow({
                 height: 130,
                 borderRadius: 14,
                 overflow: "hidden",
-                background: "#131313",
-                border: "1px solid #262626",
+                background: "var(--kr-card)",
+                border: "1px solid var(--kr-line)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "#8A8A8A",
+                color: "var(--kr-muted)",
                 fontSize: 12,
                 position: "relative",
               }}
@@ -2443,13 +2086,13 @@ function CriarFlow({
                 flex: 1,
                 height: 130,
                 borderRadius: 14,
-                border: "1.5px dashed #2E2E2E",
+                border: "1.5px dashed var(--kr-line)",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 8,
-                color: "#8A8A8A",
+                color: "var(--kr-muted)",
                 cursor: "pointer",
               }}
             >
@@ -2502,12 +2145,9 @@ function CriarFlow({
               onChange={(e) => setProductInfoText(e.target.value)}
             />
             {project === "jeova_fala" ? (
-              <div className="hint">
-                Dica: no app do TikTok, em "Informações de pesquisas para criadores", tem assuntos reais
-                em alta (com % de crescimento de verdade) — cole um aqui em vez de inventar um tema do zero.
-              </div>
+              <div className="hint">Cole um assunto real em alta do TikTok — não invente um tema.</div>
             ) : (
-              <div className="hint">Usado apenas o que você informar aqui — nada é inventado sobre o produto.</div>
+              <div className="hint">Só o que você escrever aqui é usado.</div>
             )}
             <SavedThemesDrawer
               savedThemes={savedThemes}
@@ -2517,6 +2157,32 @@ function CriarFlow({
               onRemove={removeSavedTheme}
             />
           </div>
+
+          {project === "jeova_fala" && (
+            <div style={{ marginTop: 16 }}>
+              <div className="section-label">Categoria temática (biblioteca)</div>
+              <div className="pill-row" style={{ flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  className={`pill ${ministryTheme === null ? "active" : ""}`}
+                  onClick={() => setMinistryTheme(null)}
+                >
+                  IA escolhe
+                </button>
+                {MINISTRY_THEMES.map((t) => (
+                  <button
+                    key={t.tema}
+                    type="button"
+                    className={`pill ${ministryTheme === t.tema ? "active" : ""}`}
+                    onClick={() => setMinistryTheme(t.tema)}
+                  >
+                    {t.tema}
+                  </button>
+                ))}
+              </div>
+              <div className="hint">Trava o vocabulário do Teólogo nesse tema, em vez de deixar a IA identificar sozinha.</div>
+            </div>
+          )}
         </div>
 
         <div>
@@ -2562,8 +2228,8 @@ function CriarFlow({
               display: "flex",
               alignItems: "center",
               gap: 12,
-              background: "#101010",
-              border: "1.5px dashed #2A2A2A",
+              background: "var(--kr-card-2)",
+              border: "1.5px dashed var(--kr-line)",
               borderRadius: 14,
               padding: 14,
               cursor: uploadingVideo ? "default" : "pointer",
@@ -2575,16 +2241,16 @@ function CriarFlow({
                 width: 38,
                 height: 38,
                 borderRadius: 999,
-                background: "#1C1C1C",
+                background: "var(--kr-card-2)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "#9A9A9A",
+                color: "var(--kr-muted)",
               }}
             >
               <IconPlay />
             </span>
-            <span style={{ flex: 1, color: "#B5B5B5", fontSize: 13.5 }}>
+            <span style={{ flex: 1, color: "var(--kr-muted)", fontSize: 13.5 }}>
               {uploadingVideo
                 ? "Enviando vídeo..."
                 : referenceVideoFile
@@ -2598,7 +2264,7 @@ function CriarFlow({
                   e.preventDefault();
                   setReferenceVideoFile(null);
                 }}
-                style={{ background: "none", border: "none", color: "#6B6B6B", flex: "0 0 auto", cursor: "pointer" }}
+                style={{ background: "none", border: "none", color: "var(--kr-muted-2)", flex: "0 0 auto", cursor: "pointer" }}
               >
                 remover
               </button>
@@ -2612,10 +2278,7 @@ function CriarFlow({
               />
             )}
           </label>
-          <div className="hint">
-            A primeira geração com vídeo de referência pode demorar alguns segundos a mais —
-            as ferramentas de extração são baixadas na primeira vez.
-          </div>
+          <div className="hint">A primeira vez demora mais — baixa as ferramentas de extração.</div>
           <input
             type="url"
             value={referenceVideoUrlInput}
@@ -2624,11 +2287,11 @@ function CriarFlow({
             style={{
               width: "100%",
               marginTop: 8,
-              background: "#101010",
-              border: "1.5px solid #2A2A2A",
+              background: "var(--kr-card-2)",
+              border: "1.5px solid var(--kr-line)",
               borderRadius: 12,
               padding: "10px 12px",
-              color: "#EDEDED",
+              color: "var(--kr-ink)",
               fontSize: 13.5,
             }}
           />
@@ -2666,15 +2329,13 @@ function CriarFlow({
                   </button>
                 ))}
               </div>
-              <div className="hint">
-                Cada 10s vira uma submissão separada no Flow — 50s = 5 blocos de prompt pra colar um por vez.
-              </div>
+              <div className="hint">Cada 10s vira um bloco de prompt pra colar no Flow.</div>
             </div>
 
             <div>
               <div className="section-label" style={{ display: "flex", justifyContent: "space-between" }}>
                 <span>Ator principal</span>
-                <span style={{ fontWeight: 500, color: "#7A7A7A" }}>Opcional</span>
+                <span style={{ fontWeight: 500, color: "var(--kr-muted-2)" }}>Opcional</span>
               </div>
 
               {ACTOR_PRESETS.length > 0 && (
@@ -2727,11 +2388,7 @@ function CriarFlow({
                 onChange={(e) => setActorAppearance(e.target.value)}
                 style={{ minHeight: 50 }}
               />
-              <div className="hint">
-                Enviando foto, a aparência é extraída da imagem real (não inventada) e travada em todas as
-                cenas junto com a voz. Preenchendo os 3 campos, o Cinematográfico mantém essas características
-                sem variar de cena pra cena.
-              </div>
+              <div className="hint">Foto ou os 3 campos: trava a mesma aparência em todas as cenas.</div>
             </div>
           </div>
         )}
@@ -2781,13 +2438,13 @@ function ResultadoView({
               height: 64,
               borderRadius: 12,
               flexShrink: 0,
-              background: "#131313",
-              border: "1px solid #262626",
+              background: "var(--kr-card)",
+              border: "1px solid var(--kr-line)",
               overflow: "hidden",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "#8A8A8A",
+              color: "var(--kr-muted)",
               fontSize: 11,
             }}
           >
@@ -2806,8 +2463,8 @@ function ResultadoView({
             <span className="rec-name">{formatLabel(recommendation.format)}</span>
           </div>
         </div>
-        <div style={{ color: "#fff", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Por quê?</div>
-        <div style={{ color: "#9A9A9A", fontSize: 13, lineHeight: 1.4 }}>{recommendation.reasoning}</div>
+        <div style={{ color: "var(--kr-ink)", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Por quê?</div>
+        <div style={{ color: "var(--kr-muted)", fontSize: 13, lineHeight: 1.4 }}>{recommendation.reasoning}</div>
       </div>
 
       <div>
@@ -2827,11 +2484,11 @@ function ResultadoView({
           {generation.hooks.map((h, i) => (
             <div key={i} className="hook-card">
               <div className="hook-num">{i + 1}</div>
-              <div style={{ flex: 1, color: "#E0E0E0", fontSize: 13.5, lineHeight: 1.4 }}>{h}</div>
+              <div style={{ flex: 1, color: "var(--kr-ink)", fontSize: 13.5, lineHeight: 1.4 }}>{h}</div>
               <button
                 type="button"
                 onClick={() => navigator.clipboard?.writeText(h)}
-                style={{ background: "none", border: "none", color: "#6B6B6B", cursor: "pointer", flexShrink: 0, display: "flex" }}
+                style={{ background: "none", border: "none", color: "var(--kr-muted-2)", cursor: "pointer", flexShrink: 0, display: "flex" }}
                 aria-label="Copiar hook"
               >
                 <IconCopy />
@@ -2902,17 +2559,17 @@ function FlowSegmentCard({
       </div>
       {coveredScenes.map((s) => (
         <div key={s.index} style={{ fontSize: 13.5, marginBottom: 4 }}>
-          <span style={{ color: "#9A9A9A" }}>[{s.role}]</span> {s.narration}
+          <span style={{ color: "var(--kr-muted)" }}>[{s.role}]</span> {s.narration}
           {s.onScreenText && (
-            <span style={{ color: "#B5B5B5" }}> · Texto na tela: {s.onScreenText}</span>
+            <span style={{ color: "var(--kr-muted)" }}> · Texto na tela: {s.onScreenText}</span>
           )}
         </div>
       ))}
       <div
         style={{
           fontSize: 13.5,
-          background: "#070707",
-          border: "1px solid #252525",
+          background: "var(--kr-bg)",
+          border: "1px solid var(--kr-line)",
           borderRadius: 10,
           padding: 10,
           marginTop: 6,
@@ -2979,7 +2636,7 @@ function SeoSection({ output, onSeoResult }: { output: PipelineOutput; onSeoResu
       <div>
         <div className="section-label">Legenda</div>
         <div className="card">
-          <div style={{ fontSize: 14, color: "#B5B5B5", marginBottom: 10 }}>
+          <div style={{ fontSize: 14, color: "var(--kr-muted)", marginBottom: 10 }}>
             Gerada só quando você pedir — sem hashtag (sem dado real de TikTok por trás pra confiar).
           </div>
           <button className="btn-primary" onClick={handleGenerate} disabled={loading}>
@@ -3001,7 +2658,7 @@ function SeoSection({ output, onSeoResult }: { output: PipelineOutput; onSeoResu
             {warnings.map((w, i) => (
               <div key={i} className="violation-item">
                 <div>"{w.flaggedText}"</div>
-                <div style={{ color: "#9A9A9A" }}>{w.reason}</div>
+                <div style={{ color: "var(--kr-muted)" }}>{w.reason}</div>
               </div>
             ))}
           </div>
@@ -3048,7 +2705,7 @@ function RoteiroView({
     <div className="app">
       <BrandRow onBack={onBack} />
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
-        <span style={{ color: "#fff", fontSize: 24, fontWeight: 800 }}>
+        <span style={{ color: "var(--kr-ink)", fontSize: 24, fontWeight: 800 }}>
           {approved ? "Roteiro aprovado" : "Roteiro (compliance pendente)"}
         </span>
         {approved && <IconApprovedBadge />}
@@ -3057,7 +2714,7 @@ function RoteiroView({
       <div>
         <div className="section-label">Hook selecionado</div>
         <div className="card">
-          <div style={{ color: "#E5E5E5", fontSize: 14, lineHeight: 1.5, paddingRight: 24 }}>
+          <div style={{ color: "var(--kr-ink)", fontSize: 14, lineHeight: 1.5, paddingRight: 24 }}>
             "{generation.selectedHook}"
           </div>
           <button
@@ -3076,7 +2733,7 @@ function RoteiroView({
         <div className="card">
           <div style={{ display: "flex", flexDirection: "column", paddingRight: 24 }}>
             {generation.scenes.map((s, i) => (
-              <div key={s.index} style={{ color: "#D5D5D5", fontSize: 13.5, lineHeight: 1.7 }}>
+              <div key={s.index} style={{ color: "var(--kr-ink)", fontSize: 13.5, lineHeight: 1.7 }}>
                 Cena {i + 1} – {ROLE_LABEL[s.role] ?? s.role}
               </div>
             ))}
@@ -3108,8 +2765,8 @@ function RoteiroView({
                   borderRadius: 12,
                   flexShrink: 0,
                   overflow: "hidden",
-                  background: "#131313",
-                  border: "1px solid #262626",
+                  background: "var(--kr-card)",
+                  border: "1px solid var(--kr-line)",
                 }}
               >
                 {productPhoto && (
@@ -3117,10 +2774,10 @@ function RoteiroView({
                 )}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 3 }}>
+                <div style={{ color: "var(--kr-ink)", fontSize: 14, fontWeight: 700, marginBottom: 3 }}>
                   Cena {String(i + 1).padStart(2, "0")}
                 </div>
-                <div style={{ color: "#9A9A9A", fontSize: 12, lineHeight: 1.5 }}>
+                <div style={{ color: "var(--kr-muted)", fontSize: 12, lineHeight: 1.5 }}>
                   Câmera: {s.camera}
                   <br />
                   Ação: {s.action}
@@ -3170,14 +2827,14 @@ function RoteiroView({
           {compliance.checkedGroups.map((group) => (
             <div key={group} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
               <IconCheckCircleSmall />
-              <span style={{ color: "#BFEBD1", fontSize: 13 }}>{group}</span>
+              <span style={{ color: "#166534", fontSize: 13 }}>{group}</span>
             </div>
           ))}
         </div>
       ) : (
         <div className="reject-card">
           <div style={{ fontWeight: 700, fontSize: 15 }}>Correção necessária</div>
-          <div style={{ color: "#9A9A9A", fontSize: 12.5, marginBottom: 4 }}>
+          <div style={{ color: "var(--kr-muted)", fontSize: 12.5, marginBottom: 4 }}>
             O compliance reprovou depois de {compliance.attempt} tentativas automáticas. Revise o roteiro abaixo
             antes de gerar o vídeo.
           </div>
@@ -3185,7 +2842,7 @@ function RoteiroView({
             <div key={i} className="violation-item">
               <div style={{ fontWeight: 700 }}>{v.group}</div>
               <div>"{v.flaggedText}"</div>
-              <div style={{ color: "#9A9A9A" }}>{v.reason}</div>
+              <div style={{ color: "var(--kr-muted)" }}>{v.reason}</div>
               <div style={{ color: "#FF6A1A", marginTop: 4 }}>Sugestão: {v.suggestion}</div>
             </div>
           ))}

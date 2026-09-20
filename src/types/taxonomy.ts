@@ -19,6 +19,12 @@ export const CONTENT_FORMATS = [
   "storytelling",
   "produto_360",
   "apresentacao_por_modelo",
+  "product_demo",
+  "product_reveal",
+  "try_on",
+  "walk_and_talk",
+  "mirror",
+  "hands_only",
 ] as const;
 export type ContentFormat = (typeof CONTENT_FORMATS)[number];
 

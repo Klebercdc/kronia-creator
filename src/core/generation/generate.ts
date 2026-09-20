@@ -39,11 +39,11 @@ export async function generate(
   draft = await marketing(draft, request, recommendation);
 
   if (shouldRunTeologo(request)) {
-    draft = await teologo(draft);
+    draft = await teologo(draft, request.ministryTheme);
   }
 
   draft = await psicologiaDeCompra(draft);
-  draft = await persuasao(draft);
+  draft = await persuasao(draft, request.mode);
   draft = await cinematografico(draft, request.actorProfile, ingestion);
 
   // Quality Judge — eixo de qualidade criativa (específico/natural/

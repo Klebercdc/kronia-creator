@@ -43,6 +43,13 @@ export const ContentRequestSchema = z.object({
    * em blocos fixos de 10s; cada bloco = 1 submissão separada no Flow).
    * null deixa o Roteirista escolher uma duração padrão sensata. */
   targetDurationSeconds: z.number().int().positive().multipleOf(10).nullable(),
+
+  /** Tema ministerial escolhido pelo usuário (ex.: "Consolo", "Coragem") —
+   * só usado quando project === "jeova_fala". null deixa o Teólogo
+   * identificar o tema mais próximo sozinho (comportamento anterior). Nome
+   * livre em vez de enum fechado porque a biblioteca (ministry-themes.ts)
+   * pode crescer sem exigir mudança de schema aqui. */
+  ministryTheme: z.string().nullable(),
 });
 export type ContentRequest = z.infer<typeof ContentRequestSchema>;
 

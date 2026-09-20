@@ -24,7 +24,9 @@ export function buildReferenceGrammar(analysis: VideoAnalysis): string {
     `Formato predominante: ${analysis.format.primary}${analysis.format.secondary ? ` (secundário: ${analysis.format.secondary})` : ""}.`,
   );
   lines.push(`Hook: tipo "${analysis.hook.type}", duração ${(analysis.hook.endSeconds - analysis.hook.startSeconds).toFixed(1)}s.`);
-  lines.push(`Câmera/enquadramento: ${analysis.visual.camera}, ${analysis.visual.framing}.`);
+  lines.push(
+    `Câmera/enquadramento: ${analysis.visual.camera}, ${analysis.visual.framing}${analysis.visual.cameraConfidence === "fato" ? "" : " (inferido, não 100% certo)"}.`,
+  );
   lines.push(`Ritmo: ${analysis.visual.cutsPerMinute.toFixed(1)} cortes/minuto, duração total ${analysis.durationSeconds.toFixed(1)}s.`);
   if (analysis.persuasion.length > 0) {
     lines.push(`Mecanismos de persuasão observados: ${analysis.persuasion.join(", ")}.`);

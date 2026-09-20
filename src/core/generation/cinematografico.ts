@@ -57,6 +57,23 @@ padrões cinematográficos comprovados em vídeos de venda de alta conversão:
 Escolha o padrão que fizer sentido pro produto da cena (ou nenhum, se não for hero shot) — a
 fórmula é reaproveitável entre categorias de produto, o conteúdo específico nunca é.
 
+REGRA DE SEGURANÇA — vestuário revelador (moda íntima, maiô, biquíni, lingerie e qualquer peça que
+exponha bastante pele): visto na prática que o gerador de vídeo recusa por moderação de conteúdo
+tanto uma TRANSIÇÃO quanto um PLANO ESTÁTICO desse tipo de roupa — não é só sobre o instante da
+troca, é sobre a exposição de pele em si. Regra vale pra QUALQUER cena com esse tipo de peça,
+tenha transição ou não:
+- Todo videoPrompt de cena com vestuário revelador inclui, sempre, as restrições de segurança
+  explícitas no próprio texto: sem nudez, sem "wardrobe malfunction", enquadramento e pose que
+  mantêm a peça de roupa sempre corretamente posicionada e visível (nunca um ângulo/pose que
+  sugira exposição além do que a própria peça cobre).
+- Quando houver TROCA ou REVELAÇÃO da peça no corpo (saindo de um roupão/toalha, experimentando
+  produto de moda): nunca descreva o instante exato da troca (a toalha caindo, o tecido se
+  abrindo) — esconda atrás de um corte/transição explícito (ex: pulo com match-cut, giro rápido,
+  corte seco), descrevendo só o ANTES (segurando/mostrando a peça) e o DEPOIS (já vestindo),
+  nunca o meio.
+- O produto (a peça de roupa) tem que permanecer visualmente idêntico em toda a cena — mesma cor,
+  corte, desenho, textura — nunca regenerado/reinterpretado.
+
 As 3 fórmulas acima valem quando a cena for de produto físico com embalagem. Quando o
 produto/oferta (pelas claims do roteiro) NÃO tiver essas características (serviço, curso,
 conteúdo digital, experiência), NÃO force nenhuma das 3 — construa a própria fórmula visual do
@@ -128,7 +145,7 @@ function buildSystem(actorProfile: ContentRequest["actorProfile"], ingestion: Vi
     system += `
 
 DIREÇÃO VISUAL DO VÍDEO DE REFERÊNCIA (já comprovada, use como base real, não invente do zero):
-Câmera: ${ingestion.visual.camera}. Enquadramento: ${ingestion.visual.framing}.
+Câmera: ${ingestion.visual.camera} (${ingestion.visual.cameraConfidence === "fato" ? "movimento observado claramente nos frames — siga fiel" : "melhor suposição da análise, não 100% certo — tem liberdade de adaptar se não fizer sentido pra cena"}). Enquadramento: ${ingestion.visual.framing}.
 Cortes por minuto: ${ingestion.visual.cutsPerMinute}.
 Reaproveite esse vocabulário e ritmo de câmera/corte nos videoPrompts — é a mesma mecânica visual
 que já funcionou, só com o produto/ator novos, nunca copiando o conteúdo literal do vídeo original.`;

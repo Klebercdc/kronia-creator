@@ -122,8 +122,9 @@ async function stepMarketing(job: JobRow): Promise<void> {
 }
 
 async function stepTeologo(job: JobRow): Promise<void> {
+  const { request } = payloadOf(job);
   const progress = progressOf(job);
-  const draft = await teologo(progress.draft!);
+  const draft = await teologo(progress.draft!, request.ministryTheme);
   await advanceJobStep(job.id, "psicologia", { ...progress, draft });
 }
 
@@ -134,8 +135,9 @@ async function stepPsicologia(job: JobRow): Promise<void> {
 }
 
 async function stepPersuasao(job: JobRow): Promise<void> {
+  const { request } = payloadOf(job);
   const progress = progressOf(job);
-  const draft = await persuasao(progress.draft!);
+  const draft = await persuasao(progress.draft!, request.mode);
   await advanceJobStep(job.id, "cinematografico", { ...progress, draft });
 }
 
