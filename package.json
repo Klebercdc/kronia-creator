@@ -15,7 +15,9 @@
     "smoke-test:creative-grammar": "tsx scripts/smoke-test-creative-grammar.ts",
     "generate-movement-videos": "tsx scripts/generate-movement-videos.ts",
     "match-movement-stock-videos": "tsx scripts/match-movement-stock-videos.ts",
-    "smoke-test:creative-engine": "tsx scripts/smoke-test-creative-engine.ts"
+    "smoke-test:creative-engine": "tsx scripts/smoke-test-creative-engine.ts",
+    "smoke-test:hook-intelligence": "tsx scripts/smoke-test-hook-intelligence.ts",
+    "prebuild": "npm run smoke-test:hook-intelligence"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
