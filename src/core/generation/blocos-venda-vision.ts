@@ -4,6 +4,7 @@ import { PERSUASION_MECHANISMS } from "../../types/taxonomy";
 import { BANNED_PHRASES } from "../compliance/absolute-claims-guard";
 import { CREATIVE_QUALITY_BAR } from "./quality-bar";
 import { buildHookLibraryPromptBlock } from "./hook-library";
+import { CreativeStrategySchema, CreativeBlockSchema, expectedCreativeBlockCount } from "./creative-context";
 import {
   checkFalaLengths,
   checkStructuralIssues,
@@ -11,6 +12,8 @@ import {
   fieldsUsedBy,
   VARIANT_LABEL,
   type BlocosVendaVariant,
+  validateIntentSemantics,
+  CREATIVE_ROLES_BY_VARIANT,
 } from "./blocos-venda-fala";
 
 /**
@@ -41,6 +44,8 @@ const FieldsSchema = z.object({
   prova: z.string(),
   beneficioExtra: z.string(),
   objecao: z.string(),
+  strategy: CreativeStrategySchema.optional(),
+  roteiro: z.array(CreativeBlockSchema).max(8).optional(),
 });
 
 export type BlocosVendaFields = z.infer<typeof FieldsSchema>;
@@ -88,7 +93,7 @@ usados nessa variante — deixe como string vazia "", nunca invente conteúdo pr
 preenchidos, em qualquer variante.`;
 }
 
-const SYSTEM_BASE = `Você preenche os campos de um gerador de vídeos de venda (blocos de 10s cada,
+const SYSTEM_BASE = `Você é o motor criativo de um gerador de vídeos curtos. Antes de escrever qualquer campo, siga internamente este protocolo operacional: observe apenas evidências; determine contexto, intenção, objetivo, formato e duração; separe fatos de inferências e linguagem criativa; encontre a oportunidade narrativa/visual principal; defina tema, verdade central e emoção; escolha a estratégia mais adequada; escreva naturalmente; valide intenção, contexto, claims, timing, gramática e coerência antes de retornar. Isso é um protocolo operacional, não um pedido para expor raciocínio interno.\n\nREGRA DE CONTEXTO: use somente a referência e o contexto desta chamada. Nunca carregue produto, CTA, nome, claim, cenário ou linguagem de outra geração.\n\nREGRA DE INTENÇÃO: a intenção controla a narrativa. sales = venda/conversão; engagement = interação; message = reflexão/emoção/aplicação; script = narrativa audiovisual; custom = seguir briefing. CTA deve corresponder à intenção + objetivo.\n\nREGRA DE EVIDÊNCIA: fatos, números, benefícios factuais, prova social, preço, promoção e características técnicas só entram quando fornecidos ou verificáveis. Linguagem criativa pode ser criada, mas não deve ser apresentada como evidência.\n\n
 formato SCRIPT/CENA/CÂMERA/AÇÃO/FALA/VOZ) a partir de UMA foto: um personagem/avatar (pode ser
 qualquer pessoa — Jesus, uma moça com blusa, um vendedor, tanto faz) segurando ou perto de um
 produto. Sua tarefa é escrever os campos abaixo, cada um pronto pra entrar direto nas frases-
@@ -124,7 +129,7 @@ REGRAS DE COMPLIANCE (linguagem de venda) — pros campos gancho/funcao/dor/fato
   pareça uma figura religiosa — ele é sempre um mensageiro, nunca a divindade falando.
 - "fato" tem que ser algo realmente verificável (visível na embalagem/rótulo da foto, ou uma
   característica objetiva do tipo de produto) — nunca invente número ou estatística.
-- Cada bloco tem ~10s de fala (ritmo de leitura em voz alta: ~13 letras/segundo — não conte só
+- Escreva naturalmente primeiro. Timing é validação posterior, não molde criativo. Cada bloco tem ~10s de fala (ritmo de leitura em voz alta: ~13 letras/segundo — não conte só
   palavra, uma palavra longa ("extraordinariamente") demora muito mais que uma curta ("e"), mesmo
   contando como "1 palavra" cada). A FRASE FINAL de cada bloco (o texto pronto, já com os campos
   encaixados no template, não só o campo isolado) tem que ficar entre ~95 e ~114 letras no total
@@ -198,7 +203,7 @@ SIGNIFICADO DE CADA CAMPO (como ele entra nas frases-modelo, pra você escrever 
   SEM ponto final. Entra em "Além disso… {beneficioExtra}.".
 - objecao (só variante "longo"): resposta a uma dúvida comum sobre esse tipo de produto. SEM ponto
   final. Entra em "Se você ainda tem dúvida… {objecao}.".
-- local: onde fica o botão/link de compra na interface (não é sobre o produto, é convenção de
+- local: dado de interface, não uma frase de CTA. A fala do CTA deve ser gerada de acordo com a intenção e o objetivo atual. O campo não deve conter uma frase completa que será encaixada em outro molde.\n- local: onde fica o botão/link de compra na interface (não é sobre o produto, é convenção de
   loja) — se não tiver como saber, use "carrinho laranja". Entra em "o link está no {local}, aqui
   embaixo." — o "no" já é a contração de "em o", então NUNCA comece com artigo ("um"/"uma"/"o"/"a"),
   senão vira "no um carrinho..." (errado); o certo é "no carrinho laranja...".
@@ -217,8 +222,10 @@ SIGNIFICADO DE CADA CAMPO (como ele entra nas frases-modelo, pra você escrever 
 Responda só com os campos preenchidos, nada além disso.`;
 
 function buildSystem(variant: BlocosVendaVariant): string {
-  return `${SYSTEM_BASE}\n\n${buildVariantDirective(variant)}`;
-}
+  const roles = CREATIVE_ROLES_BY_VARIANT[variant].join(" → ");
+  const count = expectedCreativeBlockCount(variant);
+  const directive = `PROTOCOLO CRIATIVO — execute antes de escrever:\n1. OBSERVE: use apenas evidências visuais e dados explicitamente fornecidos.\n2. CONTEXTUALIZE: determine perfil, produto, público, plataforma, duração e briefing desta chamada.\n3. INTENÇÃO: determine a intenção real; neste módulo, o padrão é sales salvo indicação explícita.\n4. OBJETIVO: determine o comportamento desejado.\n5. OPORTUNIDADE: encontre o elemento visual/narrativo com maior potencial de atenção.\n6. IDEIA: defina tema, verdade central, tensão/desejo e arco emocional.\n7. ESTRATÉGIA: escolha a mecânica adequada; não comece por uma frase pronta.\n8. ESCRITA: escreva a fala completa de cada bloco, sem montar frases por fragmentos.\n9. VALIDAÇÃO: confira contexto, intenção, claims, naturalidade, timing e continuidade.\n\nNão exponha cadeia de pensamento privada. Retorne somente os campos do schema.\n\nDECISÃO ESTRUTURADA: preencha strategy com intent, objective, theme, coreTruth, audience, emotionalStart, emotionalEnd, hookMechanic, narrativeArc, ctaObjective, verifiedFacts, observedVisuals e creativeAssumptions.\n\nROTEIRO FINAL: preencha roteiro com exatamente ${count} blocos. Roles: ${roles}. Cada fala é completa, natural e específica para a referência atual. O roteiro final tem prioridade sobre os moldes legados.\n\nREGRA VISUAL: não repita na fala o que a câmera já mostra sem função narrativa.\nREGRA DE RETENÇÃO: cada bloco deve avançar o anterior; não entregue o payoff cedo demais.\nREGRA DE CTA: o CTA nasce da intenção + objetivo.\n`;\n  return `${SYSTEM_BASE}\n\n${directive}\n${buildVariantDirective(variant)}`;
+  }
 
 /** Revisor de Roteiro do Blocos de venda — mesmo papel do Quality Judge do
  * pipeline principal (quality-judge.ts), mas julgando as FRASES FINAIS
@@ -240,14 +247,11 @@ const JudgmentSchema = z.object({
 });
 
 const JUDGE_SYSTEM = `Você é o Revisor de Roteiro do Blocos de venda — não escreve nada, só avalia
-com rigor as FRASES FINAIS MONTADAS do roteiro (cada campo já encaixado no template, exatamente
-como o usuário vai ler/falar), como um roteiro único e contínuo, procurando motivo pra reprovar
+com rigor as FALAS FINAIS do roteiro, exatamente como o usuário vai ler/falar, como um roteiro único
+e contínuo, procurando motivo pra reprovar
 texto mediano, clichê, robótico, gramaticalmente quebrado, ou que não persuade de verdade.
 
-Você recebe os campos crus E as frases montadas, em ordem. Julgue SEMPRE pela frase montada, não só
-pelo campo isolado — um campo pode parecer certo sozinho e ainda quebrar a gramática ou o sentido
-quando entra no template (ex.: "proposito" começando com "para" duplica o "para" que "fato" já
-tem antes dele).
+Você recebe os campos crus E as falas finais, em ordem. Julgue SEMPRE pela fala final e pelo arco completo. Os campos semânticos são evidência auxiliar; o roteiro livre é a saída principal.
 
 ${CREATIVE_QUALITY_BAR}
 
@@ -322,20 +326,37 @@ function deterministicInstruction(fields: BlocosVendaFields, variant: BlocosVend
     .filter((c) => c.over)
     .map(
       (c) =>
-        `Bloco ${c.bloco} (campo${c.campos.length > 1 ? "s" : ""} ${c.campos.join(" + ")}): a fala fica com ${c.chars} letras / ${c.words} palavras (~${c.secs.toFixed(0)}s), passa dos 10s do bloco. Reescreva ${c.campos.length > 1 ? "esses campos" : "esse campo"} mais curto(s) pra a fala do bloco ficar com no máximo ~114 letras no total (~10s), sem perder o sentido.`,
+        `Bloco ${c.bloco}: a fala tem ${c.chars} letras / ${c.words} palavras (~${c.secs.toFixed(0)}s) e passa do slot de 10s. Reescreva SOMENTE a fala desse bloco, preservando a ideia e os fatos, para aproximadamente 100–114 letras.`,
     );
-  // Pedido direto do usuário: "faça aproveitar bem os 10 segundos" — bloco
-  // curto demais desperdiça o slot inteiro tanto quanto um bloco que passa
-  // do tempo. Nunca alonga sozinho em código (exigiria inventar conteúdo)
-  // — vira instrução pra LLM elaborar mais o campo com detalhe real.
+
   const underIssues = checks
     .filter((c) => c.under)
     .map(
       (c) =>
-        `Bloco ${c.bloco} (campo${c.campos.length > 1 ? "s" : ""} ${c.campos.join(" + ")}): a fala fica com só ${c.chars} letras / ${c.words} palavras (~${c.secs.toFixed(0)}s), desperdiçando boa parte do slot de 10s. Reescreva ${c.campos.length > 1 ? "esses campos" : "esse campo"} com mais detalhe REAL (nunca invente característica/número novo) pra chegar perto de ~110 letras no total (~10s) — elabore a ideia, não apenas repita palavras.`,
+        `Bloco ${c.bloco}: a fala tem só ${c.chars} letras / ${c.words} palavras (~${c.secs.toFixed(0)}s). Elabore a mesma ideia com um detalhe REAL adicional, sem inventar fatos, até aproximadamente 95–114 letras.`,
     );
-  const structuralIssues = checkStructuralIssues(fields, variant);
-  const all = [...lengthIssues, ...underIssues, ...structuralIssues];
+
+  const expectedRoles = CREATIVE_ROLES_BY_VARIANT[variant];
+  const scriptIssues: string[] = [];
+  if (fields.roteiro) {
+    if (fields.roteiro.length !== expectedRoles.length) {
+      scriptIssues.push(`O campo roteiro precisa ter exatamente ${expectedRoles.length} blocos, nos papéis: ${expectedRoles.join(", ")}.`);
+    } else {
+      fields.roteiro.forEach((block, index) => {
+        if (block.role !== expectedRoles[index]) {
+          scriptIssues.push(`O bloco ${index + 1} deve ter role "${expectedRoles[index]}", não "${block.role}".`);
+        }
+      });
+    }
+  }
+
+  const intent = fields.strategy?.intent ?? fields.intent ?? "sales";
+  const intentIssues = validateIntentSemantics(fields, intent);
+  const structuralIssues = fields.roteiro?.length
+    ? []
+    : checkStructuralIssues(fields, variant);
+
+  const all = [...lengthIssues, ...underIssues, ...scriptIssues, ...intentIssues, ...structuralIssues];
   return all.length ? all.join("\n") : null;
 }
 
@@ -367,9 +388,9 @@ export async function generateBlocosVendaFields(
     toolName: "blocos_venda_fields",
   });
 
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < 3; attempt++) {
     const deterministic = deterministicInstruction(fields, variant);
-    const judgment = attempt === 0 ? await judgeFields(fields, variant) : null;
+    const judgment = attempt < 2 ? await judgeFields(fields, variant) : null;
     const instruction = [deterministic, judgment?.revisionInstruction].filter(Boolean).join("\n");
     if (!instruction) break;
     fields = await reviseFields(fields, instruction);
@@ -380,5 +401,14 @@ export async function generateBlocosVendaFields(
   // pra LLM encurtar de novo não é confiável o bastante (visto na prática:
   // ela às vezes ignora a instrução), e o usuário nunca deve ver o alerta
   // "passa de 10s" logo depois de gerar com IA.
+  const finalChecks = checkFalaLengths(fields, variant);
+  if (finalChecks.some((check) => check.over)) {
+    // Se a escrita livre não respeitar o contrato mesmo após 3 revisões,
+    // cai para o fallback determinístico. Segurança operacional vence uma
+    // fala criativa estourada.
+    const fallback = { ...fields, roteiro: undefined, strategy: undefined };
+    return enforceFalaBudgets(fallback, variant);
+  }
+
   return enforceFalaBudgets(fields, variant);
 }
