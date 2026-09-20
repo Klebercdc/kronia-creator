@@ -52,7 +52,7 @@ function downscaleImage(dataUrl: string, maxSide = 1280, quality = 0.82): Promis
 }
 
 /**
- * Gerador de blocos de venda — porta do artefato "Gerador de blocos de
+ * Gerador de blocos criativos — porta do artefato "Gerador de blocos de
  * venda" (Jeová Fala) enviado pelo usuário pra dentro do app, substituindo
  * o que estava na aba Prompt. Mesma lógica do HTML original (campos,
  * fórmulas de fala por bloco, contagem de palavras/tempo, alertas de
