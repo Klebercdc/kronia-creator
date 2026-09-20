@@ -23,6 +23,7 @@ import {
 import { ACTOR_PRESETS } from "../core/generation/actor-presets";
 import { TikTokPreview } from "../components/TikTokPreview";
 import { ReferenceLibraryCatalog } from "../components/ReferenceLibraryCatalog";
+import { ReferenceStudioPanel } from "../components/ReferenceStudioPanel";
 import { uploadReferenceVideo } from "../lib/supabase-client";
 import type { SavedTheme, HistoryEntry, ConversationRow } from "../lib/supabase";
 import type { ContentRequest, GenerationResult, PipelineOutput, ReferenceAnalysis } from "../types/pipeline";
@@ -42,6 +43,7 @@ import { buildCreativePromptFn } from "../server/creative.functions";
 import type { BuildCreativePromptResult } from "../core/intelligence/creative/orchestrator";
 import { TARGET_PROFILES } from "../core/intelligence/creative/target-profiles";
 import type { VideoAnalysis } from "../types/video-analysis";
+import type { ReferenceContext } from "../types/reference-studio";
 import logoIcon from "../assets/logo-icon.png";
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -1013,6 +1015,7 @@ function PromptTab({
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [result, setResult] = useState<BuildCreativePromptResult | null>(null);
+  const [referenceContext, setReferenceContext] = useState<ReferenceContext | null>(null);
 
   // Reference Intelligence (Fase 2B) — vídeo de referência opcional.
   // Reaproveita o MESMO Job Engine (ingest_reference_video) já usado em
@@ -1116,6 +1119,7 @@ function PromptTab({
           // Reference Intelligence (Fase 2B) — null se nenhum vídeo foi
           // enviado/analisado ainda; motor trata os dois casos.
           referenceAnalysis,
+          referenceContext: referenceContext ?? undefined,
         },
       });
       setResult(res);
@@ -1202,6 +1206,7 @@ function PromptTab({
             </div>
           )}
         </div>
+        <ReferenceStudioPanel videoAnalysis={referenceAnalysis} onContextChange={setReferenceContext} />
         <div style={{ display: "flex", gap: 12 }}>
           <div style={{ flex: 1 }}>
             <div className="section-label">Mídia</div>
