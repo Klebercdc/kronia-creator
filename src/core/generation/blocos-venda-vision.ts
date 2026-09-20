@@ -18,8 +18,8 @@ import {
 } from "./blocos-venda-fala";
 
 /**
- * Preenche os 17 campos do gerador de blocos de venda a partir da foto do
- * avatar/personagem com o produto — o usuário não digita nada, só anexa a
+ * Preenche os campos do gerador criativo a partir da foto do
+ * avatar/personagem com o produto — o usuário anexa a
  * foto (e opcionalmente um contexto curto). Uma chamada de visão só, porque
  * os campos são interdependentes (o nome do personagem, o tom da voz e o
  * público entram todos na mesma frase-modelo) e ficam mais coerentes
@@ -71,7 +71,7 @@ const CTA_TECNICA = fromMechanisms("cta_claro");
 /** Bloco fixo — cada variante usa só um subconjunto dos campos; o resto
  * fica como string vazia "". Nunca invente conteúdo pros campos não
  * usados só pra "preencher". */
-function buildVariantDirective(variant: BlocosVendaVariant, intent: "message" | "engagement" | "sales" | "script" | "custom" = "sales"): string {
+function buildVariantDirective(variant: BlocosVendaVariant, intent: "message" | "engagement" | "sales" | "script" | "custom" = "custom"): string {
   const used = fieldsUsedBy(variant, intent);
   const all: { campo: string; usado: boolean }[] = [
     { campo: "gancho", usado: used.has("gancho") },
@@ -175,7 +175,7 @@ Se houver produto visível ou citado, preserve sua identidade literal. Nunca tra
 
 Não exponha cadeia de pensamento privada. Retorne somente o schema.`;
 
-  return `${SYSTEM_BASE}\n\n${directive}\n${buildVariantDirective(variant)}`;
+  return `${SYSTEM_BASE}\n\n${directive}\n${buildVariantDirective(variant, "custom")}`;
 }
 /** Revisor de Roteiro do Blocos de venda — mesmo papel do Quality Judge do
  * pipeline principal (quality-judge.ts), mas julgando as FRASES FINAIS
@@ -224,7 +224,7 @@ async function judgeFields(fields: BlocosVendaFields, variant: BlocosVendaVarian
   return callStructuredText({
     schema: JudgmentSchema,
     system: JUDGE_SYSTEM,
-    prompt: `INTENÇÃO: ${fields.strategy?.intent ?? "custom"}\nOBJETIVO: ${fields.strategy?.objective ?? "conversion"}\n\nCampos gerados:\n${JSON.stringify(fields, null, 2)}\n\nFrases finais montadas (roteiro completo, leia em sequência):\n${falasMontadas}`,
+    prompt: `INTENÇÃO: ${fields.strategy?.intent ?? "custom"}\nOBJETIVO: ${fields.strategy?.objective ?? "custom"}\n\nCampos gerados:\n${JSON.stringify(fields, null, 2)}\n\nFrases finais montadas (roteiro completo, leia em sequência):\n${falasMontadas}`,
     toolName: "blocos_venda_judgment",
   });
 }
@@ -252,6 +252,7 @@ async function reviseFields(fields: BlocosVendaFields, instruction: string): Pro
  * fórmula em código, porque a LLM já demonstrou (na prática) não seguir
  * essas regras de forma confiável só por estarem escritas no prompt. */
 function deterministicInstruction(fields: BlocosVendaFields, variant: BlocosVendaVariant): string | null {
+  const intent = fields.strategy?.intent ?? "custom";
   const checks = checkFalaLengths(fields, variant);
   const lengthIssues = checks
     .filter((c) => c.over)
@@ -281,7 +282,6 @@ function deterministicInstruction(fields: BlocosVendaFields, variant: BlocosVend
     }
   }
 
-  const intent = fields.strategy?.intent ?? "sales";
   const intentIssues = validateIntentSemantics(fields, intent);
   const structuralIssues = fields.roteiro?.length
     ? []
@@ -337,7 +337,7 @@ export async function generateBlocosVendaFields(
     // Se a escrita livre não respeitar o contrato mesmo após 3 revisões,
     // cai para o fallback determinístico. Segurança operacional vence uma
     // fala criativa estourada.
-    const fallback = { ...fields, roteiro: undefined, strategy: undefined };
+    const fallback = { ...fields, roteiro: undefined };
     return enforceFalaBudgets(fallback, variant);
   }
 
