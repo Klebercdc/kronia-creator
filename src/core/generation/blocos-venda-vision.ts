@@ -128,9 +128,12 @@ REGRAS DE COMPLIANCE (linguagem de venda) — pros campos publico/valores/funcao
 - Cada bloco tem ~10s de fala (ritmo de leitura em voz alta: ~13 letras/segundo — não conte só
   palavra, uma palavra longa ("extraordinariamente") demora muito mais que uma curta ("e"), mesmo
   contando como "1 palavra" cada). A FRASE FINAL de cada bloco (o texto pronto, já com os campos
-  encaixados no template, não só o campo isolado) tem que caber em no máximo ~108 letras no total
-  (por volta de 18 palavras médias) — senão o bloco passa de 10s e alguém vai precisar encurtar na
-  mão depois. Pense na frase inteira antes de escrever cada campo, não só no campo isolado.
+  encaixados no template, não só o campo isolado) tem que ficar entre ~95 e ~114 letras no total
+  (por volta de 16-19 palavras médias) — NUNCA menos que isso. Bloco curto demais desperdiça o
+  slot de 10s inteiro (ex.: um bloco de só 70-80 letras larga ~2-3s do vídeo sem fala nenhuma) —
+  isso é tão errado quanto passar de 10s. Mire perto do teto (~110 letras), não no mínimo
+  aceitável — só encurte se realmente passar de ~114 letras. Pense na frase inteira antes de
+  escrever cada campo, não só no campo isolado.
 
 TÉCNICA POR PAPEL — mesma taxonomia usada pelos outros agentes de copy do KRONIA (hooks validados
 em análise de 34.635 clipes virais + mecanismos de persuasão legítimos, nunca manipulação
@@ -299,13 +302,25 @@ async function reviseFields(fields: BlocosVendaFields, instruction: string): Pro
  * fórmula em código, porque a LLM já demonstrou (na prática) não seguir
  * essas regras de forma confiável só por estarem escritas no prompt. */
 function deterministicInstruction(fields: BlocosVendaFields, variant: BlocosVendaVariant): string | null {
-  const overBlocks = checkFalaLengths(fields, variant).filter((c) => c.over);
-  const lengthIssues = overBlocks.map(
-    (c) =>
-      `Bloco ${c.bloco} (campo${c.campos.length > 1 ? "s" : ""} ${c.campos.join(" + ")}): a fala fica com ${c.chars} letras / ${c.words} palavras (~${c.secs.toFixed(0)}s), passa dos 10s do bloco. Reescreva ${c.campos.length > 1 ? "esses campos" : "esse campo"} mais curto(s) pra a fala do bloco ficar com no máximo ~108 letras no total (~10s), sem perder o sentido.`,
-  );
+  const checks = checkFalaLengths(fields, variant);
+  const lengthIssues = checks
+    .filter((c) => c.over)
+    .map(
+      (c) =>
+        `Bloco ${c.bloco} (campo${c.campos.length > 1 ? "s" : ""} ${c.campos.join(" + ")}): a fala fica com ${c.chars} letras / ${c.words} palavras (~${c.secs.toFixed(0)}s), passa dos 10s do bloco. Reescreva ${c.campos.length > 1 ? "esses campos" : "esse campo"} mais curto(s) pra a fala do bloco ficar com no máximo ~114 letras no total (~10s), sem perder o sentido.`,
+    );
+  // Pedido direto do usuário: "faça aproveitar bem os 10 segundos" — bloco
+  // curto demais desperdiça o slot inteiro tanto quanto um bloco que passa
+  // do tempo. Nunca alonga sozinho em código (exigiria inventar conteúdo)
+  // — vira instrução pra LLM elaborar mais o campo com detalhe real.
+  const underIssues = checks
+    .filter((c) => c.under)
+    .map(
+      (c) =>
+        `Bloco ${c.bloco} (campo${c.campos.length > 1 ? "s" : ""} ${c.campos.join(" + ")}): a fala fica com só ${c.chars} letras / ${c.words} palavras (~${c.secs.toFixed(0)}s), desperdiçando boa parte do slot de 10s. Reescreva ${c.campos.length > 1 ? "esses campos" : "esse campo"} com mais detalhe REAL (nunca invente característica/número novo) pra chegar perto de ~110 letras no total (~10s) — elabore a ideia, não apenas repita palavras.`,
+    );
   const structuralIssues = checkStructuralIssues(fields, variant);
-  const all = [...lengthIssues, ...structuralIssues];
+  const all = [...lengthIssues, ...underIssues, ...structuralIssues];
   return all.length ? all.join("\n") : null;
 }
 
