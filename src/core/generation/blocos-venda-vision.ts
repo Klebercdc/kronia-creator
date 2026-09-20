@@ -123,27 +123,31 @@ Retorne os campos do schema e nada além disso.`;
 function buildSystem(variant: BlocosVendaVariant): string {
   const roles = CREATIVE_ROLES_BY_VARIANT[variant].join(" → ");
   const count = expectedCreativeBlockCount(variant);
-  const directive = `PROTOCOLO CRIATIVO — execute antes de escrever:
-1. OBSERVE: use apenas evidências visuais e dados explicitamente fornecidos.
-2. CONTEXTUALIZE: determine perfil, produto, público, plataforma, duração e briefing desta chamada.
-3. INTENÇÃO: determine a intenção real; neste módulo, o padrão é sales salvo indicação explícita.
-4. OBJETIVO: determine o comportamento desejado.
-5. OPORTUNIDADE: encontre o elemento visual/narrativo com maior potencial de atenção.
-6. IDEIA: defina tema, verdade central, tensão/desejo e arco emocional.
-7. ESTRATÉGIA: escolha a mecânica adequada; não comece por uma frase pronta.
-8. ESCRITA: escreva a fala completa de cada bloco, sem montar frases por fragmentos.
-9. VALIDAÇÃO: confira contexto, intenção, claims, naturalidade, timing e continuidade.
+  const directive = `PROTOCOLO CRIATIVO:
+1. OBSERVE: separe evidência visual de briefing.
+2. CONTEXTUALIZE: trate o BRIEFING CRIATIVO como instrução principal.
+3. INTENÇÃO: derive a intenção do briefing; não assuma sales quando ele pedir mensagem, reflexão, fé ou engajamento.
+4. OBJETIVO: derive o comportamento desejado.
+5. OPORTUNIDADE: encontre o elemento narrativo que melhor serve à intenção.
+6. IDEIA: defina tema, verdade central, tensão/desejo e arco.
+7. ESTRATÉGIA: escolha a mecânica adequada.
+8. ESCRITA: escreva falas completas, sem montar frases por fragmentos.
+9. VALIDAÇÃO: confira intenção, claims, CTA, naturalidade, timing e continuidade.
 
-Não exponha cadeia de pensamento privada. Retorne somente os campos do schema.
+DECISÃO ESTRUTURADA:
+Preencha strategy com as decisões estruturadas solicitadas pelo schema.
+Preencha roteiro com exatamente ${count} blocos, nos papéis ${roles}. O roteiro é a saída principal e tem prioridade sobre campos legados.
 
-DECISÃO ESTRUTURADA: preencha strategy com intent, objective, theme, coreTruth, audience, emotionalStart, emotionalEnd, hookMechanic, narrativeArc, ctaObjective, verifiedFacts, observedVisuals e creativeAssumptions.
+REGRA CRÍTICA DE INTENÇÃO:
+Se o briefing pedir mensagem, reflexão, devocional, fé, esperança, consolo ou conteúdo semelhante sem pedir venda, trate como message.
+Nesse caso NÃO use carrinho, link de compra, comprar, adquirir, preço, promoção ou CTA comercial.
+Não invente prova social ou resultados.
+O encerramento deve concluir a mensagem ou convidar a uma ação não comercial coerente.
 
-ROTEIRO FINAL: preencha roteiro com exatamente ${count} blocos. Roles: ${roles}. Cada fala é completa, natural e específica para a referência atual. O roteiro final tem prioridade sobre os moldes legados.
+Se o briefing pedir explicitamente venda, compra ou conversão, trate como sales.
 
-REGRA VISUAL: não repita na fala o que a câmera já mostra sem função narrativa.
-REGRA DE RETENÇÃO: cada bloco deve avançar o anterior; não entregue o payoff cedo demais.
-REGRA DE CTA: o CTA nasce da intenção + objetivo.
-`;
+Não exponha cadeia de pensamento privada. Retorne somente o schema.`;
+
   return `${SYSTEM_BASE}\n\n${directive}\n${buildVariantDirective(variant)}`;
 }
 
