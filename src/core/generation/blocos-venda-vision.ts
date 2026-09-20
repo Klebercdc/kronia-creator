@@ -329,20 +329,37 @@ function deterministicInstruction(fields: BlocosVendaFields, variant: BlocosVend
     .filter((c) => c.over)
     .map(
       (c) =>
-        `Bloco ${c.bloco} (campo${c.campos.length > 1 ? "s" : ""} ${c.campos.join(" + ")}): a fala fica com ${c.chars} letras / ${c.words} palavras (~${c.secs.toFixed(0)}s), passa dos 10s do bloco. Reescreva ${c.campos.length > 1 ? "esses campos" : "esse campo"} mais curto(s) pra a fala do bloco ficar com no máximo ~114 letras no total (~10s), sem perder o sentido.`,
+        `Bloco ${c.bloco}: a fala tem ${c.chars} letras / ${c.words} palavras (~${c.secs.toFixed(0)}s) e passa do slot de 10s. Reescreva SOMENTE a fala desse bloco, preservando a ideia e os fatos, para aproximadamente 100–114 letras.`,
     );
-  // Pedido direto do usuário: "faça aproveitar bem os 10 segundos" — bloco
-  // curto demais desperdiça o slot inteiro tanto quanto um bloco que passa
-  // do tempo. Nunca alonga sozinho em código (exigiria inventar conteúdo)
-  // — vira instrução pra LLM elaborar mais o campo com detalhe real.
+
   const underIssues = checks
     .filter((c) => c.under)
     .map(
       (c) =>
-        `Bloco ${c.bloco} (campo${c.campos.length > 1 ? "s" : ""} ${c.campos.join(" + ")}): a fala fica com só ${c.chars} letras / ${c.words} palavras (~${c.secs.toFixed(0)}s), desperdiçando boa parte do slot de 10s. Reescreva ${c.campos.length > 1 ? "esses campos" : "esse campo"} com mais detalhe REAL (nunca invente característica/número novo) pra chegar perto de ~110 letras no total (~10s) — elabore a ideia, não apenas repita palavras.`,
+        `Bloco ${c.bloco}: a fala tem só ${c.chars} letras / ${c.words} palavras (~${c.secs.toFixed(0)}s). Elabore a mesma ideia com um detalhe REAL adicional, sem inventar fatos, até aproximadamente 95–114 letras.`,
     );
-  const structuralIssues = checkStructuralIssues(fields, variant);
-  const all = [...lengthIssues, ...underIssues, ...structuralIssues];
+
+  const expectedRoles = CREATIVE_ROLES_BY_VARIANT[variant];
+  const scriptIssues: string[] = [];
+  if (fields.roteiro) {
+    if (fields.roteiro.length !== expectedRoles.length) {
+      scriptIssues.push(`O campo roteiro precisa ter exatamente ${expectedRoles.length} blocos, nos papéis: ${expectedRoles.join(", ")}.`);
+    } else {
+      fields.roteiro.forEach((block, index) => {
+        if (block.role !== expectedRoles[index]) {
+          scriptIssues.push(`O bloco ${index + 1} deve ter role "${expectedRoles[index]}", não "${block.role}".`);
+        }
+      });
+    }
+  }
+
+  const intent = fields.strategy?.intent ?? fields.intent ?? "sales";
+  const intentIssues = validateIntentSemantics(fields, intent);
+  const structuralIssues = fields.roteiro?.length
+    ? []
+    : checkStructuralIssues(fields, variant);
+
+  const all = [...lengthIssues, ...underIssues, ...scriptIssues, ...intentIssues, ...structuralIssues];
   return all.length ? all.join("\n") : null;
 }
 
@@ -374,9 +391,9 @@ export async function generateBlocosVendaFields(
     toolName: "blocos_venda_fields",
   });
 
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < 3; attempt++) {
     const deterministic = deterministicInstruction(fields, variant);
-    const judgment = attempt === 0 ? await judgeFields(fields, variant) : null;
+    const judgment = attempt < 2 ? await judgeFields(fields, variant) : null;
     const instruction = [deterministic, judgment?.revisionInstruction].filter(Boolean).join("\n");
     if (!instruction) break;
     fields = await reviseFields(fields, instruction);
@@ -387,5 +404,14 @@ export async function generateBlocosVendaFields(
   // pra LLM encurtar de novo não é confiável o bastante (visto na prática:
   // ela às vezes ignora a instrução), e o usuário nunca deve ver o alerta
   // "passa de 10s" logo depois de gerar com IA.
+  const finalChecks = checkFalaLengths(fields, variant);
+  if (finalChecks.some((check) => check.over)) {
+    // Se a escrita livre não respeitar o contrato mesmo após 3 revisões,
+    // cai para o fallback determinístico. Segurança operacional vence uma
+    // fala criativa estourada.
+    const fallback = { ...fields, roteiro: undefined, strategy: undefined };
+    return enforceFalaBudgets(fallback, variant);
+  }
+
   return enforceFalaBudgets(fields, variant);
 }
