@@ -84,6 +84,13 @@ interface FieldValues {
   roteiro?: CreativeBlock[];
 }
 
+/** Só os campos de texto — exclui "strategy"/"roteiro" (não são string).
+ * Necessário pra tipar chaves usadas em atribuição genérica (PRODUCT_KEYS,
+ * FIELD_LABELS, loadStoredValues); sem isso o TS trata a chave como
+ * "keyof FieldValues" completo e a atribuição de string quebra o
+ * typecheck, porque essa união também cobre os 2 campos não-string. */
+type StringFieldKey = keyof Omit<FieldValues, "strategy" | "roteiro">;
+
 const STORAGE_KEY = "jf-blocos-v2";
 
 const DEFAULTS: FieldValues = {
@@ -106,7 +113,7 @@ const DEFAULTS: FieldValues = {
   objecao: "não precisa saber de teologia pra entender — a linguagem é simples, dia a dia",
 };
 
-const PRODUCT_KEYS: (keyof FieldValues)[] = [
+const PRODUCT_KEYS: (StringFieldKey)[] = [
   "gancho",
   "produto",
   "funcao",
@@ -300,7 +307,7 @@ function loadStoredValues(): FieldValues {
   try {
     const raw = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "{}");
     const merged = { ...DEFAULTS };
-    (Object.keys(DEFAULTS) as (keyof FieldValues)[]).forEach((k) => {
+    (Object.keys(DEFAULTS) as (StringFieldKey)[]).forEach((k) => {
       if (typeof raw[k] === "string") merged[k] = raw[k];
     });
     if (Array.isArray(raw.roteiro)) merged.roteiro = raw.roteiro;
@@ -311,7 +318,7 @@ function loadStoredValues(): FieldValues {
   }
 }
 
-const FIELD_LABELS: { key: keyof FieldValues; label: string; hint: string; textarea?: boolean; rows?: number; group?: "produto" | "personagem" }[] = [
+const FIELD_LABELS: { key: StringFieldKey; label: string; hint: string; textarea?: boolean; rows?: number; group?: "produto" | "personagem" }[] = [
   { key: "nome", label: "Nome do personagem/avatar", hint: 'Aparece como "VOZ OFICIAL DE ___" na fala' },
   { key: "gancho", label: "Gancho (fala do bloco 1)", hint: "A frase pronta de abertura — livre, sem molde fixo. Ex.: \"Se você está precisando de esperança… fica comigo só por alguns segundos.\"", textarea: true, rows: 2 },
   { key: "produto", label: "Produto", hint: "Com artigo. Ex.: um livro devocional" },
@@ -353,7 +360,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
     }
   }, [values]);
 
-  function setField(key: keyof FieldValues, val: string) {
+  function setField(key: StringFieldKey, val: string) {
     setValues((prev) => ({ ...prev, [key]: val, roteiro: undefined, strategy: undefined }));
   }
 
