@@ -10,11 +10,13 @@ import {
   charCount,
   estimateSecs,
   fieldsUsedBy,
+  finalFalasFor,
   FALA_TEMPLATES_BY_VARIANT,
   VARIANT_LABEL,
   VARIANT_ORDER,
   type BlocosVendaVariant,
 } from "../core/generation/blocos-venda-fala";
+import type { CreativeBlock, CreativeStrategy } from "../core/generation/creative-context";
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -78,6 +80,8 @@ interface FieldValues {
   prova: string;
   beneficioExtra: string;
   objecao: string;
+  strategy?: CreativeStrategy;
+  roteiro?: CreativeBlock[];
 }
 
 const STORAGE_KEY = "jf-blocos-v2";
@@ -270,7 +274,7 @@ function blocksFor(variant: BlocosVendaVariant): BlockDef[] {
   });
 }
 
-function buildPrompt(b: BlockDef, v: FieldValues, index: number): string {
+function buildPrompt(b: BlockDef, v: FieldValues, index: number, falaOverride?: string): string {
   const nomeCaixaAlta = nomeDe(v).toUpperCase();
   return [
     `SCRIPT ${String(index + 1).padStart(2, "0")} — ${b.tempoScript}`,
@@ -285,7 +289,7 @@ function buildPrompt(b: BlockDef, v: FieldValues, index: number): string {
     "",
     `FALA — VOZ OFICIAL DE ${nomeCaixaAlta}:`,
     "",
-    `"${b.fala(v)}"`,
+    `"${falaOverride ?? b.fala(v)}"`,
     "",
     `VOZ: ${v.voz}`,
   ].join("\n");
@@ -299,6 +303,8 @@ function loadStoredValues(): FieldValues {
     (Object.keys(DEFAULTS) as (keyof FieldValues)[]).forEach((k) => {
       if (typeof raw[k] === "string") merged[k] = raw[k];
     });
+    if (Array.isArray(raw.roteiro)) merged.roteiro = raw.roteiro;
+    if (raw.strategy && typeof raw.strategy === "object") merged.strategy = raw.strategy;
     return merged;
   } catch {
     return DEFAULTS;
@@ -389,10 +395,11 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
 
   const blocks = useMemo(() => {
     const defs = blocksFor(variant);
+    const creativeFalas = finalFalasFor(values, variant);
     return defs.map((b, i) => {
-      const fala = b.fala(values);
+      const fala = creativeFalas[i] ?? b.fala(values);
       const s = estimateSecs(fala);
-      return { def: b, fala, words: wordCount(fala), chars: charCount(fala), secs: s, over: s > 11, prompt: buildPrompt(b, values, i) };
+      return { def: b, fala, words: wordCount(fala), chars: charCount(fala), secs: s, over: s > 11, prompt: buildPrompt(b, values, i, fala) };
     });
   }, [values, variant]);
 
