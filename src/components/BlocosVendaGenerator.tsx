@@ -344,6 +344,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
   const [copiedBlock, setCopiedBlock] = useState<number | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
+  const [briefing, setBriefing] = useState("");
   const [contexto, setContexto] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -393,7 +394,10 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
     setAiLoading(true);
     setAiError(null);
     try {
-      const fields = await generateFieldsRpc({ data: { imageDataUrls: photos, contexto: contexto.trim() || undefined, variant } });
+      const briefingTrimmed = briefing.trim();
+      const contextoTrimmed = contexto.trim();
+      const combinedContext = [briefingTrimmed ? `BRIEFING CRIATIVO: ${briefingTrimmed}` : "", contextoTrimmed ? `CONTEXTO DA IMAGEM/PRODUTO: ${contextoTrimmed}` : ""].filter(Boolean).join("\\n\\n");
+      const fields = await generateFieldsRpc({ data: { imageDataUrls: photos, contexto: combinedContext || undefined, variant } });
       setValues((prev) => ({ ...prev, ...fields }));
     } catch (err) {
       setAiError(errorMessageOf(err, "Erro ao gerar os campos com IA"));
@@ -564,9 +568,21 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
           )}
         </div>
         <div className="hint" style={{ marginBottom: 10 }}>Foto do avatar segurando o produto (ou uma de cada).</div>
+        <textarea
+          className="input"
+          rows={4}
+          placeholder="Briefing criativo — escreva o que você quer criar. Ex.: Quero uma mensagem cristã sobre esperança, com tom íntimo e emocional, para pessoas que estão passando por um momento difícil."
+          value={briefing}
+          onChange={(e) => setBriefing(e.target.value)}
+          style={{ marginBottom: 10, resize: "vertical" }}
+          aria-label="Briefing criativo"
+        />
+        <div className="hint" style={{ marginBottom: 10 }}>
+          Descreva a ideia, mensagem, público, objetivo ou qualquer direção criativa. A IA usa este briefing junto com a imagem, sem substituir o que estiver visível.
+        </div>
         <input
           className="input"
-          placeholder="Contexto opcional (ex.: nome do produto, se não estiver legível na foto)"
+          placeholder="Contexto adicional opcional (ex.: nome do produto, se não estiver legível na foto)"
           value={contexto}
           onChange={(e) => setContexto(e.target.value)}
           style={{ marginBottom: 10 }}
