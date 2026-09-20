@@ -4,6 +4,7 @@ import { PERSUASION_MECHANISMS } from "../../types/taxonomy";
 import { BANNED_PHRASES } from "../compliance/absolute-claims-guard";
 import { CREATIVE_QUALITY_BAR } from "./quality-bar";
 import { buildHookLibraryPromptBlock } from "./hook-library";
+import { CreativeStrategySchema, CreativeBlockSchema, expectedCreativeBlockCount } from "./creative-context";
 import {
   checkFalaLengths,
   checkStructuralIssues,
@@ -11,6 +12,8 @@ import {
   fieldsUsedBy,
   VARIANT_LABEL,
   type BlocosVendaVariant,
+  validateIntentSemantics,
+  CREATIVE_ROLES_BY_VARIANT,
 } from "./blocos-venda-fala";
 
 /**
@@ -41,6 +44,8 @@ const FieldsSchema = z.object({
   prova: z.string(),
   beneficioExtra: z.string(),
   objecao: z.string(),
+  strategy: CreativeStrategySchema.optional(),
+  roteiro: z.array(CreativeBlockSchema).max(8).optional(),
 });
 
 export type BlocosVendaFields = z.infer<typeof FieldsSchema>;
@@ -217,8 +222,10 @@ SIGNIFICADO DE CADA CAMPO (como ele entra nas frases-modelo, pra você escrever 
 Responda só com os campos preenchidos, nada além disso.`;
 
 function buildSystem(variant: BlocosVendaVariant): string {
-  return `${SYSTEM_BASE}\n\n${buildVariantDirective(variant)}`;
-}
+  const roles = CREATIVE_ROLES_BY_VARIANT[variant].join(" → ");
+  const count = expectedCreativeBlockCount(variant);
+  const directive = `PROTOCOLO CRIATIVO — execute antes de escrever:\n1. OBSERVE: use apenas evidências visuais e dados explicitamente fornecidos.\n2. CONTEXTUALIZE: determine perfil, produto, público, plataforma, duração e briefing desta chamada.\n3. INTENÇÃO: determine a intenção real; neste módulo, o padrão é sales salvo indicação explícita.\n4. OBJETIVO: determine o comportamento desejado.\n5. OPORTUNIDADE: encontre o elemento visual/narrativo com maior potencial de atenção.\n6. IDEIA: defina tema, verdade central, tensão/desejo e arco emocional.\n7. ESTRATÉGIA: escolha a mecânica adequada; não comece por uma frase pronta.\n8. ESCRITA: escreva a fala completa de cada bloco, sem montar frases por fragmentos.\n9. VALIDAÇÃO: confira contexto, intenção, claims, naturalidade, timing e continuidade.\n\nNão exponha cadeia de pensamento privada. Retorne somente os campos do schema.\n\nDECISÃO ESTRUTURADA: preencha strategy com intent, objective, theme, coreTruth, audience, emotionalStart, emotionalEnd, hookMechanic, narrativeArc, ctaObjective, verifiedFacts, observedVisuals e creativeAssumptions.\n\nROTEIRO FINAL: preencha roteiro com exatamente ${count} blocos. Roles: ${roles}. Cada fala é completa, natural e específica para a referência atual. O roteiro final tem prioridade sobre os moldes legados.\n\nREGRA VISUAL: não repita na fala o que a câmera já mostra sem função narrativa.\nREGRA DE RETENÇÃO: cada bloco deve avançar o anterior; não entregue o payoff cedo demais.\nREGRA DE CTA: o CTA nasce da intenção + objetivo.\n`;\n  return `${SYSTEM_BASE}\\n\\n${directive}\\n${buildVariantDirective(variant)}`;
+  }
 
 /** Revisor de Roteiro do Blocos de venda — mesmo papel do Quality Judge do
  * pipeline principal (quality-judge.ts), mas julgando as FRASES FINAIS
