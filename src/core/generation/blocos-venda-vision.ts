@@ -87,11 +87,12 @@ function buildVariantDirective(variant: BlocosVendaVariant, intent: "message" | 
   ];
   const usados = all.filter((c) => c.usado).map((c) => c.campo);
   const naoUsados = all.filter((c) => !c.usado).map((c) => c.campo);
-  return `VARIANTE ATUAL: "${VARIANT_LABEL[variant]}". Preencha SÓ estes campos de fala com conteúdo
-real: ${usados.join(", ")}. Os campos ${naoUsados.length ? naoUsados.join(", ") : "(nenhum)"} NÃO são
-usados nessa variante — deixe como string vazia "", nunca invente conteúdo pra eles só pra
-"preencher". Os campos visuais/de personagem (nome, visual, demo, idv, voz, cen) são sempre
-preenchidos, em qualquer variante.`;
+  return `VARIANTE ATUAL: "${VARIANT_LABEL[variant]}". A estratégia define quais campos de fala são realmente usados.
+Se strategy.intent for "sales", preencha somente os campos comerciais usados nesta variante: ${usados.join(", ")}.
+Se strategy.intent for "message", "engagement", "script" ou "custom", NÃO preencha "local", "cta", "prova",
+"beneficioExtra" ou "objecao" só para completar o schema; deixe esses campos vazios quando não forem fatos
+necessários. O roteiro é a fonte criativa principal. Nunca invente conteúdo para campos não utilizados.
+Os campos visuais/de personagem (nome, visual, demo, idv, voz, cen) continuam disponíveis para continuidade.`;
 }
 
 const SYSTEM_BASE = `Você é o motor criativo do KRONIA Creator.
@@ -133,7 +134,6 @@ Não exponha cadeia de pensamento privada.
 Retorne somente os campos do schema.`;
 
 function buildSystem(variant: BlocosVendaVariant): string {
-  const roles = creativeRolesForVariant(variant, "sales").join(" → ");
   const count = expectedCreativeBlockCount(variant);
 
   const directive = `PROTOCOLO CRIATIVO — execute antes de escrever:
@@ -224,7 +224,7 @@ async function judgeFields(fields: BlocosVendaFields, variant: BlocosVendaVarian
   return callStructuredText({
     schema: JudgmentSchema,
     system: JUDGE_SYSTEM,
-    prompt: `INTENÇÃO: ${fields.strategy?.intent ?? "sales"}\nOBJETIVO: ${fields.strategy?.objective ?? "conversion"}\n\nCampos gerados:\n${JSON.stringify(fields, null, 2)}\n\nFrases finais montadas (roteiro completo, leia em sequência):\n${falasMontadas}`,
+    prompt: `INTENÇÃO: ${fields.strategy?.intent ?? "custom"}\nOBJETIVO: ${fields.strategy?.objective ?? "conversion"}\n\nCampos gerados:\n${JSON.stringify(fields, null, 2)}\n\nFrases finais montadas (roteiro completo, leia em sequência):\n${falasMontadas}`,
     toolName: "blocos_venda_judgment",
   });
 }
