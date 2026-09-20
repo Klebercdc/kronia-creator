@@ -113,10 +113,15 @@ Não invente números, prova social, depoimentos, eficácia, resultados, preço,
 Linguagem criativa pode ser criada, mas não pode ser apresentada como fato.
 Em conteúdo cristão, o personagem NÃO fala como Deus em primeira pessoa.
 
-FIDELIDADE AO PRODUTO:
-Preserve o nome do produto exatamente como aparece na referência ou no contexto fornecido.
-Não substitua, traduza, simplifique ou rebatize o produto por uma descrição emocional como "palavra de esperança".
-Se o nome não estiver legível, use a descrição literal mais segura possível e não invente nome comercial.
+FIDELIDADE À IDENTIDADE E AO PRODUTO:
+- "nome" é a identidade do personagem/avatar, NÃO o tema, a mensagem, a emoção ou o produto. Nunca use nomes como "Mensagem de Esperança", "Esperança", "Palavra de Conforto" ou equivalentes como se fossem personagem.
+- Se o BRIEFING identificar explicitamente o personagem, preserve esse nome exatamente.
+- Se o BRIEFING não identificar o personagem e a imagem não permitir uma identificação inequívoca, use "Personagem" em vez de inventar uma identidade.
+- "produto" é o objeto/produto real mostrado ou explicitamente citado. Preserve seu nome literal.
+- Nunca transforme o nome do personagem em tema ("Mensagem de Esperança") nem o produto em conceito emocional ("palavra de conforto", "palavra de esperança").
+- Se o nome do produto estiver legível na imagem, transcreva-o literalmente, respeitando palavras e ordem.
+- Se não estiver legível, use uma descrição objetiva do objeto, como "livro devocional", e não invente um nome comercial.
+- Nunca use artigo indefinido + conceito abstrato ("uma palavra de conforto", "um momento de esperança") no campo produto.
 
 ROTEIRO:
 O campo roteiro é a saída criativa principal. Cada fala deve ser completa, natural e específica para esta chamada.
@@ -158,9 +163,11 @@ Se o BRIEFING pedir mensagem, reflexão, devocional, fé, esperança, consolo ou
 
 Se o BRIEFING pedir explicitamente venda, compra ou conversão, use "sales".
 
-REGRA PARA JESUS E FIGURAS RELIGIOSAS:
-Não escreva falas divinas em primeira pessoa como "eu te abençoo", "eu sou Deus", "eu vou te guiar" ou equivalentes.
-A mensagem deve ser narrada pelo personagem como mensageiro, sem atribuir autoridade divina literal.
+REGRA PARA PERSONAGEM E FALA:
+- O personagem é quem aparece na cena; o tema não vira nome de personagem.
+- Não escreva falas divinas em primeira pessoa como "eu te abençoo", "eu sou Deus", "eu vou te guiar" ou equivalentes.
+- A mensagem deve ser narrada pelo personagem como mensageiro, sem atribuir autoridade divina literal.
+- Não transforme uma mensagem sobre esperança em um personagem chamado "Mensagem de Esperança".
 
 REGRA DE PRODUTO:
 Se houver produto visível ou citado, preserve sua identidade literal. Nunca transforme o produto em um conceito emocional.
