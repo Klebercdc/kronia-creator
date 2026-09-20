@@ -1,5 +1,5 @@
 /**
- * Fala dos blocos do gerador comercial.
+ * Fala dos blocos do gerador criativo.
  *
  * Regra desta fase:
  * IA decide linguagem/narrativa; código valida o resultado.
@@ -49,7 +49,7 @@ const NON_COMMERCIAL_ROLES_BY_VARIANT: Record<BlocosVendaVariant, string[]> = {
 
 export function creativeRolesForVariant(
   variant: BlocosVendaVariant,
-  intent: CreativeIntent = "sales",
+  intent: CreativeIntent = "custom",
 ): string[] {
   return intent === "sales" ? CREATIVE_ROLES_BY_VARIANT[variant] : NON_COMMERCIAL_ROLES_BY_VARIANT[variant];
 }
@@ -60,7 +60,7 @@ export function hasCreativeScript(fields: BlocosVendaFieldsLike): fields is Bloc
 }
 
 export function finalFalasFor(fields: BlocosVendaFieldsLike, variant: BlocosVendaVariant): string[] {
-  const intent = fields.strategy?.intent ?? fields.intent ?? "sales";
+  const intent = fields.strategy?.intent ?? fields.intent ?? "custom";
   const roteiro = fields.roteiro;
   const expected = creativeRolesForVariant(variant, intent).length;
   if (Array.isArray(roteiro) && roteiro.length === expected && roteiro.every((b) => Boolean(b?.fala?.trim()))) {
@@ -215,7 +215,7 @@ export const FALA_TEMPLATES_BY_VARIANT: Record<BlocosVendaVariant, TemplateEntry
   longo: [GANCHO, REVELACAO, DOR, PROVA, ALIVIO, BENEFICIO_EXTRA, OBJECAO, CTA_FALLBACK],
 };
 
-export function fieldsUsedBy(variant: BlocosVendaVariant, intent: CreativeIntent = "sales"): Set<keyof BlocosVendaFieldsLike> {
+export function fieldsUsedBy(variant: BlocosVendaVariant, intent: CreativeIntent = "custom"): Set<keyof BlocosVendaFieldsLike> {
   if (intent !== "sales") return new Set(["gancho"]);
   const set = new Set<keyof BlocosVendaFieldsLike>();
   FALA_TEMPLATES_BY_VARIANT[variant].forEach((t) => t.campo.forEach((c) => set.add(c)));
