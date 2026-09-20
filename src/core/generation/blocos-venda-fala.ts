@@ -41,16 +41,40 @@ export const CREATIVE_ROLES_BY_VARIANT: Record<BlocosVendaVariant, string[]> = {
   longo: ["gancho", "revelacao", "dor", "prova", "alivio", "beneficio_extra", "objecao", "cta"],
 };
 
+const NON_COMMERCIAL_ROLES_BY_VARIANT: Record<BlocosVendaVariant, string[]> = {
+  curto: ["gancho", "desenvolvimento", "fechamento"],
+  padrao: ["gancho", "contexto", "aprofundamento", "aplicacao", "fechamento"],
+  longo: ["gancho", "contexto", "tensao", "aprofundamento", "reflexao", "aplicacao", "conexao", "fechamento"],
+};
+
+export function creativeRolesForVariant(
+  variant: BlocosVendaVariant,
+  intent: CreativeIntent = "sales",
+): string[] {
+  return intent === "sales" ? CREATIVE_ROLES_BY_VARIANT[variant] : NON_COMMERCIAL_ROLES_BY_VARIANT[variant];
+}
+
 export function hasCreativeScript(fields: BlocosVendaFieldsLike): fields is BlocosVendaFieldsLike & CreativeScriptLike {
   const roteiro = fields.roteiro;
   return Array.isArray(roteiro) && roteiro.length > 0 && roteiro.every((b) => Boolean(b?.fala?.trim()));
 }
 
 export function finalFalasFor(fields: BlocosVendaFieldsLike, variant: BlocosVendaVariant): string[] {
+  const intent = fields.strategy?.intent ?? fields.intent ?? "sales";
   const roteiro = fields.roteiro;
-  const expected = CREATIVE_ROLES_BY_VARIANT[variant].length;
+  const expected = creativeRolesForVariant(variant, intent).length;
   if (Array.isArray(roteiro) && roteiro.length === expected && roteiro.every((b) => Boolean(b?.fala?.trim()))) {
     return roteiro.map((b) => b.fala.trim());
+  }
+  if (intent !== "sales") {
+    const gancho = clean(fields.gancho) || "Respire fundo e fique comigo por alguns segundos.";
+    const dor = clean(fields.dor) || "Nem todo momento difícil precisa ser enfrentado em silêncio.";
+    const proposito = clean(fields.proposito) || "Há momentos em que uma simples reflexão muda a forma de enxergar o caminho.";
+    const fechamento = intent === "engagement"
+      ? "Se isso fez sentido para você, compartilhe o que essa mensagem despertou."
+      : "Guarde essa mensagem no coração e leve essa reflexão com você.";
+    const pool = [gancho, dor, proposito, fechamento];
+    return Array.from({ length: expected }, (_, i) => pool[Math.min(i, pool.length - 1)]);
   }
   return FALA_TEMPLATES_BY_VARIANT[variant].map((t) => t.fala(fields));
 }
@@ -191,7 +215,8 @@ export const FALA_TEMPLATES_BY_VARIANT: Record<BlocosVendaVariant, TemplateEntry
   longo: [GANCHO, REVELACAO, DOR, PROVA, ALIVIO, BENEFICIO_EXTRA, OBJECAO, CTA_FALLBACK],
 };
 
-export function fieldsUsedBy(variant: BlocosVendaVariant): Set<keyof BlocosVendaFieldsLike> {
+export function fieldsUsedBy(variant: BlocosVendaVariant, intent: CreativeIntent = "sales"): Set<keyof BlocosVendaFieldsLike> {
+  if (intent !== "sales") return new Set(["gancho"]);
   const set = new Set<keyof BlocosVendaFieldsLike>();
   FALA_TEMPLATES_BY_VARIANT[variant].forEach((t) => t.campo.forEach((c) => set.add(c)));
   return set;
@@ -210,10 +235,17 @@ export interface FalaCheck {
 
 export function checkFalaLengths(fields: BlocosVendaFieldsLike, variant: BlocosVendaVariant): FalaCheck[] {
   const roteiro = fields.roteiro;
-  const expected = CREATIVE_ROLES_BY_VARIANT[variant].length;
+  const intent = fields.strategy?.intent ?? fields.intent ?? "sales";
+  const expected = creativeRolesForVariant(variant, intent).length;
   if (Array.isArray(roteiro) && roteiro.length === expected && roteiro.every((b) => Boolean(b?.fala?.trim()))) {
     return roteiro.map((b, i) => {
       const fala = b.fala.trim();
+      const secs = estimateSecs(fala);
+      return { bloco: i + 1, campos: [], fala, words: wordCount(fala), chars: charCount(fala), secs, over: secs > 11, under: secs < 8 };
+    });
+  }
+  if (intent !== "sales") {
+    return finalFalasFor(fields, variant).map((fala, i) => {
       const secs = estimateSecs(fala);
       return { bloco: i + 1, campos: [], fala, words: wordCount(fala), chars: charCount(fala), secs, over: secs > 11, under: secs < 8 };
     });
@@ -243,7 +275,8 @@ const LOCAL_ARTICLE_START = /^(um|uma|o|a)\s/i;
 const GANCHO_FORMULA_ANTIGA = /^se você é .+\bque valoriza\b/i;
 
 export function checkStructuralIssues(fields: BlocosVendaFieldsLike, variant: BlocosVendaVariant): string[] {
-  const used = fieldsUsedBy(variant);
+  const intent = fields.strategy?.intent ?? fields.intent ?? "sales";
+  const used = fieldsUsedBy(variant, intent);
   const issues: string[] = [];
 
   if (used.has("gancho") && GANCHO_FORMULA_ANTIGA.test(clean(fields.gancho))) {
@@ -300,6 +333,8 @@ const DANGLING_END_WORDS = new Set([
 ]);
 
 export function enforceFalaBudgets<T extends BlocosVendaFieldsLike>(fields: T, variant: BlocosVendaVariant): T {
+  const intent = fields.strategy?.intent ?? fields.intent ?? "sales";
+  if (intent !== "sales") return fields;
   // Checagem equivalente a hasCreativeScript(fields), mas sem usar o type
   // guard exportado (que narrowa "fields" pra um tipo fixo não-genérico e
   // quebra o spread abaixo — "Spread types may only be created from
