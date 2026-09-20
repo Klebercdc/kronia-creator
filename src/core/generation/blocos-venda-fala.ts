@@ -106,22 +106,22 @@ export function validateIntentSemantics(fields: BlocosVendaFieldsLike, intent: C
   const issues: string[] = [];
   const roteiro = fields.roteiro;
   const cta = clean(fields.cta || (roteiro?.[roteiro.length - 1]?.fala ?? "") || fields.local);
+  const scriptText = (roteiro ?? []).map((b) => b.fala).join(" ");
 
   if (intent === "sales" && MESSAGE_CTA_RE.test(cta)) {
-    issues.push(
-      "CTA incompatível com intenção de venda: foi detectada linguagem de mensagem/reflexão. Gere um CTA comercial contextualizado.",
-    );
+    issues.push("CTA incompatível com intenção de venda: linguagem de mensagem/reflexão detectada.");
   }
 
-  if (intent !== "sales" && SALES_CTA_RE.test(cta)) {
-    issues.push(
-      `CTA comercial detectado em intenção "${intent}". Gere uma ação coerente com o objetivo atual.`,
-    );
+  if (intent !== "sales" && SALES_CTA_RE.test(cta + " " + scriptText)) {
+    issues.push("Linguagem comercial detectada em intenção não comercial. Remova compra, carrinho, link, preço e aquisição.");
+  }
+
+  if (intent !== "sales" && /(transformou\s+vidas?|tem\s+ajudado\s+gera[cç][oõ]es|milhares\s+de\s+(pessoas|vidas))/i.test(scriptText)) {
+    issues.push("Alegação de resultado/prova social não verificável detectada.");
   }
 
   return issues;
 }
-
 /** Só os campos de FALA (texto) — exclui "intent"/"strategy"/"roteiro",
  * que não são strings. Os moldes/orçamento de corte só operam sobre
  * texto; sem isso, atribuir "" ou o resultado de .join(" ") a um campo
@@ -209,19 +209,19 @@ export interface FalaCheck {
 }
 
 export function checkFalaLengths(fields: BlocosVendaFieldsLike, variant: BlocosVendaVariant): FalaCheck[] {
+  const roteiro = fields.roteiro;
+  const expected = CREATIVE_ROLES_BY_VARIANT[variant].length;
+  if (Array.isArray(roteiro) && roteiro.length === expected && roteiro.every((b) => Boolean(b?.fala?.trim()))) {
+    return roteiro.map((b, i) => {
+      const fala = b.fala.trim();
+      const secs = estimateSecs(fala);
+      return { bloco: i + 1, campos: [], fala, words: wordCount(fala), chars: charCount(fala), secs, over: secs > 11, under: secs < 8 };
+    });
+  }
   return FALA_TEMPLATES_BY_VARIANT[variant].map((t, i) => {
     const fala = t.fala(fields);
     const secs = estimateSecs(fala);
-    return {
-      bloco: i + 1,
-      campos: t.campo,
-      fala,
-      words: wordCount(fala),
-      chars: charCount(fala),
-      secs,
-      over: secs > 11,
-      under: secs < 8,
-    };
+    return { bloco: i + 1, campos: t.campo, fala, words: wordCount(fala), chars: charCount(fala), secs, over: secs > 11, under: secs < 8 };
   });
 }
 
