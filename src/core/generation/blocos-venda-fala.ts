@@ -24,10 +24,36 @@ export interface BlocosVendaFieldsLike {
   intent?: CreativeIntent;
   /** Fala pronta de CTA. Quando presente, ganha precedência sobre "local". */
   cta?: string;
+  strategy?: CreativeStrategy;
   roteiro?: Array<{ role: string; fala: string }>;
 }
 
 export type BlocosVendaVariant = "curto" | "padrao" | "longo";
+
+export interface CreativeScriptLike {
+  strategy?: CreativeStrategy;
+  roteiro?: CreativeBlock[];
+}
+
+export const CREATIVE_ROLES_BY_VARIANT: Record<BlocosVendaVariant, string[]> = {
+  curto: ["gancho", "desenvolvimento", "cta"],
+  padrao: ["gancho", "revelacao", "dor", "alivio", "cta"],
+  longo: ["gancho", "revelacao", "dor", "prova", "alivio", "beneficio_extra", "objecao", "cta"],
+};
+
+export function hasCreativeScript(fields: BlocosVendaFieldsLike): fields is BlocosVendaFieldsLike & CreativeScriptLike {
+  const roteiro = fields.roteiro;
+  return Array.isArray(roteiro) && roteiro.length > 0 && roteiro.every((b) => Boolean(b?.fala?.trim()));
+}
+
+export function finalFalasFor(fields: BlocosVendaFieldsLike, variant: BlocosVendaVariant): string[] {
+  const roteiro = fields.roteiro;
+  const expected = CREATIVE_ROLES_BY_VARIANT[variant].length;
+  if (Array.isArray(roteiro) && roteiro.length === expected && roteiro.every((b) => Boolean(b?.fala?.trim()))) {
+    return roteiro.map((b) => b.fala.trim());
+  }
+  return FALA_TEMPLATES_BY_VARIANT[variant].map((t) => t.fala(fields));
+}
 
 export const VARIANT_LABEL: Record<BlocosVendaVariant, string> = {
   curto: "Curto (~30s)",
