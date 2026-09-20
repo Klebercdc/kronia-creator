@@ -13,7 +13,13 @@ Tipos de hook possíveis: ${HOOK_TYPES.join(", ")}.
 Mecanismos de persuasão possíveis: ${PERSUASION_MECHANISMS.join(", ")}.
 Nunca invente uma categoria fora dessas listas, nem descreva algo que não está visível nos
 frames ou no transcript — se não der pra saber, diga o que é razoável concluir a partir do que
-foi mostrado, não invente detalhe.`;
+foi mostrado, não invente detalhe.
+
+CÂMERA — distinga observado de inferido: "cameraConfidence" é "fato" só quando o movimento de
+câmera (travelling, zoom, pan, estático) está claramente visível comparando os frames em
+sequência; é "inferencia" quando os frames não deixam claro se o movimento é da câmera ou do
+personagem/objeto em quadro — nesse caso descreva sua melhor suposição em "camera" mas marque
+como inferência, nunca apresente como certeza o que não é.`;
 
 const InferredSchema = VideoAnalysisSchema.omit({
   sourceUrl: true,

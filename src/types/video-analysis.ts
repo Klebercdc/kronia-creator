@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CONTENT_FORMATS, HOOK_TYPES, PERSUASION_MECHANISMS } from "./taxonomy";
+import { EvidenceKindSchema } from "./evidence";
 
 /**
  * Saída estruturada da etapa de Ingestão (baseada no Video Analyzer,
@@ -27,6 +28,12 @@ export const VideoAnalysisSchema = z.object({
 
   visual: z.object({
     camera: z.string(),
+    /** "fato" = movimento de câmera claramente visível nos frames; "inferencia" = melhor
+     * suposição quando os frames não deixam o movimento óbvio (ex.: pode ser travelling ou só
+     * movimento do personagem) — o Cinematográfico usa isso pra saber se deve seguir à risca ou
+     * tem liberdade de adaptar. Mesmo vocabulário de EvidenceKind já usado pra claims de produto,
+     * aplicado aqui à análise visual em vez de reinventar uma escala nova. */
+    cameraConfidence: EvidenceKindSchema,
     framing: z.string(),
     cutsPerMinute: z.number().nonnegative(),
   }),
