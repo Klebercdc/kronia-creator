@@ -6,12 +6,14 @@ import {
   composeMovementPromptFn,
   FORMAT_LABEL,
   BODY_PART_LABEL,
+  TRANSITION_LABEL,
   bodyPartsFor,
   type MovementCategory,
   type MovementEntry,
   type MovementFormat,
   type SubjectType,
   type BodyPart,
+  type TransitionType,
 } from "../server/movement-library.functions";
 import { listHookTypesFn, generateHookPromptFn, type HookType } from "../server/hook-avancado.functions";
 import { errorMessageOf } from "../lib/errors";
@@ -23,6 +25,7 @@ const SUBJECT_OPTIONS: { value: SubjectType; label: string }[] = [
 
 const FORMAT_ORDER: MovementFormat[] = ["padrao", "pov", "ugc", "cta", "sequencia"];
 const BODY_PART_ORDER: BodyPart[] = ["cabelo", "maos", "corpo", "pernas", "rosto"];
+const TRANSITION_ORDER: TransitionType[] = ["nenhuma", "pulo", "giro", "corte_seco", "zoom"];
 
 /** Clipe stock do Pexels é o vídeo inteiro (pode passar de 10-30s) — corta
  * em loop de 3s a partir do início em vez de carregar/tocar tudo, tanto
@@ -137,6 +140,9 @@ export function MovementLibraryCatalog() {
   // de abertura crítica + lista do que não mostrar (ver hook-avancado.ts).
   // null = só o modo determinístico (Gerar prompt final) fica disponível.
   const [hookType, setHookType] = useState<HookType | null>(null);
+  // Como a cena corta de um movimento pro próximo — "nenhuma" mantém o
+  // conector genérico de sempre ("Em seguida," etc).
+  const [transitionType, setTransitionType] = useState<TransitionType>("nenhuma");
   const [generatingAi, setGeneratingAi] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
 
@@ -217,7 +223,7 @@ export function MovementLibraryCatalog() {
     setComposing(true);
     setCopied(false);
     try {
-      const res = await composeRpc({ data: { ids: selectedIds, subjectType } });
+      const res = await composeRpc({ data: { ids: selectedIds, subjectType, transitionType } });
       setComposed(res?.text ?? null);
     } finally {
       setComposing(false);
@@ -469,6 +475,26 @@ export function MovementLibraryCatalog() {
 
           {!composed ? (
             <>
+              {selectedIds.length > 1 && (
+                <div>
+                  <div style={{ fontSize: 11.5, color: "var(--kr-muted)", marginBottom: 6 }}>
+                    Transição entre os movimentos:
+                  </div>
+                  <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4 }}>
+                    {TRANSITION_ORDER.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        className={`pill ${transitionType === t ? "active" : ""}`}
+                        style={{ flex: "0 0 auto", whiteSpace: "nowrap", fontSize: 12 }}
+                        onClick={() => setTransitionType(t)}
+                      >
+                        {TRANSITION_LABEL[t]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div>
                 <div style={{ fontSize: 11.5, color: "var(--kr-muted)", marginBottom: 6 }}>
                   Gancho narrativo avançado (opcional) — abertura tipo "motoboy na porta", escrita pela IA a partir
