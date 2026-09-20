@@ -149,6 +149,19 @@ function nomeDe(v: FieldValues): string {
   return clean(v.nome) || "avatar";
 }
 
+function creativeIntent(v: FieldValues): CreativeStrategy["intent"] {
+  return v.strategy?.intent ?? "custom";
+}
+
+function isCommercial(v: FieldValues): boolean {
+  return creativeIntent(v) === "sales";
+}
+
+function isMessage(v: FieldValues): boolean {
+  return creativeIntent(v) === "message";
+}
+
+
 interface BlockDef {
   titulo: string;
   tempo: string;
@@ -267,22 +280,37 @@ const BLOCKS_BY_VARIANT: Record<BlocosVendaVariant, BlockDef[]> = {
   longo: [GANCHO_BLOCK, REVELACAO_BLOCK, DOR_BLOCK, PROVA_BLOCK, ALIVIO_BLOCK, BENEFICIO_EXTRA_BLOCK, OBJECAO_BLOCK, CTA_BLOCK],
 };
 
-function blocksFor(variant: BlocosVendaVariant): BlockDef[] {
-  return BLOCKS_BY_VARIANT[variant].map((b, i) => {
+function blocksFor(variant: BlocosVendaVariant, v: FieldValues): BlockDef[] {
+  const defs = BLOCKS_BY_VARIANT[variant];
+  const commercial = isCommercial(v);
+  const message = isMessage(v);
+  return defs.map((b, i) => {
     const start = i * 10;
     const end = start + 10;
     const pad = (n: number) => String(n).padStart(2, "0");
+    let title = b.titulo;
+
+    if (!commercial && title.toLowerCase().includes("cta")) {
+      title = message ? "Fechamento da mensagem" : "Encerramento";
+    }
+    if (!commercial && title.toLowerCase().includes("conversão")) {
+      title = message ? "Fechamento da mensagem" : "Encerramento";
+    }
+
     return {
       ...b,
-      titulo: `Bloco ${i + 1} · ${b.titulo}`,
+      titulo: `Bloco ${i + 1} · ${title}`,
       tempo: `${start}–${end}s`,
       tempoScript: `00:${pad(start)}–00:${pad(end)}`,
     };
   });
 }
-
 function buildPrompt(b: BlockDef, v: FieldValues, index: number, falaOverride?: string): string {
   const nomeCaixaAlta = nomeDe(v).toUpperCase();
+  const commercial = isCommercial(v);
+  const guard = commercial
+    ? ""
+    : "DIRETRIZ DE INTENÇÃO: este roteiro não é comercial. Não mencionar compra, carrinho, link, preço, promoção ou aquisição. Não apontar para baixo como gesto de compra.";
   return [
     `SCRIPT ${String(index + 1).padStart(2, "0")} — ${b.tempoScript}`,
     "",
@@ -299,6 +327,7 @@ function buildPrompt(b: BlockDef, v: FieldValues, index: number, falaOverride?: 
     `"${falaOverride ?? b.fala(v)}"`,
     "",
     `VOZ: ${v.voz}`,
+    guard,
   ].join("\n");
 }
 
@@ -407,7 +436,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
   }
 
   const blocks = useMemo(() => {
-    const defs = blocksFor(variant);
+    const defs = blocksFor(variant, values);
     const creativeFalas = finalFalasFor(values, variant);
     return defs.map((b, i) => {
       const fala = creativeFalas[i] ?? b.fala(values);
@@ -422,7 +451,13 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
     blocks.forEach((blk, i) => {
       if (blk.over) msgs.push(`Bloco ${i + 1}: cerca de ${blk.secs.toFixed(0)}s, passa de 10s. Encurte a fala.`);
     });
-    const texto = [values.gancho, values.produto, values.funcao, values.dor, values.fato, values.proposito].join(" ");
+    const texto = [values.gancho, values.produto, values.funcao, values.dor, values.fato, values.proposito, ...(values.roteiro ?? []).map((b) => b.fala)].join(" ");
+    if (!isCommercial(values) && /carrinho|compr(e|ar)|adquir|link|preço|promoção|leve para casa|transforma(?:ção|r) sua vida/i.test(texto)) {
+      msgs.push("Intenção não comercial: o roteiro contém linguagem de venda ou conversão.");
+    }
+    if (values.nome.trim().toLowerCase() === "jesus" && DIVINE_RE.test(texto)) {
+      msgs.push("Jesus não deve falar como autoridade divina em primeira pessoa; reescreva como mensagem, sem atribuir fala divina.");
+    }
     const bannedPhrase = findBannedPhrase(texto);
     if (bannedPhrase) msgs.push(`Frase de promessa absoluta: "${bannedPhrase}". Só use se estiver na página do produto.`);
     if (DIVINE_RE.test(texto)) msgs.push("O personagem não fala como Deus em 1ª pessoa. Reescreva como mensageiro.");
