@@ -71,9 +71,21 @@ interface TemplateEntry {
   fala: (v: BlocosVendaFieldsLike) => string;
 }
 
+/** "publico" às vezes vem como cláusula relativa ("quem busca consolo e
+ * fé") em vez de frase nominal ("uma mulher") — nesse caso "Se você é
+ * quem busca..." soa estranho (repete "é quem"). Detecta esse formato e
+ * troca pra "Se você busca..." (tira o "quem", ajusta o verbo), variação
+ * pedida diretamente pelo usuário. Fora esse caso, mantém o molde padrão. */
 const GANCHO: TemplateEntry = {
   campo: ["publico", "valores"],
-  fala: (v) => `Se você é ${clean(v.publico)} que valoriza ${clean(v.valores)}… não passe esse vídeo sem ver isso.`,
+  fala: (v) => {
+    const publico = clean(v.publico);
+    const semQuem = publico.match(/^quem\s+(.+)/i);
+    if (semQuem) {
+      return `Se você ${semQuem[1]} e valoriza ${clean(v.valores)}… não passe esse vídeo sem ver isso.`;
+    }
+    return `Se você é ${publico} que valoriza ${clean(v.valores)}… não passe esse vídeo sem ver isso.`;
+  },
 };
 const REVELACAO: TemplateEntry = {
   campo: ["produto", "funcao"],
