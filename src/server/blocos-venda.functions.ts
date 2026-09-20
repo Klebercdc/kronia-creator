@@ -15,7 +15,7 @@ export const generateBlocosVendaFieldsFn = createServerFn({ method: "POST" })
     z
       .object({
         imageDataUrls: z.array(z.string().min(1)).min(1).max(4),
-        contexto: z.string().optional(),
+        contexto: z.string().max(4000).optional(),
         variant: z.enum(["curto", "padrao", "longo"]).optional(),
       })
       .parse(data),
