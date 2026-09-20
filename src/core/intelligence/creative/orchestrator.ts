@@ -9,7 +9,7 @@ import { repairCreativeSpec } from "./repair";
 import { buildReferenceGrammar } from "./reference-grammar";
 import { applyReferenceLocks } from "../../reference-studio/apply-locks";
 import { CREATIVE_QC_MAX_ATTEMPTS, type CreativeEvaluation, type CreativeSpec, type PromptArtifact } from "./schemas";
-import type { ReferenceLock } from "../../../types/reference-studio";
+import type { ReferenceContext, ReferenceLock } from "../../../types/reference-studio";
 import type { VideoAnalysis } from "../../../types/video-analysis";
 
 export interface BuildCreativePromptInput extends Omit<CreativeReasoningInput, "referenceGrammar"> {
@@ -20,7 +20,7 @@ export interface BuildCreativePromptInput extends Omit<CreativeReasoningInput, "
   referenceAnalysis: VideoAnalysis | null;
   /** Invariantes visuais vindos do Reference Studio. São aplicados em código
    * antes da compilação, portanto o LLM não é a fonte de verdade dos locks. */
-  referenceLocks?: ReferenceLock[];
+  referenceContext?: ReferenceContext;
 }
 
 export interface BuildCreativePromptResult {
@@ -38,10 +38,25 @@ export interface BuildCreativePromptResult {
  * deterministicamente após o raciocínio inicial e novamente após cada repair,
  * impedindo que uma correção LLM remova invariantes de identidade/produto.
  */
+function resolveReferenceLocks(context?: ReferenceContext): ReferenceLock[] {
+  if (!context) return [];
+  const negativeLocks: ReferenceLock[] = context.negativeConstraints.map((value, index) => ({
+    id: `context-negative-${index}`,
+    type: "negative_visual",
+    attribute: "negative_visual",
+    value,
+    priority: "critical",
+    sourceEvidenceIds: [],
+    variable: false,
+  }));
+  return [...context.locks, ...negativeLocks];
+}
+
 export async function buildCreativePrompt(input: BuildCreativePromptInput): Promise<BuildCreativePromptResult> {
   const referenceGrammar = input.referenceAnalysis ? buildReferenceGrammar(input.referenceAnalysis) : null;
+  const referenceLocks = resolveReferenceLocks(input.referenceContext);
   let spec = await generateCreativeSpec({ ...input, referenceGrammar });
-  spec = applyReferenceLocks(spec, input.referenceLocks ?? []);
+  spec = applyReferenceLocks(spec, referenceLocks);
   let evaluation = evaluateCreativeSpec(spec);
 
   if (evaluation.verdict === "fail") {
@@ -98,7 +113,7 @@ export async function buildCreativePrompt(input: BuildCreativePromptInput): Prom
 
     attempt += 1;
     currentSpec = await repairCreativeSpec(currentSpec, qc.issues);
-    currentSpec = applyReferenceLocks(currentSpec, input.referenceLocks ?? []);
+    currentSpec = applyReferenceLocks(currentSpec, referenceLocks);
 
     evaluation = evaluateCreativeSpec(currentSpec);
     if (evaluation.verdict === "fail") {

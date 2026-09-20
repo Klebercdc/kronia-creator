@@ -4,9 +4,34 @@ import {
   ReferenceAssetSchema,
   ReferenceStudioInputSchema,
   type ReferenceAsset,
+  type ReferenceEvidence,
+  type ReferenceLock,
+  type ReferenceLockType,
   type ReferenceStudioInput,
 } from "../../types/reference-studio";
 import type { VideoAnalysis } from "../../types/video-analysis";
+
+function userLockType(type: ReferenceStudioInput["type"]): ReferenceLockType {
+  if (type === "person") return "identity";
+  if (type === "product") return "product_fidelity";
+  return "style_pattern";
+}
+
+function lockFromEvidence(
+  evidence: ReferenceEvidence,
+  type: ReferenceLockType,
+  priority: ReferenceLock["priority"] = "high",
+): ReferenceLock {
+  return {
+    id: `lock-${type}-${evidence.id}`,
+    type,
+    attribute: evidence.attribute,
+    value: evidence.value,
+    priority,
+    sourceEvidenceIds: [evidence.id],
+    variable: false,
+  };
+}
 
 export async function analyzeReferenceAsset(params: {
   input: ReferenceStudioInput;
@@ -17,7 +42,13 @@ export async function analyzeReferenceAsset(params: {
   const input = ReferenceStudioInputSchema.parse(params.input);
   const now = params.now ?? new Date().toISOString();
 
-  let profile: ReferenceAsset["profile"] = {
+  if (input.type === "combination") {
+    throw new Error(
+      'Referências "combination" exigem mapeamento explícito de papéis. Analise personagem, produto e estilo separadamente antes de combiná-los.',
+    );
+  }
+
+  const profile: ReferenceAsset["profile"] = {
     character: null,
     product: null,
     style: null,
@@ -38,7 +69,7 @@ export async function analyzeReferenceAsset(params: {
     profile.style = buildStylePatternProfile(params.videoAnalysis);
   }
 
-  const evidence = [
+  const evidence: ReferenceEvidence[] = [
     ...(profile.character?.identity ?? []),
     ...(profile.character?.body ?? []),
     ...(profile.character?.wardrobe ?? []),
@@ -56,18 +87,31 @@ export async function analyzeReferenceAsset(params: {
     ...(profile.style?.narrative ?? []),
   ];
 
-  for (const value of input.userProvidedAttributes) {
-    evidence.push({
-      id: `user-${evidence.length}`,
-      attribute: "user_provided",
-      value,
-      kind: "user_provided",
-      source: "user input",
-      confidence: "high",
-    });
-  }
+  const userEvidence = input.userProvidedAttributes.map<ReferenceEvidence>((value, index) => ({
+    id: `user-${index}`,
+    attribute: "user_provided",
+    value,
+    kind: "user_provided",
+    source: "user input",
+    confidence: "high",
+  }));
+  evidence.push(...userEvidence);
 
-  const locks = deriveCandidateLocks(profile);
+  const negativeEvidence = input.negativeConstraints.map<ReferenceEvidence>((value, index) => ({
+    id: `negative-${index}`,
+    attribute: "negative_visual",
+    value,
+    kind: "user_provided",
+    source: "user input",
+    confidence: "high",
+  }));
+  evidence.push(...negativeEvidence);
+
+  const locks = [
+    ...deriveCandidateLocks(profile),
+    ...userEvidence.map((item) => lockFromEvidence(item, userLockType(input.type))),
+    ...negativeEvidence.map((item) => lockFromEvidence(item, "negative_visual", "critical")),
+  ];
 
   return ReferenceAssetSchema.parse({
     id: crypto.randomUUID(),
@@ -77,7 +121,7 @@ export async function analyzeReferenceAsset(params: {
     profile,
     evidence,
     locks,
-    negativeConstraints: [],
+    negativeConstraints: input.negativeConstraints,
     version: 1,
     status: "review",
     createdAt: now,

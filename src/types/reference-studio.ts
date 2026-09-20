@@ -54,6 +54,14 @@ export const ReferenceLockSchema = z.object({
 });
 export type ReferenceLock = z.infer<typeof ReferenceLockSchema>;
 
+export const ReferenceContextSchema = z.object({
+  assetIds: z.array(z.string().min(1)),
+  locks: z.array(ReferenceLockSchema),
+  negativeConstraints: z.array(z.string().min(1)).default([]),
+  version: z.number().int().positive(),
+});
+export type ReferenceContext = z.infer<typeof ReferenceContextSchema>;
+
 export const CharacterProfileSchema = z.object({
   identity: z.array(ReferenceEvidenceSchema),
   body: z.array(ReferenceEvidenceSchema),
@@ -117,6 +125,7 @@ export const ReferenceStudioInputSchema = z.object({
   type: ReferenceAssetTypeSchema,
   name: z.string().min(1),
   sourceAssets: z.array(z.string().min(1)).min(1),
-  userProvidedAttributes: z.array(z.string()).default([]),
+  userProvidedAttributes: z.array(z.string().min(1)).default([]),
+  negativeConstraints: z.array(z.string().min(1)).default([]),
 });
 export type ReferenceStudioInput = z.infer<typeof ReferenceStudioInputSchema>;
