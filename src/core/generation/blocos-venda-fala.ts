@@ -84,18 +84,26 @@ function stableIndex(s: string, count: number): number {
   return Math.abs(h) % count;
 }
 
-/** "publico" às vezes vem como cláusula relativa ("quem busca consolo e
- * fé") em vez de frase nominal ("uma mulher") — nesse caso "Se você é
- * quem busca..." soa estranho (repete "é quem"). Detecta esse formato e
- * alterna entre 2 variações sem esse problema (pedido direto: "mude a
- * lógica... busque outras entradas também", não só uma alternativa fixa).
- * Fora esse caso (publico é frase nominal normal), mantém o molde padrão. */
+/** Lógica geral (não casos fixos): o molde padrão empilha DUAS cláusulas —
+ * "Se você é {publico} QUE valoriza {valores}…". Isso só funciona quando
+ * "publico" é frase NOMINAL pura ("uma mulher"). Se "publico" já carrega
+ * cláusula própria (começa com "quem", ou tem "que"/"quem" em qualquer
+ * parte — ex.: "mulheres que buscam paz", "quem já perdeu alguém"),
+ * empilhar mais um "que valoriza" cria uma cadeia "quem...que..."/
+ * "que...que..." ambígua (fica sem clareza quem valoriza o quê). A regra é
+ * sempre a mesma: detectar se "publico" já tem cláusula e, se tiver, trocar
+ * o conector de "que" pra "e" (nunca empilhar 2 cláusulas relativas) — e
+ * quando "publico" começa com "quem", ainda tira esse "quem" e alterna
+ * entre 2 aberturas, pra não sempre soar igual. */
+const CLAUSULA_RE = /\b(que|quem)\b/i;
+
 const GANCHO: TemplateEntry = {
   campo: ["publico", "valores"],
   fala: (v) => {
     const publico = clean(v.publico);
     const valores = clean(v.valores);
     const semQuem = publico.match(/^quem\s+(.+)/i);
+
     if (semQuem) {
       const acao = semQuem[1];
       const variantes = [
@@ -104,7 +112,12 @@ const GANCHO: TemplateEntry = {
       ];
       return variantes[stableIndex(publico + valores, variantes.length)];
     }
-    return `Se você é ${publico} que valoriza ${valores}… não passe esse vídeo sem ver isso.`;
+
+    // "publico" não começa com "quem", mas já tem cláusula própria em
+    // outra posição (ex.: "mulheres que buscam paz") — troca "que" por
+    // "e" pra não empilhar 2 cláusulas relativas na mesma frase.
+    const conector = CLAUSULA_RE.test(publico) ? "e" : "que";
+    return `Se você é ${publico} ${conector} valoriza ${valores}… não passe esse vídeo sem ver isso.`;
   },
 };
 const REVELACAO: TemplateEntry = {
