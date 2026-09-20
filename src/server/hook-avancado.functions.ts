@@ -1,3 +1,4 @@
+import "../lib/error-serialization";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { generateHookPrompt, HOOK_TYPES, type HookType } from "../core/generation/hook-avancado";
