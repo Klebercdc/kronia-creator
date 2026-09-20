@@ -117,7 +117,9 @@ SIGNIFICADO DE CADA CAMPO (como ele entra nas frases-modelo, pra você escrever 
   colado depois de "valoriza" (ex.: "que valoriza fortalece..." é gramaticalmente errado).
 - produto: nome do produto COM ARTIGO (ex.: "o devocional Mulheres com Deus", "a caneca
   personalizada"). Entra em "está com {produto} nas mãos" e "Isso não é só {produto}… é {funcao}.".
-- funcao: função emocional do produto, frase curta SEM ponto final. Entra em "é {funcao}.".
+- funcao: função emocional do produto, frase curta SEM ponto final. Entra em "é {funcao}." — NUNCA
+  comece com "é"/"são" (o "é" do template já cumpre esse papel; "é é um guia..." é gramaticalmente
+  errado, o certo é só "um guia...").
 - dor: dor cotidiana do público, frase curta SEM ponto final. Entra em "Na correria da vida… às
   vezes {dor}.".
 - fato: fato verificável e curto sobre o produto. SEM ponto final. Entra em "{fato} para

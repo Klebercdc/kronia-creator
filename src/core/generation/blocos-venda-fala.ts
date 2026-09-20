@@ -97,7 +97,7 @@ export function checkFalaLengths(fields: BlocosVendaFieldsLike): FalaCheck[] {
  * própria abertura fixa do bloco). Roda em código, não em julgamento de
  * IA — mesmo princípio da checagem de duração acima. */
 const NOMINAL_VERB_START =
-  /^(traz|oferece|ajuda|cont[ée]m|proporciona|apresenta|fornece|d[áa]|gera|promove|cria|inclui|fortalece|eleva|melhora|aumenta|reduz|alivia|cura|resolve|transforma|inspira|guia|ilumina|conecta|desperta|renova)\b/i;
+  /^(é|são|traz|oferece|ajuda|cont[ée]m|proporciona|apresenta|fornece|d[áa]|gera|promove|cria|inclui|fortalece|eleva|melhora|aumenta|reduz|alivia|cura|resolve|transforma|inspira|guia|ilumina|conecta|desperta|renova)\b/i;
 const DOR_ECHO_START = /^(na correria|no dia a dia|no corre|às vezes|as vezes)\b/i;
 const FATO_TESTIMONIAL = /(leitores?|clientes?|usu[áa]rios?|consumidores?|pessoas?) (relatam|dizem|afirmam|contam|garantem)/i;
 const PUBLICO_PREPOSITION_START = /^(para|pra)\s/i;
