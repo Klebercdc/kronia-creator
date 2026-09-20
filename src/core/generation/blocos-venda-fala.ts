@@ -83,14 +83,28 @@ export function checkFalaLengths(fields: BlocosVendaFieldsLike): FalaCheck[] {
  * vida… às vezes Na correria do dia a dia…" com o campo "dor" repetindo a
  * própria abertura fixa do bloco). Roda em código, não em julgamento de
  * IA — mesmo princípio da checagem de duração acima. */
-const FUNCAO_VERB_START = /^(traz|oferece|ajuda|cont[ée]m|proporciona|apresenta|fornece|d[áa]|gera|promove|cria|inclui)\b/i;
+const NOMINAL_VERB_START =
+  /^(traz|oferece|ajuda|cont[ée]m|proporciona|apresenta|fornece|d[áa]|gera|promove|cria|inclui|fortalece|eleva|melhora|aumenta|reduz|alivia|cura|resolve|transforma|inspira|guia|ilumina|conecta|desperta|renova)\b/i;
 const DOR_ECHO_START = /^(na correria|no dia a dia|no corre|às vezes|as vezes)\b/i;
 const FATO_TESTIMONIAL = /(leitores?|clientes?|usu[áa]rios?|consumidores?|pessoas?) (relatam|dizem|afirmam|contam|garantem)/i;
+const PUBLICO_PREPOSITION_START = /^(para|pra)\s/i;
 
 export function checkStructuralIssues(fields: BlocosVendaFieldsLike): string[] {
   const issues: string[] = [];
 
-  if (FUNCAO_VERB_START.test(clean(fields.funcao))) {
+  if (PUBLICO_PREPOSITION_START.test(clean(fields.publico))) {
+    issues.push(
+      `Campo "publico" ("${fields.publico}") começa com "para"/"pra" — ele entra em "Se você é {publico} que valoriza...", e "é para quem..." é gramaticalmente errado (o "é" já cumpre esse papel). Reescreva "publico" sem o "para"/"pra" inicial (ex.: "quem busca inspiração espiritual", não "para quem busca...").`,
+    );
+  }
+
+  if (NOMINAL_VERB_START.test(clean(fields.valores))) {
+    issues.push(
+      `Campo "valores" ("${fields.valores}") começa com verbo — ele entra em "que valoriza {valores}…", então tem que ser uma frase NOMINAL (ex.: "sua fé e sua paz interior"), nunca outro verbo colado (ex.: "valoriza fortalece..." está gramaticalmente errado). Reescreva "valores" como frase nominal.`,
+    );
+  }
+
+  if (NOMINAL_VERB_START.test(clean(fields.funcao))) {
     issues.push(
       `Campo "funcao" ("${fields.funcao}") começa com verbo — ele entra em "é {funcao}.", então tem que ser uma frase NOMINAL (ex.: "um guia diário de amor"), nunca outro verbo colado (ex.: "é traz..." está gramaticalmente errado). Reescreva "funcao" como frase nominal.`,
     );

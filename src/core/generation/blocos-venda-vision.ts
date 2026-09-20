@@ -109,9 +109,11 @@ SIGNIFICADO DE CADA CAMPO (como ele entra nas frases-modelo, pra você escrever 
   "Marina", "Rafael") — nunca deixe genérico tipo "Avatar". Vira "FALA — VOZ OFICIAL DE {NOME}:" e
   "{Nome} está sentado em...".
 - publico: pra quem é o produto, entra em "Se você é {publico} que valoriza {valores}…". Ex.: "uma
-  mulher", "um pai", "quem trabalha demais".
-- valores: o que esse público valoriza, entra na mesma frase acima. Ex.: "sua fé, sua família e
-  sua paz".
+  mulher", "um pai", "quem trabalha demais". NUNCA comece com "para"/"pra" (o "é" antes já cumpre
+  esse papel — "é para quem busca..." é gramaticalmente errado; o certo é "é quem busca...").
+- valores: o que esse público valoriza, entra na mesma frase acima ("que valoriza {valores}…") —
+  frase NOMINAL (coisas que a pessoa valoriza: "sua fé, sua família e sua paz"), NUNCA um verbo
+  colado depois de "valoriza" (ex.: "que valoriza fortalece..." é gramaticalmente errado).
 - produto: nome do produto COM ARTIGO (ex.: "o devocional Mulheres com Deus", "a caneca
   personalizada"). Entra em "está com {produto} nas mãos" e "Isso não é só {produto}… é {funcao}.".
 - funcao: função emocional do produto, frase curta SEM ponto final. Entra em "é {funcao}.".
