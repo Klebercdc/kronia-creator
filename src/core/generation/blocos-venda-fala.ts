@@ -27,10 +27,22 @@ export function wordCount(s: string): number {
   return s.split(/\s+/).filter((w) => w && w !== "…").length;
 }
 
-/** Mesma fórmula usada no componente: ritmo de fala de ~2,1 palavras/s
- * mais 1,2s de folga de respiração/pausa no início e no fim do bloco. */
+/** Quantidade de letras/caracteres faladas (sem contar espaço) — palavra
+ * NÃO é uma unidade confiável de tempo de fala: "e" e
+ * "extraordinariamente" contam como "1 palavra" cada, mas têm duração bem
+ * diferente. Contar letra por letra é o que corrige isso (pedido direto:
+ * "não sabe contar letras" — a estimativa de segundos usava só contagem
+ * de palavra). */
+export function charCount(s: string): number {
+  return s.replace(/\s+/g, "").length;
+}
+
+/** Ritmo de fala em português: ~13 letras/segundo (equivalente ao antigo
+ * ~2,1 palavras/s pra uma palavra média de ~6 letras, mas agora sensível
+ * ao tamanho real de cada palavra) + 1,2s de folga de respiração/pausa no
+ * início e no fim do bloco. */
 export function estimateSecs(s: string): number {
-  return wordCount(s) / 2.1 + 1.2;
+  return charCount(s) / 13 + 1.2;
 }
 
 export const FALA_TEMPLATES: {
@@ -64,6 +76,7 @@ export interface FalaCheck {
   campos: (keyof BlocosVendaFieldsLike)[];
   fala: string;
   words: number;
+  chars: number;
   secs: number;
   over: boolean;
 }
@@ -73,7 +86,7 @@ export function checkFalaLengths(fields: BlocosVendaFieldsLike): FalaCheck[] {
   return FALA_TEMPLATES.map((t, i) => {
     const fala = t.fala(fields);
     const secs = estimateSecs(fala);
-    return { bloco: i + 1, campos: t.campo, fala, words: wordCount(fala), secs, over: secs > 11 };
+    return { bloco: i + 1, campos: t.campo, fala, words: wordCount(fala), chars: charCount(fala), secs, over: secs > 11 };
   });
 }
 
@@ -125,12 +138,19 @@ export function checkStructuralIssues(fields: BlocosVendaFieldsLike): string[] {
   return issues;
 }
 
-/** Último recurso, determinístico — corta palavra por palavra até caber.
+/** Orçamento por bloco em LETRAS (não palavras) — equivalente aos ~18
+ * palavras/~10s antigos pra uma frase de palavras médias, mas agora
+ * sensível ao tamanho real de cada uma. */
+const TARGET_CHARS_PER_BLOCK = 108;
+
+/** Último recurso, determinístico — corta palavra por palavra (a unidade
+ * que se corta continua sendo a palavra inteira, pra não quebrar no meio
+ * de uma; o que muda é a MEDIDA do orçamento, agora em letras) até caber.
  * Pedir pra LLM encurtar (via instrução de revisão) já se mostrou pouco
  * confiável na prática, mesmo com 2 rodadas de revisão: às vezes ela
  * simplesmente ignora o pedido e devolve o campo quase do mesmo tamanho.
  * Isso aqui GARANTE que nenhum bloco sai da geração acima de ~10s — corta
- * do campo com mais palavras primeiro (geralmente o menos essencial pra
+ * do campo com mais letras primeiro (geralmente o menos essencial pra
  * manter a frase compreensível), até o total do bloco caber no orçamento. */
 export function enforceFalaBudgets<T extends BlocosVendaFieldsLike>(fields: T): T {
   const result: T = { ...fields };
@@ -140,15 +160,17 @@ export function enforceFalaBudgets<T extends BlocosVendaFieldsLike>(fields: T): 
 
     const blanked = { ...result };
     t.campo.forEach((c) => (blanked[c] = ""));
-    const fixedWords = wordCount(t.fala(blanked));
-    const budget = Math.max(3, 18 - fixedWords);
+    const fixedChars = charCount(t.fala(blanked));
+    const budget = Math.max(15, TARGET_CHARS_PER_BLOCK - fixedChars);
 
     const campoWords: Partial<Record<keyof BlocosVendaFieldsLike, string[]>> = {};
     t.campo.forEach((c) => (campoWords[c] = clean(result[c]).split(/\s+/).filter(Boolean)));
-    const total = () => t.campo.reduce((sum, c) => sum + (campoWords[c]?.length ?? 0), 0);
+    const totalChars = () => t.campo.reduce((sum, c) => sum + (campoWords[c]?.join("").length ?? 0), 0);
 
-    while (total() > budget) {
-      const longest = t.campo.reduce((best, c) => ((campoWords[c]?.length ?? 0) > (campoWords[best]?.length ?? 0) ? c : best));
+    while (totalChars() > budget) {
+      const longest = t.campo.reduce((best, c) =>
+        (campoWords[c]?.join("").length ?? 0) > (campoWords[best]?.join("").length ?? 0) ? c : best,
+      );
       const words = campoWords[longest];
       if (!words || words.length <= 1) break;
       words.pop();

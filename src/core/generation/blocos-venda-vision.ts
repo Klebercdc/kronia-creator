@@ -81,11 +81,12 @@ REGRAS DE COMPLIANCE (linguagem de venda) — pros campos publico/valores/funcao
   pareça uma figura religiosa — ele é sempre um mensageiro, nunca a divindade falando.
 - "fato" tem que ser algo realmente verificável (visível na embalagem/rótulo da foto, ou uma
   característica objetiva do tipo de produto) — nunca invente número ou estatística.
-- Cada bloco tem ~10s de fala (ritmo de leitura em voz alta: ~2,1 palavras/segundo). A FRASE
-  FINAL de cada bloco (o texto pronto, já com os campos encaixados no template, não só o campo
-  isolado) tem que caber em no máximo ~18 palavras no total — senão o bloco passa de 10s e alguém
-  vai precisar encurtar na mão depois. Pense na frase inteira antes de escrever cada campo, não só
-  no campo isolado.
+- Cada bloco tem ~10s de fala (ritmo de leitura em voz alta: ~13 letras/segundo — não conte só
+  palavra, uma palavra longa ("extraordinariamente") demora muito mais que uma curta ("e"), mesmo
+  contando como "1 palavra" cada). A FRASE FINAL de cada bloco (o texto pronto, já com os campos
+  encaixados no template, não só o campo isolado) tem que caber em no máximo ~108 letras no total
+  (por volta de 18 palavras médias) — senão o bloco passa de 10s e alguém vai precisar encurtar na
+  mão depois. Pense na frase inteira antes de escrever cada campo, não só no campo isolado.
 
 TÉCNICA POR BLOCO — mesma taxonomia usada pelos outros agentes de copy do KRONIA (hooks validados
 em análise de 34.635 clipes virais + mecanismos de persuasão legítimos, nunca manipulação
@@ -229,7 +230,7 @@ function deterministicInstruction(fields: BlocosVendaFields): string | null {
   const overBlocks = checkFalaLengths(fields).filter((c) => c.over);
   const lengthIssues = overBlocks.map(
     (c) =>
-      `Bloco ${c.bloco} (campo${c.campos.length > 1 ? "s" : ""} ${c.campos.join(" + ")}): a fala fica com ${c.words} palavras (~${c.secs.toFixed(0)}s), passa dos 10s do bloco. Reescreva ${c.campos.length > 1 ? "esses campos" : "esse campo"} mais curto(s) pra a fala do bloco ficar com no máximo 18 palavras no total (~10s), sem perder o sentido.`,
+      `Bloco ${c.bloco} (campo${c.campos.length > 1 ? "s" : ""} ${c.campos.join(" + ")}): a fala fica com ${c.chars} letras / ${c.words} palavras (~${c.secs.toFixed(0)}s), passa dos 10s do bloco. Reescreva ${c.campos.length > 1 ? "esses campos" : "esse campo"} mais curto(s) pra a fala do bloco ficar com no máximo ~108 letras no total (~10s), sem perder o sentido.`,
   );
   const structuralIssues = checkStructuralIssues(fields);
   const all = [...lengthIssues, ...structuralIssues];
