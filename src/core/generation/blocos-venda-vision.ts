@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { callStructuredText, callStructuredVisionFromDataUrls } from "../../lib/openai";
-import { HOOK_TYPES, PERSUASION_MECHANISMS } from "../../types/taxonomy";
+import { PERSUASION_MECHANISMS } from "../../types/taxonomy";
 import { BANNED_PHRASES } from "../compliance/absolute-claims-guard";
 import { CREATIVE_QUALITY_BAR } from "./quality-bar";
+import { buildHookLibraryPromptBlock } from "./hook-library";
 import {
   checkFalaLengths,
   checkStructuralIssues,
@@ -51,13 +52,9 @@ export type BlocosVendaFields = z.infer<typeof FieldsSchema>;
  * (types/taxonomy.ts) em vez de string solta: se um desses nomes for
  * removido/renomeado na taxonomia, o build quebra aqui em vez de o prompt
  * silenciosamente citar uma técnica que não existe mais. */
-function fromHookTypes(...names: (typeof HOOK_TYPES)[number][]): string {
-  return names.join(" + ");
-}
 function fromMechanisms(...names: (typeof PERSUASION_MECHANISMS)[number][]): string {
   return names.join(" + ");
 }
-const GANCHO_TECNICA = fromHookTypes("identity_call", "pattern_interrupt");
 const REVELACAO_TECNICA = fromMechanisms("beneficio");
 const DOR_TECNICA = fromMechanisms("problema_solucao", "desejo");
 const PROVA_TECNICA = fromMechanisms("prova_social");
@@ -139,9 +136,15 @@ TÉCNICA POR PAPEL — mesma taxonomia usada pelos outros agentes de copy do KRO
 em análise de 34.635 clipes virais + mecanismos de persuasão legítimos, nunca manipulação
 enganosa, escassez inventada ou prova social sem evidência). Escreva CADA campo já pensando na
 técnica do papel onde ele entra (só os papéis usados na variante atual, ver diretiva abaixo):
-- publico + valores (Gancho): técnica "${GANCHO_TECNICA}" — chama o espectador pela identidade
-  dele de um jeito específico o bastante pra interromper o scroll, não um público genérico ("as
-  pessoas", "todo mundo").
+- publico + valores (Gancho): escolha a mecânica de gancho que MELHOR encaixa nesse produto/
+  personagem específico, dentre este repertório (mesma taxonomia dos outros agentes de copy do
+  KRONIA, hooks validados em análise de 34.635 clipes virais):
+${buildHookLibraryPromptBlock()}
+  Não force sempre a mesma técnica — olhe a foto e o produto e escolha a mecânica que teria mais
+  força ali (ex.: produto com apelo de identidade forte → "identity_call"; produto com resultado
+  visual óbvio → "result_first"; produto ligado a uma dor comum → "relatable_pain"). Chame o
+  espectador pela identidade dele de um jeito específico o bastante pra interromper o scroll,
+  nunca um público genérico ("as pessoas", "todo mundo").
 - produto + funcao (Revelação): mecanismo "${REVELACAO_TECNICA}" — a função emocional tem que ser
   o benefício real que ESSE produto entrega, nunca uma característica técnica solta.
 - dor (Dor): mecanismo "${DOR_TECNICA}" — a dor tem que ser específica e reconhecível no dia a dia
@@ -240,8 +243,9 @@ ${CREATIVE_QUALITY_BAR}
 
 Técnica esperada por PAPEL (mesma taxonomia usada na geração — nem toda variante usa todos os
 papéis, julgue só os que aparecerem nas frases montadas que você recebeu):
-- Gancho (publico+valores): "${GANCHO_TECNICA}" — precisa realmente interromper o scroll de alguém
-  específico, não soar genérico.
+- Gancho (publico+valores): qualquer mecânica do repertório de hooks (curiosity, pattern_interrupt,
+  identity_call, result_first etc.) — precisa realmente interromper o scroll de alguém específico,
+  não soar genérico. Julgue se a escolha combina com o produto/foto, não se bateu uma técnica fixa.
 - Revelação (produto+funcao): "${REVELACAO_TECNICA}" — a função tem que ser o benefício real desse
   produto.
 - Dor (dor): "${DOR_TECNICA}" — dor específica e reconhecível, não genérica.
