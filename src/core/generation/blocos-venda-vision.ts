@@ -86,7 +86,6 @@ function buildVariantDirective(variant: BlocosVendaVariant, intent: "message" | 
     { campo: "local", usado: used.has("local") },
   ];
   const usados = all.filter((c) => c.usado).map((c) => c.campo);
-  const naoUsados = all.filter((c) => !c.usado).map((c) => c.campo);
   return `VARIANTE ATUAL: "${VARIANT_LABEL[variant]}". A estratégia define quais campos de fala são realmente usados.
 Se strategy.intent for "sales", preencha somente os campos comerciais usados nesta variante: ${usados.join(", ")}.
 Se strategy.intent for "message", "engagement", "script" ou "custom", NÃO preencha "local", "cta", "prova",
