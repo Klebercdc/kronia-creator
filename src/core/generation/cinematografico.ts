@@ -128,7 +128,7 @@ function buildSystem(actorProfile: ContentRequest["actorProfile"], ingestion: Vi
     system += `
 
 DIREÇÃO VISUAL DO VÍDEO DE REFERÊNCIA (já comprovada, use como base real, não invente do zero):
-Câmera: ${ingestion.visual.camera}. Enquadramento: ${ingestion.visual.framing}.
+Câmera: ${ingestion.visual.camera} (${ingestion.visual.cameraConfidence === "fato" ? "movimento observado claramente nos frames — siga fiel" : "melhor suposição da análise, não 100% certo — tem liberdade de adaptar se não fizer sentido pra cena"}). Enquadramento: ${ingestion.visual.framing}.
 Cortes por minuto: ${ingestion.visual.cutsPerMinute}.
 Reaproveite esse vocabulário e ritmo de câmera/corte nos videoPrompts — é a mesma mecânica visual
 que já funcionou, só com o produto/ator novos, nunca copiando o conteúdo literal do vídeo original.`;
