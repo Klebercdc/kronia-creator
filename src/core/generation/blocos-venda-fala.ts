@@ -67,14 +67,31 @@ export function finalFalasFor(fields: BlocosVendaFieldsLike, variant: BlocosVend
     return roteiro.map((b) => b.fala.trim());
   }
   if (intent !== "sales") {
-    const gancho = clean(fields.gancho) || "Respire fundo e fique comigo por alguns segundos.";
-    const dor = clean(fields.dor) || "Nem todo momento difícil precisa ser enfrentado em silêncio.";
-    const proposito = clean(fields.proposito) || "Há momentos em que uma simples reflexão muda a forma de enxergar o caminho.";
-    const fechamento = intent === "engagement"
-      ? "Se isso fez sentido para você, compartilhe o que essa mensagem despertou."
-      : "Guarde essa mensagem no coração e leve essa reflexão com você.";
-    const pool = [gancho, dor, proposito, fechamento];
-    return Array.from({ length: expected }, (_, i) => pool[Math.min(i, pool.length - 1)]);
+    const roles = creativeRolesForVariant(variant, intent);
+    return roles.map((role, index) => {
+      const gancho = clean(fields.gancho) || "Respire fundo e fique comigo por alguns segundos.";
+      const dor = clean(fields.dor) || "Nem todo momento difícil precisa ser enfrentado em silêncio.";
+      const proposito = clean(fields.proposito) || "Uma simples reflexão pode mudar a forma de enxergar o caminho.";
+      const fechamento = intent === "engagement"
+        ? "Se isso fez sentido para você, compartilhe o que essa mensagem despertou."
+        : "Guarde essa mensagem no coração e leve essa reflexão com você.";
+
+      const byRole: Record<string, string> = {
+        gancho,
+        desenvolvimento: `${dor} E você não precisa atravessar isso sozinho.`,
+        contexto: dor,
+        tensao: `Mesmo quando ${dor.toLowerCase()}, ainda existe espaço para recomeçar.`,
+        aprofundamento: proposito,
+        reflexao: "Talvez hoje você só precise parar por um instante e olhar para tudo isso com mais calma.",
+        aplicacao: "Leve esta reflexão para o seu dia e permita que ela acompanhe suas próximas escolhas.",
+        conexao: intent === "engagement"
+          ? "Se essa mensagem encontrou você no momento certo, conte nos comentários o que ela despertou."
+          : "Permita que essa reflexão permaneça com você ao longo do dia.",
+        fechamento,
+      };
+
+      return fitFalaBudget(byRole[role] ?? proposito, index);
+    });
   }
   return FALA_TEMPLATES_BY_VARIANT[variant].map((t) => t.fala(fields));
 }
@@ -89,6 +106,16 @@ export const VARIANT_ORDER: BlocosVendaVariant[] = ["curto", "padrao", "longo"];
 
 export function clean(s: string): string {
   return String(s || "").trim().replace(/[.,;…\s]+$/, "");
+}
+
+function fitFalaBudget(s: string, index = 0): string {
+  const text = clean(s);
+  const maxChars = 114;
+  if (text.length <= maxChars) return text;
+  const cut = text.slice(0, maxChars);
+  const lastSpace = cut.lastIndexOf(" ");
+  const trimmed = (lastSpace > 40 ? cut.slice(0, lastSpace) : cut).trim();
+  return trimmed || `Respire fundo e permaneça comigo por mais um instante ${index + 1}.`;
 }
 
 export function wordCount(s: string): number {
