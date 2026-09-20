@@ -131,7 +131,7 @@ const PRODUCT_KEYS: (StringFieldKey)[] = [
 const VIDEO_SPEC =
   "Vertical 9:16, câmera estável com micro-movimento lento, foco alternando entre rosto e produto. SEM legenda, SEM texto sobreposto e SEM logotipo gerado (entram na edição). Sem música gerada.";
 
-const DIVINE_RE = /\b(eu te (aben[cç]oo|curo|liberto|perdoo|dou)|eu sou (deus|jesus)|meu filho|minha filha)\b/i;
+const DIVINE_RE = /\b(eu te (aben[cç]oo|curo|liberto|perdoo|dou)|eu sou (deus|jesus)|meu filho|minha filha|estou aqui para (te )?guiar você|vou te guiar|eu vou guiar você)\b/i;
 
 /** Mesma lista de frases de promessa absoluta usada pelo Compliance do
  * resto do app (absolute-claims-guard.ts) — importada, não reescrita aqui,
@@ -311,18 +311,24 @@ function buildPrompt(b: BlockDef, v: FieldValues, index: number, falaOverride?: 
   const guard = commercial
     ? ""
     : "DIRETRIZ DE INTENÇÃO: este roteiro não é comercial. Não mencionar compra, carrinho, link, preço, promoção ou aquisição. Não apontar para baixo como gesto de compra.";
+  const acao = !commercial && b === CTA_BLOCK
+    ? `${cap(nomeDe(v))} mantém ${clean(v.produto)} visível e faz apenas um gesto natural de acolhimento com a mão, sem apontar para baixo, sem indicar link e sem gesto de compra.`
+    : b.acao(v);
+  const cena = !commercial && b === CTA_BLOCK
+    ? `${cap(nomeDe(v))} está de frente para a câmera, segurando ${clean(v.produto)} com a mão esquerda, mantendo-o totalmente visível. Olha diretamente para o espectador, com expressão serena e acolhedora.`
+    : b.cena(v);
   return [
     `SCRIPT ${String(index + 1).padStart(2, "0")} — ${b.tempoScript}`,
     "",
     b.titulo.split("·")[1]?.trim().toUpperCase() ?? b.titulo.toUpperCase(),
     "",
-    `CENA: ${b.cena(v)}`,
+    `CENA: ${cena}`,
     "",
     `CÂMERA: ${b.camera(v)}`,
     "",
-    `AÇÃO: ${b.acao(v)}`,
+    `AÇÃO: ${acao}`,
     "",
-    `FALA — VOZ OFICIAL DE ${nomeCaixaAlta}:`,
+    `FALA — PERSONAGEM ${nomeCaixaAlta}:`,
     "",
     `"${falaOverride ?? b.fala(v)}"`,
     "",
