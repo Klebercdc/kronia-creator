@@ -1,6 +1,7 @@
 import { callStructuredText } from "../../lib/openai";
 import { type ContentRequest, type GenerationResult } from "../../types/pipeline";
 import { RevisionInferredSchema, DECISION_LOG_PROMPT_BLOCK, appendDecisionLog } from "./decision-log";
+import { MINISTRY_THEMES } from "./ministry-themes";
 
 /** Termos que indicam referência religiosa explícita no produto/briefing —
  * checagem determinística (sem LLM), rodada em CIMA do que já existe em
@@ -84,6 +85,11 @@ o gancho e a cena de produto nunca tratam o objeto como mercadoria genérica —
 significado espiritual real que ele carrega pra quem usa (fé, proteção, lembrança, identidade),
 com a mesma exigência de base bíblica real das outras regras acima, nunca um significado
 inventado só pra soar bonito.
+
+BIBLIOTECA TEMÁTICA — identifique o tema mais próximo do roteiro (não force um tema que não é o
+real) e use o vocabulário dele pra ancorar a linguagem, em vez de vocabulário genérico de "fé" que
+serviria pra qualquer tema:
+${MINISTRY_THEMES.map((t) => `- ${t.tema} (${t.subtemas.join(", ")}): ${t.vocabulario.join(", ")}`).join("\n")}
 
 ${DECISION_LOG_PROMPT_BLOCK}
 

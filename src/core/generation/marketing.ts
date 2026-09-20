@@ -1,6 +1,7 @@
 import { callStructuredText } from "../../lib/openai";
 import { type ContentRequest, type FormatRecommendation, type GenerationResult } from "../../types/pipeline";
 import { CREATIVE_QUALITY_BAR } from "./quality-bar";
+import { TIKTOK_COMMERCE_RULES } from "./tiktok-commerce-rules";
 import { RevisionInferredSchema, DECISION_LOG_PROMPT_BLOCK, appendDecisionLog } from "./decision-log";
 
 const SYSTEM = `Você é o agente de Marketing do KRONIA. Revisa um rascunho de roteiro pela lente
@@ -40,6 +41,8 @@ export async function marketing(
   request: ContentRequest,
   recommendation: FormatRecommendation,
 ): Promise<GenerationResult> {
+  const tiktokBlock = request.mode === "tiktok_shop" ? `\n\n${TIKTOK_COMMERCE_RULES}` : "";
+
   const prompt = `Objetivo: ${request.objective}. Modo: ${request.mode}.
 Formato recomendado: ${recommendation.format} — ${recommendation.reasoning}
 
@@ -47,7 +50,7 @@ Roteiro para revisão de posicionamento:\n${JSON.stringify(draft, null, 2)}`;
 
   const inferred = await callStructuredText({
     schema: RevisionInferredSchema,
-    system: SYSTEM,
+    system: SYSTEM + tiktokBlock,
     prompt,
     toolName: "generation_result",
   });

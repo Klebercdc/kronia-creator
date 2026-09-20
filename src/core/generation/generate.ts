@@ -43,7 +43,7 @@ export async function generate(
   }
 
   draft = await psicologiaDeCompra(draft);
-  draft = await persuasao(draft);
+  draft = await persuasao(draft, request.mode);
   draft = await cinematografico(draft, request.actorProfile, ingestion);
 
   // Quality Judge — eixo de qualidade criativa (específico/natural/

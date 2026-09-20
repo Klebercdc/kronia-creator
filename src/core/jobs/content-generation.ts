@@ -134,8 +134,9 @@ async function stepPsicologia(job: JobRow): Promise<void> {
 }
 
 async function stepPersuasao(job: JobRow): Promise<void> {
+  const { request } = payloadOf(job);
   const progress = progressOf(job);
-  const draft = await persuasao(progress.draft!);
+  const draft = await persuasao(progress.draft!, request.mode);
   await advanceJobStep(job.id, "cinematografico", { ...progress, draft });
 }
 
