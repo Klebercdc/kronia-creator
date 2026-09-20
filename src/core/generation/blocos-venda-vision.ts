@@ -145,7 +145,7 @@ DECISÃO ESTRUTURADA:
 Preencha strategy com intent, objective, theme, coreTruth, audience, emotionalStart, emotionalEnd, hookMechanic, narrativeArc, ctaObjective, verifiedFacts, observedVisuals e creativeAssumptions.
 
 ROTEIRO FINAL:
-Preencha roteiro com exatamente \${count} blocos, nos papéis \${roles}.
+Preencha roteiro com exatamente ${count} blocos, nos papéis ${roles}.
 O roteiro é a saída principal e tem prioridade sobre os moldes legados.
 
 REGRA CRÍTICA DE INTENÇÃO:
