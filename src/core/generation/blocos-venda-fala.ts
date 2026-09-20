@@ -360,7 +360,7 @@ const DANGLING_END_WORDS = new Set([
 ]);
 
 export function enforceFalaBudgets<T extends BlocosVendaFieldsLike>(fields: T, variant: BlocosVendaVariant): T {
-  const intent = fields.strategy?.intent ?? fields.intent ?? "sales";
+  const intent = fields.strategy?.intent ?? fields.intent ?? "custom";
   if (intent !== "sales") return fields;
   // Checagem equivalente a hasCreativeScript(fields), mas sem usar o type
   // guard exportado (que narrowa "fields" pra um tipo fixo não-genérico e
