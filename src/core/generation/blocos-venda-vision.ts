@@ -332,11 +332,24 @@ export async function generateBlocosVendaFields(
   // pra LLM encurtar de novo não é confiável o bastante (visto na prática:
   // ela às vezes ignora a instrução), e o usuário nunca deve ver o alerta
   // "passa de 10s" logo depois de gerar com IA.
+  const finalIntent = fields.strategy?.intent ?? "custom";
   const finalChecks = checkFalaLengths(fields, variant);
-  if (finalChecks.some((check) => check.over)) {
-    // Se a escrita livre não respeitar o contrato mesmo após 3 revisões,
-    // cai para o fallback determinístico. Segurança operacional vence uma
-    // fala criativa estourada.
+  const finalSemanticIssues = validateIntentSemantics(fields, finalIntent);
+  const expectedRoles = creativeRolesForVariant(variant, finalIntent);
+  const finalRoleMismatch = Array.isArray(fields.roteiro)
+    ? fields.roteiro.length !== expectedRoles.length ||
+      fields.roteiro.some((block, index) => block.role !== expectedRoles[index])
+    : false;
+
+  if (
+    finalChecks.some((check) => check.over) ||
+    (finalIntent !== "sales" && finalSemanticIssues.length > 0) ||
+    (finalIntent !== "sales" && finalRoleMismatch)
+  ) {
+    // Última barreira determinística: se uma intenção não comercial ainda
+    // contiver linguagem comercial ou papéis de venda depois das revisões,
+    // descarta somente o roteiro inválido e deixa o fallback narrativo
+    // neutro reconstruí-lo. Nunca converta silenciosamente para sales.
     const fallback = { ...fields, roteiro: undefined };
     return enforceFalaBudgets(fallback, variant);
   }
