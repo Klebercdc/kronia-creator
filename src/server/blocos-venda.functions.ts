@@ -20,7 +20,15 @@ export const generateBlocosVendaFieldsFn = createServerFn({ method: "POST" })
       })
       .parse(data),
   )
-  .handler(
-    async ({ data }): Promise<BlocosVendaFields> =>
-      generateBlocosVendaFields(data.imageDataUrls, data.contexto, data.variant),
-  );
+  .handler(async ({ data }): Promise<BlocosVendaFields> => {
+    try {
+      return await generateBlocosVendaFields(data.imageDataUrls, data.contexto, data.variant);
+    } catch (error) {
+      console.error("[KRONIA] generateBlocosVendaFields failed", {
+        name: error instanceof Error ? error.name : typeof error,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw error;
+    }
+  });
