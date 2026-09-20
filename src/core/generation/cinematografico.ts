@@ -57,6 +57,22 @@ padrões cinematográficos comprovados em vídeos de venda de alta conversão:
 Escolha o padrão que fizer sentido pro produto da cena (ou nenhum, se não for hero shot) — a
 fórmula é reaproveitável entre categorias de produto, o conteúdo específico nunca é.
 
+REGRA DE SEGURANÇA — transição de vestuário (roupa, maiô, moda, "antes/depois" de uso corporal):
+quando a cena envolver o personagem TROCANDO ou REVELANDO uma peça de roupa/vestuário no corpo
+(experimentando produto de moda, saindo de um roupão/toalha pra mostrar a peça, etc.), o
+videoPrompt NUNCA descreve o instante exato da troca (a toalha caindo, o tecido se abrindo, o
+momento de transição do corpo) — isso gera recusa de moderação de conteúdo no gerador de vídeo
+(visto na prática: prompts que descrevem esse instante literalmente são bloqueados; esconder o
+instante atrás de um corte não). Em vez disso:
+- Esconda o instante da troca atrás de um corte/transição explícito (ex: pulo com match-cut, giro
+  rápido, corte seco) — descreva o ANTES (segurando/mostrando a peça) e o DEPOIS (já vestindo a
+  peça), nunca o meio.
+- No videoPrompt dessas cenas, inclua explicitamente as restrições de segurança: sem nudez, sem
+  "wardrobe malfunction", sem mostrar o tecido/toalha caindo — a peça de roupa já está no corpo
+  imediatamente depois do corte, nunca um estado intermediário.
+- O produto (a peça de roupa) tem que permanecer visualmente idêntico antes e depois do corte —
+  mesma cor, corte, desenho, textura — nunca regenerado/reinterpretado pelo corte.
+
 As 3 fórmulas acima valem quando a cena for de produto físico com embalagem. Quando o
 produto/oferta (pelas claims do roteiro) NÃO tiver essas características (serviço, curso,
 conteúdo digital, experiência), NÃO force nenhuma das 3 — construa a própria fórmula visual do
