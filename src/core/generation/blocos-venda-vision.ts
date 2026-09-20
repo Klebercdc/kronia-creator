@@ -155,22 +155,34 @@ const JUDGE_SYSTEM = `Você é o Quality Judge dos campos de um gerador de víde
 não escreve nada, só avalia com rigor os 14 campos abaixo, procurando motivo pra reprovar texto
 mediano, clichê ou robótico.
 
+Você recebe os campos crus E as 5 frases finais já montadas (campo dentro do template, exatamente
+como o usuário vai ler/falar). Julgue pela FRASE MONTADA, não só pelo campo isolado — um campo pode
+parecer certo sozinho e ainda quebrar a gramática quando entra no template (ex.: campo "para quem
+busca X" bota na frase "Se você é para quem busca X…", que está gramaticalmente errado mesmo se o
+campo isolado parecer razoável).
+
 ${CREATIVE_QUALITY_BAR}
 
 Dê nota de 0 a 10 em 2 eixos:
-- naturalidade: soa como alguém falando de verdade, ou como texto de propaganda de IA?
+- naturalidade: as 5 frases MONTADAS soam como alguém falando de verdade em português correto, ou
+  tem erro de concordância/verbo duplicado/preposição sobrando? Qualquer erro gramatical na frase
+  montada derruba essa nota pra abaixo de 5, mesmo que o resto do texto esteja bom.
 - especificidade: usa o produto/personagem REAL da foto, ou serviria pra qualquer produto do
   mesmo nicho?
 
 "weakestField": o nome do campo mais fraco (ex.: "fato", "dor").
 "revisionInstruction": se naturalidade OU especificidade estiver abaixo de 8, escreva uma
-instrução CIRÚRGICA (o que reescrever, em qual campo, por quê) — senão, null.`;
+instrução CIRÚRGICA (o que reescrever, em qual campo, por quê, citando a frase montada quebrada se
+for o caso) — senão, null.`;
 
 async function judgeFields(fields: BlocosVendaFields) {
+  const falasMontadas = checkFalaLengths(fields)
+    .map((c) => `Bloco ${c.bloco}: "${c.fala}"`)
+    .join("\n");
   return callStructuredText({
     schema: JudgmentSchema,
     system: JUDGE_SYSTEM,
-    prompt: `Campos gerados:\n${JSON.stringify(fields, null, 2)}`,
+    prompt: `Campos gerados:\n${JSON.stringify(fields, null, 2)}\n\nFrases finais montadas:\n${falasMontadas}`,
     toolName: "blocos_venda_judgment",
   });
 }
