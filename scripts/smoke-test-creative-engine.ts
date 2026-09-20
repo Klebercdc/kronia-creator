@@ -46,6 +46,15 @@ assert.equal(validateIntentSemantics(goodSalesCta, "sales").length, 0);
 
 const legacy = finalFalasFor(base, "padrao");
 assert.equal(legacy.length, 5);
-assert.ok(legacy[0].length > 0);
+assert.ok(legacy.every((fala) => fala.length > 0));
+assert.ok(!legacy.join(" ").match(/carrinho|link|compre|adquira|confira os detalhes/i));
+
+const message = finalFalasFor({ ...base, intent: "message" }, "padrao");
+assert.equal(message.length, 5);
+assert.ok(!message.join(" ").match(/carrinho|link|compre|adquira|preço|promoção/i));
+
+const custom = finalFalasFor({ ...base, intent: "custom" }, "longo");
+assert.equal(custom.length, 8);
+assert.ok(!custom.join(" ").match(/carrinho|link|compre|adquira|preço|promoção/i));
 
 console.log("creative engine smoke test: PASS");
