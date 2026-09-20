@@ -247,7 +247,7 @@ const OBJECAO_BLOCK: BlockDef = {
   acao: (v) => `${cap(nomeDe(v))} balança a cabeça suavemente em sinal de segurança, mantendo tom calmo e confiante.`,
 };
 const FINAL_BLOCK: BlockDef = {
-  titulo: "CTA e conversão",
+  titulo: "Fechamento",
   tempo: "",
   tempoScript: "",
   fala: FALA_TEMPLATES_BY_VARIANT.padrao[4].fala,
@@ -255,7 +255,7 @@ const FINAL_BLOCK: BlockDef = {
     `${cap(nomeDe(v))} está de frente para a câmera, segurando ${clean(v.produto)} com a mão esquerda, mantendo-o totalmente visível. Olha diretamente para o espectador, com expressão serena e acolhedora.`,
   camera: () => `Plano médio estável, com aproximação muito suave. Sem mudança de cenário nem cortes complexos. ${VIDEO_SPEC}`,
   acao: (v) =>
-    `Ao mencionar "${clean(v.local)}", ${nomeDe(v)} levanta a mão direita e aponta claramente para baixo, indicando que o link está abaixo do vídeo — gesto natural e fácil de entender. Depois, mantém o produto visível, volta a mão para uma posição natural e olha para a câmera com um pequeno sorriso sereno.`,
+    `${cap(nomeDe(v))} mantém ${clean(v.produto)} visível e faz apenas um gesto natural de acolhimento com a mão, sem apontar para baixo, sem indicar link e sem gesto de compra.`,
 };
 /** Só pra "curto" — revelação e dor combinadas numa frase só (a fala vem
  * de FALA_TEMPLATES_BY_VARIANT.curto[1], que já é a versão combinada). */
@@ -271,9 +271,8 @@ const REVELACAO_DOR_CURTO_BLOCK: BlockDef = {
     `${cap(nomeDe(v))} segura ${clean(v.produto)} por um instante, depois baixa levemente o olhar antes de voltar a encarar a câmera com empatia.`,
 };
 
-/** Cada variante monta sua sequência de blocos de 10s reaproveitando os
- * mesmos blocos-base (mesma "espinha" gancho → desenvolvimento → CTA) —
- * "padrao" é EXATAMENTE a sequência que já existia antes das variantes. */
+/** Cada variante monta sua sequência de blocos de 10s. O último bloco é
+ * neutro por padrão; somente a intenção "sales" o transforma em CTA comercial. */
 const BLOCKS_BY_VARIANT: Record<BlocosVendaVariant, BlockDef[]> = {
   curto: [GANCHO_BLOCK, REVELACAO_DOR_CURTO_BLOCK, FINAL_BLOCK],
   padrao: [GANCHO_BLOCK, REVELACAO_BLOCK, DOR_BLOCK, ALIVIO_BLOCK, FINAL_BLOCK],
@@ -290,11 +289,8 @@ function blocksFor(variant: BlocosVendaVariant, v: FieldValues): BlockDef[] {
     const pad = (n: number) => String(n).padStart(2, "0");
     let title = b.titulo;
 
-    if (!commercial && title.toLowerCase().includes("cta")) {
-      title = message ? "Fechamento da mensagem" : "Encerramento";
-    }
-    if (!commercial && title.toLowerCase().includes("conversão")) {
-      title = message ? "Fechamento da mensagem" : "Encerramento";
+    if (b === FINAL_BLOCK) {
+      title = commercial ? "CTA e conversão" : message ? "Fechamento da mensagem" : "Encerramento";
     }
 
     return {
@@ -311,12 +307,10 @@ function buildPrompt(b: BlockDef, v: FieldValues, index: number, falaOverride?: 
   const guard = commercial
     ? ""
     : "DIRETRIZ DE INTENÇÃO: este roteiro não é comercial. Não mencionar compra, carrinho, link, preço, promoção ou aquisição. O fechamento deve concluir a mensagem ou convidar a uma ação não comercial coerente.";
-  const acao = !commercial && b === FINAL_BLOCK
-    ? `${cap(nomeDe(v))} mantém ${clean(v.produto)} visível e faz apenas um gesto natural de acolhimento com a mão, sem apontar para baixo, sem indicar link e sem gesto de compra.`
+  const acao = commercial && b === FINAL_BLOCK
+    ? `Ao mencionar "${clean(v.local)}", ${nomeDe(v)} levanta a mão direita e aponta claramente para baixo, indicando que o link está abaixo do vídeo — gesto natural e fácil de entender. Depois, mantém o produto visível, volta a mão para uma posição natural e olha para a câmera com um pequeno sorriso sereno.`
     : b.acao(v);
-  const cena = !commercial && b === FINAL_BLOCK
-    ? `${cap(nomeDe(v))} está de frente para a câmera, segurando ${clean(v.produto)} com a mão esquerda, mantendo-o totalmente visível. Olha diretamente para o espectador, com expressão serena e acolhedora.`
-    : b.cena(v);
+  const cena = b.cena(v);
   return [
     `SCRIPT ${String(index + 1).padStart(2, "0")} — ${b.tempoScript}`,
     "",
@@ -354,7 +348,7 @@ function loadStoredValues(): FieldValues {
 }
 
 const FIELD_LABELS: { key: StringFieldKey; label: string; hint: string; textarea?: boolean; rows?: number; group?: "produto" | "personagem" }[] = [
-  { key: "nome", label: "Nome do personagem/avatar", hint: 'Aparece como "VOZ OFICIAL DE ___" na fala' },
+  { key: "nome", label: "Nome do personagem/avatar", hint: 'Aparece como "FALA — PERSONAGEM ___" no roteiro' },
   { key: "gancho", label: "Gancho (fala do bloco 1)", hint: "A frase pronta de abertura — livre, sem molde fixo. Ex.: \"Se você está precisando de esperança… fica comigo só por alguns segundos.\"", textarea: true, rows: 2 },
   { key: "produto", label: "Produto", hint: "Com artigo. Ex.: um livro devocional" },
   { key: "funcao", label: "Função emocional", hint: "O que o produto faz pela pessoa, em uma frase" },
@@ -453,7 +447,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
 
   const alerts = useMemo(() => {
     const msgs: string[] = [];
-    const used = fieldsUsedBy(variant);
+    const used = fieldsUsedBy(variant, creativeIntent(values));
     blocks.forEach((blk, i) => {
       if (blk.over) msgs.push(`Bloco ${i + 1}: cerca de ${blk.secs.toFixed(0)}s, passa de 10s. Encurte a fala.`);
     });
@@ -526,10 +520,10 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
         </div>
       </div>
       <h1 className="h1" style={{ fontSize: 20, marginBottom: 4 }}>
-        Blocos de venda
+        Blocos criativos
       </h1>
       <div className="hint" style={{ marginBottom: 12 }}>
-        Anexe a foto do avatar com o produto e deixe a IA gerar os blocos.
+        Anexe a foto do avatar com o produto e deixe a IA gerar os blocos criativos.
       </div>
 
       <div className="section-label" style={{ marginBottom: 6 }}>
