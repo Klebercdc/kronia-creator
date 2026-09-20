@@ -57,21 +57,22 @@ padrões cinematográficos comprovados em vídeos de venda de alta conversão:
 Escolha o padrão que fizer sentido pro produto da cena (ou nenhum, se não for hero shot) — a
 fórmula é reaproveitável entre categorias de produto, o conteúdo específico nunca é.
 
-REGRA DE SEGURANÇA — transição de vestuário (roupa, maiô, moda, "antes/depois" de uso corporal):
-quando a cena envolver o personagem TROCANDO ou REVELANDO uma peça de roupa/vestuário no corpo
-(experimentando produto de moda, saindo de um roupão/toalha pra mostrar a peça, etc.), o
-videoPrompt NUNCA descreve o instante exato da troca (a toalha caindo, o tecido se abrindo, o
-momento de transição do corpo) — isso gera recusa de moderação de conteúdo no gerador de vídeo
-(visto na prática: prompts que descrevem esse instante literalmente são bloqueados; esconder o
-instante atrás de um corte não). Em vez disso:
-- Esconda o instante da troca atrás de um corte/transição explícito (ex: pulo com match-cut, giro
-  rápido, corte seco) — descreva o ANTES (segurando/mostrando a peça) e o DEPOIS (já vestindo a
-  peça), nunca o meio.
-- No videoPrompt dessas cenas, inclua explicitamente as restrições de segurança: sem nudez, sem
-  "wardrobe malfunction", sem mostrar o tecido/toalha caindo — a peça de roupa já está no corpo
-  imediatamente depois do corte, nunca um estado intermediário.
-- O produto (a peça de roupa) tem que permanecer visualmente idêntico antes e depois do corte —
-  mesma cor, corte, desenho, textura — nunca regenerado/reinterpretado pelo corte.
+REGRA DE SEGURANÇA — vestuário revelador (moda íntima, maiô, biquíni, lingerie e qualquer peça que
+exponha bastante pele): visto na prática que o gerador de vídeo recusa por moderação de conteúdo
+tanto uma TRANSIÇÃO quanto um PLANO ESTÁTICO desse tipo de roupa — não é só sobre o instante da
+troca, é sobre a exposição de pele em si. Regra vale pra QUALQUER cena com esse tipo de peça,
+tenha transição ou não:
+- Todo videoPrompt de cena com vestuário revelador inclui, sempre, as restrições de segurança
+  explícitas no próprio texto: sem nudez, sem "wardrobe malfunction", enquadramento e pose que
+  mantêm a peça de roupa sempre corretamente posicionada e visível (nunca um ângulo/pose que
+  sugira exposição além do que a própria peça cobre).
+- Quando houver TROCA ou REVELAÇÃO da peça no corpo (saindo de um roupão/toalha, experimentando
+  produto de moda): nunca descreva o instante exato da troca (a toalha caindo, o tecido se
+  abrindo) — esconda atrás de um corte/transição explícito (ex: pulo com match-cut, giro rápido,
+  corte seco), descrevendo só o ANTES (segurando/mostrando a peça) e o DEPOIS (já vestindo),
+  nunca o meio.
+- O produto (a peça de roupa) tem que permanecer visualmente idêntico em toda a cena — mesma cor,
+  corte, desenho, textura — nunca regenerado/reinterpretado.
 
 As 3 fórmulas acima valem quando a cena for de produto físico com embalagem. Quando o
 produto/oferta (pelas claims do roteiro) NÃO tiver essas características (serviço, curso,
