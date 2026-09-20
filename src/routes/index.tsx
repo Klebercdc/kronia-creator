@@ -1240,7 +1240,6 @@ type PendingOpportunitySeed =
  * Perfil) enquanto a Home não tiver equivalente pra todas elas. */
 const SIDEBAR_ITEMS: { id: AppTab; label: string; Icon: () => React.JSX.Element; mediaHint?: "image" }[] = [
   { id: "criar", label: "Criar conteúdo", Icon: NavIconCriar },
-  { id: "criar", label: "Analisar referência", Icon: NavIconAnalisar },
   { id: "reference", label: "Reference Studio", Icon: NavIconAnalisar },
   { id: "criar", label: "Criar roteiro", Icon: NavIconRoteiro },
   { id: "prompt", label: "Blocos de venda", Icon: NavIconBlocosVenda },
