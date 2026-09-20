@@ -24,6 +24,7 @@ export interface BlocosVendaFieldsLike {
   intent?: CreativeIntent;
   /** Fala pronta de CTA. Quando presente, ganha precedência sobre "local". */
   cta?: string;
+  roteiro?: Array<{ role: string; fala: string }>;
 }
 
 export type BlocosVendaVariant = "curto" | "padrao" | "longo";
@@ -77,7 +78,8 @@ const SALES_CTA_RE =
 
 export function validateIntentSemantics(fields: BlocosVendaFieldsLike, intent: CreativeIntent): string[] {
   const issues: string[] = [];
-  const cta = clean(fields.cta || fields.local);
+  const roteiro = fields.roteiro;
+  const cta = clean(fields.cta || (roteiro?.[roteiro.length - 1]?.fala ?? "") || fields.local);
 
   if (intent === "sales" && MESSAGE_CTA_RE.test(cta)) {
     issues.push(
@@ -265,6 +267,7 @@ const DANGLING_END_WORDS = new Set([
 ]);
 
 export function enforceFalaBudgets<T extends BlocosVendaFieldsLike>(fields: T, variant: BlocosVendaVariant): T {
+  if (hasCreativeScript(fields)) return fields;
   const result: T = { ...fields };
 
   for (const t of FALA_TEMPLATES_BY_VARIANT[variant]) {
