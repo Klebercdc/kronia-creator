@@ -276,8 +276,8 @@ const REVELACAO_DOR_CURTO_BLOCK: BlockDef = {
  * "padrao" é EXATAMENTE a sequência que já existia antes das variantes. */
 const BLOCKS_BY_VARIANT: Record<BlocosVendaVariant, BlockDef[]> = {
   curto: [GANCHO_BLOCK, REVELACAO_DOR_CURTO_BLOCK, FINAL_BLOCK],
-  padrao: [GANCHO_BLOCK, REVELACAO_BLOCK, DOR_BLOCK, ALIVIO_BLOCK, CTA_BLOCK],
-  longo: [GANCHO_BLOCK, REVELACAO_BLOCK, DOR_BLOCK, PROVA_BLOCK, ALIVIO_BLOCK, BENEFICIO_EXTRA_BLOCK, OBJECAO_BLOCK, CTA_BLOCK],
+  padrao: [GANCHO_BLOCK, REVELACAO_BLOCK, DOR_BLOCK, ALIVIO_BLOCK, FINAL_BLOCK],
+  longo: [GANCHO_BLOCK, REVELACAO_BLOCK, DOR_BLOCK, PROVA_BLOCK, ALIVIO_BLOCK, BENEFICIO_EXTRA_BLOCK, OBJECAO_BLOCK, FINAL_BLOCK],
 };
 
 function blocksFor(variant: BlocosVendaVariant, v: FieldValues): BlockDef[] {
@@ -311,10 +311,10 @@ function buildPrompt(b: BlockDef, v: FieldValues, index: number, falaOverride?: 
   const guard = commercial
     ? ""
     : "DIRETRIZ DE INTENÇÃO: este roteiro não é comercial. Não mencionar compra, carrinho, link, preço, promoção ou aquisição. O fechamento deve concluir a mensagem ou convidar a uma ação não comercial coerente.";
-  const acao = !commercial && b === CTA_BLOCK
+  const acao = !commercial && b === FINAL_BLOCK
     ? `${cap(nomeDe(v))} mantém ${clean(v.produto)} visível e faz apenas um gesto natural de acolhimento com a mão, sem apontar para baixo, sem indicar link e sem gesto de compra.`
     : b.acao(v);
-  const cena = !commercial && b === CTA_BLOCK
+  const cena = !commercial && b === FINAL_BLOCK
     ? `${cap(nomeDe(v))} está de frente para a câmera, segurando ${clean(v.produto)} com a mão esquerda, mantendo-o totalmente visível. Olha diretamente para o espectador, com expressão serena e acolhedora.`
     : b.cena(v);
   return [
