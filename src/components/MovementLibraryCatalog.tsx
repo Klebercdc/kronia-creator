@@ -385,16 +385,14 @@ export function MovementLibraryCatalog() {
 
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 8,
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
           marginBottom: selectedIds.length > 0 ? 140 : 16,
         }}
       >
         {!loading && visibleMovements.length === 0 && movements.length > 0 && (
-          <div className="hint" style={{ gridColumn: "1 / -1" }}>
-            Nenhum movimento aqui mexe nessa parte do corpo.
-          </div>
+          <div className="hint">Nenhum movimento aqui mexe nessa parte do corpo.</div>
         )}
         {visibleMovements.map((m) => {
           const selected = selectedIds.includes(m.id);
@@ -406,39 +404,39 @@ export function MovementLibraryCatalog() {
               onClick={() => toggle(m.id)}
               style={{
                 display: "flex",
-                flexDirection: "column",
-                gap: 4,
-                background: "none",
-                border: "none",
-                padding: 0,
+                alignItems: "center",
+                gap: 10,
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 10,
+                border: selected ? "1px solid var(--kr-accent-2)" : "1px solid var(--kr-line)",
+                background: selected ? "var(--kr-tint)" : "var(--kr-card)",
                 textAlign: "left",
                 cursor: "pointer",
-                position: "relative",
               }}
             >
-              <MovementPreview entry={m} selected={selected} />
-              {order && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 5,
-                    right: 5,
-                    width: 18,
-                    height: 18,
-                    borderRadius: "50%",
-                    background: "#FF5500",
-                    color: "#fff",
-                    fontSize: 10,
-                    fontWeight: 700,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {order}
-                </div>
+              <div
+                style={{
+                  flex: "0 0 auto",
+                  width: 20,
+                  height: 20,
+                  borderRadius: order ? "50%" : 5,
+                  background: selected ? "linear-gradient(135deg, #FF8A1A, #FF5500)" : "transparent",
+                  border: selected ? "none" : "1.5px solid var(--kr-line)",
+                  color: "#fff",
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {order ?? ""}
+              </div>
+              <div style={{ flex: 1, fontSize: 13, color: "var(--kr-ink)", lineHeight: 1.3 }}>{m.title}</div>
+              {m.durationSec != null && (
+                <div style={{ flex: "0 0 auto", fontSize: 11, color: "var(--kr-muted-2)", fontFamily: "monospace" }}>{m.durationSec}s</div>
               )}
-              <div style={{ fontSize: 11, color: "var(--kr-ink)", lineHeight: 1.25 }}>{m.title}</div>
             </button>
           );
         })}
@@ -521,6 +519,12 @@ export function MovementLibraryCatalog() {
             </>
           ) : (
             <>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                {selectedIds.map((id) => {
+                  const m = selectedMap.get(id);
+                  return m ? <MovementPreview key={id} entry={m} selected /> : null;
+                })}
+              </div>
               <textarea
                 className="input"
                 readOnly
