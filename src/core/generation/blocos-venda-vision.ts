@@ -25,8 +25,7 @@ import {
 
 const FieldsSchema = z.object({
   nome: z.string(),
-  publico: z.string(),
-  valores: z.string(),
+  gancho: z.string(),
   produto: z.string(),
   funcao: z.string(),
   dor: z.string(),
@@ -69,8 +68,7 @@ const CTA_TECNICA = fromMechanisms("cta_claro");
 function buildVariantDirective(variant: BlocosVendaVariant): string {
   const used = fieldsUsedBy(variant);
   const all: { campo: string; usado: boolean }[] = [
-    { campo: "publico", usado: used.has("publico") },
-    { campo: "valores", usado: used.has("valores") },
+    { campo: "gancho", usado: used.has("gancho") },
     { campo: "produto", usado: used.has("produto") },
     { campo: "funcao", usado: used.has("funcao") },
     { campo: "dor", usado: used.has("dor") },
@@ -102,9 +100,9 @@ foto (cor, material, texto legível, roupa, cenário, iluminação). Nunca inven
 não dá pra confirmar olhando a imagem. Se algo não estiver claro, descreva de forma mais genérica
 em vez de arredondar pra um detalhe inventado.
 
-REGRAS DE TOM E LINGUAGEM — vale pra TODOS os campos de fala (publico, valores, produto, funcao,
-dor, fato, proposito, local). Mesma barra de qualidade usada pelos outros agentes de copy do
-KRONIA (marketing/persuasão/psicologia-compra) — Blocos de venda não é exceção:
+REGRAS DE TOM E LINGUAGEM — vale pra TODOS os campos de fala (gancho, produto, funcao, dor, fato,
+proposito, local). Mesma barra de qualidade usada pelos outros agentes de copy do KRONIA
+(marketing/persuasão/psicologia-compra) — Blocos de venda não é exceção:
 
 ${CREATIVE_QUALITY_BAR}
 
@@ -114,7 +112,7 @@ ${CREATIVE_QUALITY_BAR}
   que se junta numa frase só (funcao dentro de "é {funcao}.", fato+proposito, dor dentro de "às
   vezes {dor}.") e confirme que soa como UMA frase fluida, não dois pedaços colados.
 
-REGRAS DE COMPLIANCE (linguagem de venda) — pros campos publico/valores/funcao/dor/fato/proposito:
+REGRAS DE COMPLIANCE (linguagem de venda) — pros campos gancho/funcao/dor/fato/proposito:
 - NUNCA use nenhuma destas frases de promessa absoluta (mesma lista banida em todo o KRONIA,
   checada automaticamente no Compliance do resto do app): ${BANNED_PHRASES.join(", ")}
   — a menos que esteja literalmente escrito no produto/embalagem na foto.
@@ -136,15 +134,21 @@ TÉCNICA POR PAPEL — mesma taxonomia usada pelos outros agentes de copy do KRO
 em análise de 34.635 clipes virais + mecanismos de persuasão legítimos, nunca manipulação
 enganosa, escassez inventada ou prova social sem evidência). Escreva CADA campo já pensando na
 técnica do papel onde ele entra (só os papéis usados na variante atual, ver diretiva abaixo):
-- publico + valores (Gancho): escolha a mecânica de gancho que MELHOR encaixa nesse produto/
-  personagem específico, dentre este repertório (mesma taxonomia dos outros agentes de copy do
-  KRONIA, hooks validados em análise de 34.635 clipes virais):
+- gancho (Gancho): objetivo é SÓ interromper o scroll nos primeiros segundos — não existe molde de
+  frase pra isso, escreva a fala PRONTA e NATURAL do bloco 1, como se fosse dita de verdade, não
+  colada de pedaços. Escolha a mecânica que MELHOR encaixa nesse produto/personagem específico,
+  dentre este repertório (mesma taxonomia dos outros agentes de copy do KRONIA, hooks validados em
+  análise de 34.635 clipes virais):
 ${buildHookLibraryPromptBlock()}
-  Não force sempre a mesma técnica — olhe a foto e o produto e escolha a mecânica que teria mais
-  força ali (ex.: produto com apelo de identidade forte → "identity_call"; produto com resultado
-  visual óbvio → "result_first"; produto ligado a uma dor comum → "relatable_pain"). Chame o
-  espectador pela identidade dele de um jeito específico o bastante pra interromper o scroll,
-  nunca um público genérico ("as pessoas", "todo mundo").
+  Não force sempre a mesma técnica nem a mesma construção — varie entre pergunta, confissão pessoal,
+  observação cotidiana, contraste, identificação direta, convite simples etc., o que fizer mais
+  sentido pro produto/foto (ex.: produto com apelo de identidade forte → "identity_call"; produto
+  com resultado visual óbvio → "result_first"; produto ligado a uma dor comum → "relatable_pain").
+  PROIBIDO: repetir a fórmula "Se você é [público] que valoriza [valores]..." — é exatamente o
+  padrão de anúncio/template que este campo existe pra evitar (checado automaticamente em código;
+  reprovado se cair nela). Quando fizer sentido, chame o espectador pela identidade dele de um jeito
+  específico (nunca "as pessoas"/"todo mundo" genérico), mas isso é uma entre várias formas válidas
+  de gancho, não a única.
 - produto + funcao (Revelação): mecanismo "${REVELACAO_TECNICA}" — a função emocional tem que ser
   o benefício real que ESSE produto entrega, nunca uma característica técnica solta.
 - dor (Dor): mecanismo "${DOR_TECNICA}" — a dor tem que ser específica e reconhecível no dia a dia
@@ -166,12 +170,11 @@ SIGNIFICADO DE CADA CAMPO (como ele entra nas frases-modelo, pra você escrever 
   (túnica, iconografia cristã), use "Jesus". Senão, invente um nome coerente com a aparência (ex.:
   "Marina", "Rafael") — nunca deixe genérico tipo "Avatar". Vira "FALA — VOZ OFICIAL DE {NOME}:" e
   "{Nome} está sentado em...".
-- publico: pra quem é o produto, entra em "Se você é {publico} que valoriza {valores}…". Ex.: "uma
-  mulher", "um pai", "quem trabalha demais". NUNCA comece com "para"/"pra" (o "é" antes já cumpre
-  esse papel — "é para quem busca..." é gramaticalmente errado; o certo é "é quem busca...").
-- valores: o que esse público valoriza, entra na mesma frase acima ("que valoriza {valores}…") —
-  frase NOMINAL (coisas que a pessoa valoriza: "sua fé, sua família e sua paz"), NUNCA um verbo
-  colado depois de "valoriza" (ex.: "que valoriza fortalece..." é gramaticalmente errado).
+- gancho: a FALA PRONTA e completa do bloco 1 (não um fragmento a ser encaixado em molde nenhum) —
+  frase curta, natural, que alguém diria de verdade em voz alta, não copy de anúncio. Ex. (só
+  ilustrativo, nunca copie): "Se você está precisando de esperança… fica comigo só por alguns
+  segundos.", "Tem dias em que a gente só queria ouvir uma palavra boa.", "Eu não esperava que uma
+  leitura tão simples pudesse dizer tanto." Sem ponto final duplo, sem aspas.
 - produto: nome do produto COM ARTIGO (ex.: "o devocional Mulheres com Deus", "a caneca
   personalizada"). Entra em "está com {produto} nas mãos" e "Isso não é só {produto}… é {funcao}.".
 - funcao: função emocional do produto, frase curta SEM ponto final. Entra em "é {funcao}." — NUNCA
@@ -239,16 +242,17 @@ texto mediano, clichê, robótico, gramaticalmente quebrado, ou que não persuad
 
 Você recebe os campos crus E as frases montadas, em ordem. Julgue SEMPRE pela frase montada, não só
 pelo campo isolado — um campo pode parecer certo sozinho e ainda quebrar a gramática ou o sentido
-quando entra no template (ex.: campo "para quem busca X" vira "Se você é para quem busca X…",
-errado, mesmo que o campo isolado parecesse razoável).
+quando entra no template (ex.: "proposito" começando com "para" duplica o "para" que "fato" já
+tem antes dele).
 
 ${CREATIVE_QUALITY_BAR}
 
 Técnica esperada por PAPEL (mesma taxonomia usada na geração — nem toda variante usa todos os
 papéis, julgue só os que aparecerem nas frases montadas que você recebeu):
-- Gancho (publico+valores): qualquer mecânica do repertório de hooks (curiosity, pattern_interrupt,
-  identity_call, result_first etc.) — precisa realmente interromper o scroll de alguém específico,
-  não soar genérico. Julgue se a escolha combina com o produto/foto, não se bateu uma técnica fixa.
+- Gancho (gancho): qualquer mecânica do repertório de hooks (curiosity, pattern_interrupt,
+  identity_call, result_first etc.) — precisa realmente interromper o scroll, soar como fala
+  natural (não copy de anúncio) e não cair na fórmula "Se você é X que valoriza Y...". Julgue se a
+  escolha combina com o produto/foto, não se bateu uma técnica fixa.
 - Revelação (produto+funcao): "${REVELACAO_TECNICA}" — a função tem que ser o benefício real desse
   produto.
 - Dor (dor): "${DOR_TECNICA}" — dor específica e reconhecível, não genérica.

@@ -14,8 +14,13 @@
  */
 
 export interface BlocosVendaFieldsLike {
-  publico: string;
-  valores: string;
+  /** Frase de abertura do bloco 1, já pronta pra falar — nunca montada
+   * de fragmentos ("publico"/"valores" encaixados num molde fixo, que é
+   * exatamente o que soava "anúncio", não fala natural). Escrita livre
+   * (pela IA ou digitada), escolhendo a técnica de gancho que melhor
+   * encaixa (repertório em hook-library.ts) — código só valida (duração,
+   * compliance, clichê), nunca decide como a frase começa. */
+  gancho: string;
   produto: string;
   funcao: string;
   dor: string;
@@ -42,10 +47,6 @@ export const VARIANT_ORDER: BlocosVendaVariant[] = ["curto", "padrao", "longo"];
 
 export function clean(s: string): string {
   return String(s || "").trim().replace(/[.,;…\s]+$/, "");
-}
-
-function cap(s: string): string {
-  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
 export function wordCount(s: string): number {
@@ -75,84 +76,16 @@ interface TemplateEntry {
   fala: (v: BlocosVendaFieldsLike) => string;
 }
 
-/** Hash simples e estável (mesmo texto sempre cai na mesma variação —
- * preview/edição manual não fica "piscando" entre gerações diferentes,
- * mas produtos diferentes tendem a cair em ganchos diferentes). */
-function stableIndex(s: string, count: number): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-  return Math.abs(h) % count;
-}
-
-/** Lógica geral (não casos fixos): o molde padrão empilha DUAS cláusulas —
- * "Se você é {publico} QUE valoriza {valores}…". Isso só funciona quando
- * "publico" é frase NOMINAL pura ("uma mulher"), no SINGULAR, pra combinar
- * com "você é". Duas famílias de problema, mesma raiz (publico não é uma
- * frase nominal singular simples):
- * 1) "publico" já é uma cláusula própria ("quem busca X", "mulheres que
- *    buscam X") — empilhar "que valoriza" cria cadeia "quem...que..."
- *    ambígua.
- * 2) "publico" é um SUBSTANTIVO COLETIVO PLURAL ("pessoas em busca de X",
- *    "mulheres à procura de X") — "você é pessoas" quebra a concordância
- *    de número (singular "você" + plural "pessoas"), problema diferente
- *    do 1, mas mesma causa raiz: "publico" não serve puro depois de "é".
- * Pra qualquer uma das duas famílias, extrai a AÇÃO real (o que a pessoa
- * busca/quer/precisa) e reconstrói com "Se você busca..." — sempre
- * singular, sempre concordando com "você", nunca empilhando cláusula. */
-function extractSeekingClause(publico: string): string | null {
-  const semQuem = publico.match(/^quem\s+(.+)/i);
-  if (semQuem) return semQuem[1];
-
-  const VERBO_PLURAL_PARA_SINGULAR: Record<string, string> = {
-    buscam: "busca",
-    querem: "quer",
-    precisam: "precisa",
-    valorizam: "valoriza",
-    sentem: "sente",
-    vivem: "vive",
-    enfrentam: "enfrenta",
-  };
-  const coletivo = "(?:pessoas?|mulheres|homens|m[aã]es|pais|gente)";
-
-  // "<coletivo> em busca de/à procura de X" — não tem verbo próprio, o
-  // conector já indica "busca".
-  let m = publico.match(new RegExp(`^${coletivo}\\s+(?:em busca de|à procura de|a procura de)\\s+(.+)`, "i"));
-  if (m) return `busca ${m[1]}`;
-
-  // "<coletivo> que <verbo no plural> X" — conjuga o verbo pro singular
-  // (concordando com "você"), reaproveitando o resto da frase como está.
-  m = publico.match(new RegExp(`^${coletivo}\\s+que\\s+(\\w+)\\s+(.+)`, "i"));
-  if (m) {
-    const verboSingular = VERBO_PLURAL_PARA_SINGULAR[m[1].toLowerCase()];
-    if (verboSingular) return `${verboSingular} ${m[2]}`;
-  }
-
-  return null;
-}
-
+/** Antes era um molde fixo ("Se você é {publico} que valoriza {valores}…")
+ * que forçava a mesma cadência em todo gancho — pedido direto do usuário
+ * pra parar de soar "anúncio". Agora "gancho" já é a frase pronta,
+ * escrita livre; código só garante que não é vazia (as checagens de
+ * duração/clichê/compliance ficam em `checkStructuralIssues` /
+ * `checkFalaLengths`, que já rodam sobre esse texto igual aos outros
+ * blocos). */
 const GANCHO: TemplateEntry = {
-  campo: ["publico", "valores"],
-  fala: (v) => {
-    const publico = clean(v.publico);
-    const valores = clean(v.valores);
-    const acao = extractSeekingClause(publico);
-
-    if (acao) {
-      const variantes = [
-        `Se você ${acao} e valoriza ${valores}… não passe esse vídeo sem ver isso.`,
-        `${cap(acao)}? Se também valoriza ${valores}… não passe esse vídeo sem ver isso.`,
-      ];
-      return variantes[stableIndex(publico + valores, variantes.length)];
-    }
-
-    // "publico" é frase nominal (não bateu nenhum padrão de cláusula
-    // acima), mas ainda pode ter "que"/"quem" solto em outra posição
-    // (ex.: "uma mulher que já perdeu alguém") — troca "que" por "e" pra
-    // não empilhar 2 cláusulas relativas na mesma frase.
-    const CLAUSULA_RE = /\b(que|quem)\b/i;
-    const conector = CLAUSULA_RE.test(publico) ? "e" : "que";
-    return `Se você é ${publico} ${conector} valoriza ${valores}… não passe esse vídeo sem ver isso.`;
-  },
+  campo: ["gancho"],
+  fala: (v) => String(v.gancho || "").trim(),
 };
 const REVELACAO: TemplateEntry = {
   campo: ["produto", "funcao"],
@@ -255,25 +188,25 @@ const NOMINAL_VERB_START =
  * específica o bastante pra dispensar o \b. */
 const DOR_ECHO_RE = /(na correria|no dia a dia|no corre\b|às vezes|as vezes)/i;
 const FATO_TESTIMONIAL = /(leitores?|clientes?|usu[áa]rios?|consumidores?|pessoas?) (relatam|dizem|afirmam|contam|garantem)/i;
-const PUBLICO_PREPOSITION_START = /^(para|pra)\s/i;
 /** "local" entra em "o link está no {local}, aqui embaixo." — "no" já é a
  * contração de "em o", então um artigo solto no começo do campo ("um
  * carrinho...") vira "no um carrinho..." (errado). Visto na prática. */
 const LOCAL_ARTICLE_START = /^(um|uma|o|a)\s/i;
+/** Guardrail contra o molde antigo que causava a queixa "parece anúncio,
+ * não fala natural" — "gancho" agora é escrito livre, mas não pode
+ * regredir pra exatamente a fórmula que a gente tirou de propósito. Não é
+ * checagem de conteúdo/gramática (isso fica por conta de duração e
+ * compliance, que já rodam sobre qualquer texto), só impede a MESMA
+ * cadência fixa de sempre. */
+const GANCHO_FORMULA_ANTIGA = /^se você é .+\bque valoriza\b/i;
 
 export function checkStructuralIssues(fields: BlocosVendaFieldsLike, variant: BlocosVendaVariant): string[] {
   const used = fieldsUsedBy(variant);
   const issues: string[] = [];
 
-  if (used.has("publico") && PUBLICO_PREPOSITION_START.test(clean(fields.publico))) {
+  if (used.has("gancho") && GANCHO_FORMULA_ANTIGA.test(clean(fields.gancho))) {
     issues.push(
-      `Campo "publico" ("${fields.publico}") começa com "para"/"pra" — ele entra em "Se você é {publico} que valoriza...", e "é para quem..." é gramaticalmente errado (o "é" já cumpre esse papel). Reescreva "publico" sem o "para"/"pra" inicial (ex.: "quem busca inspiração espiritual", não "para quem busca...").`,
-    );
-  }
-
-  if (used.has("valores") && NOMINAL_VERB_START.test(clean(fields.valores))) {
-    issues.push(
-      `Campo "valores" ("${fields.valores}") começa com verbo — ele entra em "que valoriza {valores}…", então tem que ser uma frase NOMINAL (ex.: "sua fé e sua paz interior"), nunca outro verbo colado (ex.: "valoriza fortalece..." está gramaticalmente errado). Reescreva "valores" como frase nominal.`,
+      `Campo "gancho" ("${fields.gancho}") caiu na fórmula fixa antiga ("Se você é X que valoriza Y…") — exatamente o padrão que soa anúncio/template, não fala natural. Escreva uma frase de abertura diferente, escolhendo livremente a técnica (pergunta, confissão, observação cotidiana, contraste, identificação direta etc. — repertório completo no bloco de técnicas do prompt).`,
     );
   }
 

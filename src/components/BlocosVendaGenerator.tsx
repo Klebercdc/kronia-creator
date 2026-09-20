@@ -62,8 +62,7 @@ function downscaleImage(dataUrl: string, maxSide = 1280, quality = 0.82): Promis
 
 interface FieldValues {
   nome: string;
-  publico: string;
-  valores: string;
+  gancho: string;
   produto: string;
   funcao: string;
   dor: string;
@@ -85,8 +84,7 @@ const STORAGE_KEY = "jf-blocos-v2";
 
 const DEFAULTS: FieldValues = {
   nome: "Jesus",
-  publico: "uma mulher",
-  valores: "sua fé, sua família e sua paz",
+  gancho: "Se você está precisando de esperança… fica comigo só por alguns segundos.",
   produto: "o devocional Mulheres com Deus",
   funcao: "um lembrete diário para você continuar firme na fé",
   dor: "uma simples palavra é tudo que você precisa para não desistir",
@@ -105,8 +103,7 @@ const DEFAULTS: FieldValues = {
 };
 
 const PRODUCT_KEYS: (keyof FieldValues)[] = [
-  "publico",
-  "valores",
+  "gancho",
   "produto",
   "funcao",
   "dor",
@@ -310,8 +307,7 @@ function loadStoredValues(): FieldValues {
 
 const FIELD_LABELS: { key: keyof FieldValues; label: string; hint: string; textarea?: boolean; rows?: number; group?: "produto" | "personagem" }[] = [
   { key: "nome", label: "Nome do personagem/avatar", hint: 'Aparece como "VOZ OFICIAL DE ___" na fala' },
-  { key: "publico", label: "Para quem", hint: "Ex.: uma mulher, um pai, quem trabalha demais" },
-  { key: "valores", label: "O que essa pessoa valoriza", hint: "Ex.: sua fé, sua família e sua paz" },
+  { key: "gancho", label: "Gancho (fala do bloco 1)", hint: "A frase pronta de abertura — livre, sem molde fixo. Ex.: \"Se você está precisando de esperança… fica comigo só por alguns segundos.\"", textarea: true, rows: 2 },
   { key: "produto", label: "Produto", hint: "Com artigo. Ex.: um livro devocional" },
   { key: "funcao", label: "Função emocional", hint: "O que o produto faz pela pessoa, em uma frase" },
   { key: "dor", label: "Dor do dia a dia", hint: 'Entra em "Na correria da vida… às vezes ___."' },
@@ -406,7 +402,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
     blocks.forEach((blk, i) => {
       if (blk.over) msgs.push(`Bloco ${i + 1}: cerca de ${blk.secs.toFixed(0)}s, passa de 10s. Encurte a fala.`);
     });
-    const texto = [values.publico, values.valores, values.produto, values.funcao, values.dor, values.fato, values.proposito].join(" ");
+    const texto = [values.gancho, values.produto, values.funcao, values.dor, values.fato, values.proposito].join(" ");
     const bannedPhrase = findBannedPhrase(texto);
     if (bannedPhrase) msgs.push(`Frase de promessa absoluta: "${bannedPhrase}". Só use se estiver na página do produto.`);
     if (DIVINE_RE.test(texto)) msgs.push("O personagem não fala como Deus em 1ª pessoa. Reescreva como mensageiro.");
