@@ -10,6 +10,7 @@ import {
   checkStructuralIssues,
   enforceFalaBudgets,
   fieldsUsedBy,
+  creativeRolesForVariant,
   VARIANT_LABEL,
   type BlocosVendaVariant,
   validateIntentSemantics,
@@ -70,8 +71,8 @@ const CTA_TECNICA = fromMechanisms("cta_claro");
 /** Bloco fixo — cada variante usa só um subconjunto dos campos; o resto
  * fica como string vazia "". Nunca invente conteúdo pros campos não
  * usados só pra "preencher". */
-function buildVariantDirective(variant: BlocosVendaVariant): string {
-  const used = fieldsUsedBy(variant);
+function buildVariantDirective(variant: BlocosVendaVariant, intent: "message" | "engagement" | "sales" | "script" | "custom" = "sales"): string {
+  const used = fieldsUsedBy(variant, intent);
   const all: { campo: string; usado: boolean }[] = [
     { campo: "gancho", usado: used.has("gancho") },
     { campo: "produto", usado: used.has("produto") },
@@ -132,7 +133,7 @@ Não exponha cadeia de pensamento privada.
 Retorne somente os campos do schema.`;
 
 function buildSystem(variant: BlocosVendaVariant): string {
-  const roles = CREATIVE_ROLES_BY_VARIANT[variant].join(" → ");
+  const roles = creativeRolesForVariant(variant, "sales").join(" → ");
   const count = expectedCreativeBlockCount(variant);
 
   const directive = `PROTOCOLO CRIATIVO — execute antes de escrever:
@@ -150,7 +151,7 @@ DECISÃO ESTRUTURADA:
 Preencha strategy com intent, objective, theme, coreTruth, audience, emotionalStart, emotionalEnd, hookMechanic, narrativeArc, ctaObjective, verifiedFacts, observedVisuals e creativeAssumptions.
 
 ROTEIRO FINAL:
-Preencha roteiro com exatamente ${count} blocos, nos papéis ${roles}.
+Preencha roteiro com exatamente ${count} blocos. Os papéis dependem da intenção: em "sales" use papéis comerciais; em "message", "engagement", "script" ou "custom" use papéis narrativos e termine em "fechamento", nunca em "cta".
 O roteiro é a saída principal e tem prioridade sobre os moldes legados.
 
 REGRA CRÍTICA DE INTENÇÃO:
@@ -266,7 +267,7 @@ function deterministicInstruction(fields: BlocosVendaFields, variant: BlocosVend
         `Bloco ${c.bloco}: a fala tem só ${c.chars} letras / ${c.words} palavras (~${c.secs.toFixed(0)}s). Elabore a mesma ideia com um detalhe REAL adicional, sem inventar fatos, até aproximadamente 95–114 letras.`,
     );
 
-  const expectedRoles = CREATIVE_ROLES_BY_VARIANT[variant];
+  const expectedRoles = creativeRolesForVariant(variant, intent);
   const scriptIssues: string[] = [];
   if (fields.roteiro) {
     if (fields.roteiro.length !== expectedRoles.length) {
