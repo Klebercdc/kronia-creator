@@ -3,7 +3,7 @@ import { callStructuredText, callStructuredVisionFromDataUrls } from "../../lib/
 import { HOOK_TYPES, PERSUASION_MECHANISMS } from "../../types/taxonomy";
 import { BANNED_PHRASES } from "../compliance/absolute-claims-guard";
 import { CREATIVE_QUALITY_BAR } from "./quality-bar";
-import { checkFalaLengths, checkStructuralIssues } from "./blocos-venda-fala";
+import { checkFalaLengths, checkStructuralIssues, enforceFalaBudgets } from "./blocos-venda-fala";
 
 /**
  * Preenche os 14 campos do gerador de blocos de venda a partir da foto do
@@ -236,5 +236,10 @@ export async function generateBlocosVendaFields(
     fields = await reviseFields(fields, instruction);
   }
 
-  return fields;
+  // Última garantia, sem IA: se mesmo depois de 2 revisões algum bloco
+  // continuar passando de 10s, corta palavra por palavra em código — pedir
+  // pra LLM encurtar de novo não é confiável o bastante (visto na prática:
+  // ela às vezes ignora a instrução), e o usuário nunca deve ver o alerta
+  // "passa de 10s" logo depois de gerar com IA.
+  return enforceFalaBudgets(fields);
 }

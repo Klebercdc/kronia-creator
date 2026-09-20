@@ -110,3 +110,40 @@ export function checkStructuralIssues(fields: BlocosVendaFieldsLike): string[] {
 
   return issues;
 }
+
+/** Último recurso, determinístico — corta palavra por palavra até caber.
+ * Pedir pra LLM encurtar (via instrução de revisão) já se mostrou pouco
+ * confiável na prática, mesmo com 2 rodadas de revisão: às vezes ela
+ * simplesmente ignora o pedido e devolve o campo quase do mesmo tamanho.
+ * Isso aqui GARANTE que nenhum bloco sai da geração acima de ~10s — corta
+ * do campo com mais palavras primeiro (geralmente o menos essencial pra
+ * manter a frase compreensível), até o total do bloco caber no orçamento. */
+export function enforceFalaBudgets<T extends BlocosVendaFieldsLike>(fields: T): T {
+  const result: T = { ...fields };
+
+  for (const t of FALA_TEMPLATES) {
+    if (estimateSecs(t.fala(result)) <= 11) continue;
+
+    const blanked = { ...result };
+    t.campo.forEach((c) => (blanked[c] = ""));
+    const fixedWords = wordCount(t.fala(blanked));
+    const budget = Math.max(3, 18 - fixedWords);
+
+    const campoWords: Partial<Record<keyof BlocosVendaFieldsLike, string[]>> = {};
+    t.campo.forEach((c) => (campoWords[c] = clean(result[c]).split(/\s+/).filter(Boolean)));
+    const total = () => t.campo.reduce((sum, c) => sum + (campoWords[c]?.length ?? 0), 0);
+
+    while (total() > budget) {
+      const longest = t.campo.reduce((best, c) => ((campoWords[c]?.length ?? 0) > (campoWords[best]?.length ?? 0) ? c : best));
+      const words = campoWords[longest];
+      if (!words || words.length <= 1) break;
+      words.pop();
+    }
+
+    t.campo.forEach((c) => {
+      result[c] = (campoWords[c] ?? []).join(" ");
+    });
+  }
+
+  return result;
+}
