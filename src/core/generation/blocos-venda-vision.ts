@@ -111,6 +111,10 @@ ${CREATIVE_QUALITY_BAR}
   pode começar com "para", senão a frase final fica com "para... para..."). Leia cada par de campos
   que se junta numa frase só (funcao dentro de "é {funcao}.", fato+proposito, dor dentro de "às
   vezes {dor}.") e confirme que soa como UMA frase fluida, não dois pedaços colados.
+- "dor" entra como CONTINUAÇÃO minúscula de "…às vezes {dor}.", nunca como frase independente com
+  sujeito próprio (ex.: "às vezes Muitas pessoas se sentem desorientadas..." está errado — não pode
+  começar com maiúscula nem introduzir um sujeito novo tipo "muitas pessoas"/"todos". Escreva como
+  continuação direta: "às vezes perdemos o rumo", não "às vezes muitas pessoas perdem o rumo").
 
 REGRAS DE COMPLIANCE (linguagem de venda) — pros campos gancho/funcao/dor/fato/proposito:
 - NUNCA use nenhuma destas frases de promessa absoluta (mesma lista banida em todo o KRONIA,
