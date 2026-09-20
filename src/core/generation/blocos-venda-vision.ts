@@ -177,7 +177,7 @@ Não exponha cadeia de pensamento privada. Retorne somente o schema.`;
 
   return `${SYSTEM_BASE}\n\n${directive}\n${buildVariantDirective(variant, "custom")}`;
 }
-/** Revisor de Roteiro do Blocos de venda — mesmo papel do Quality Judge do
+/** Revisor de roteiro criativo — mesmo papel do Quality Judge do
  * pipeline principal (quality-judge.ts), mas julgando as FRASES FINAIS
  * MONTADAS como um roteiro só (não os campos isolados): gramática,
  * persuasão (cada bloco realmente convence, ou é só bonito?) e
