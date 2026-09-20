@@ -178,7 +178,9 @@ SIGNIFICADO DE CADA CAMPO (como ele entra nas frases-modelo, pra você escrever 
   comece com "é"/"são" (o "é" do template já cumpre esse papel; "é é um guia..." é gramaticalmente
   errado, o certo é só "um guia...").
 - dor: dor cotidiana do público, frase curta SEM ponto final. Entra em "Na correria da vida… às
-  vezes {dor}.".
+  vezes {dor}." — nunca repita "às vezes"/"na correria"/"no dia a dia" (com essas palavras ou
+  qualquer variação parecida, tipo "na dor da vida... às vezes...") DENTRO do campo, em nenhuma
+  posição — o template já injeta isso antes, repetir duplica o conector.
 - fato: fato verificável e curto sobre o produto. SEM ponto final. Entra em "{fato} para
   {proposito}.".
 - proposito: o que a pessoa ganha a longo prazo, frase curta SEM ponto final. Entra na mesma frase
@@ -191,7 +193,8 @@ SIGNIFICADO DE CADA CAMPO (como ele entra nas frases-modelo, pra você escrever 
   final. Entra em "Se você ainda tem dúvida… {objecao}.".
 - local: onde fica o botão/link de compra na interface (não é sobre o produto, é convenção de
   loja) — se não tiver como saber, use "carrinho laranja". Entra em "o link está no {local}, aqui
-  embaixo.".
+  embaixo." — o "no" já é a contração de "em o", então NUNCA comece com artigo ("um"/"uma"/"o"/"a"),
+  senão vira "no um carrinho..." (errado); o certo é "no carrinho laranja...".
 - visual: como o produto aparece NA FOTO (cor, textos legíveis, formato, embalagem) — descrição
   fiel, não é frase de venda.
 - demo: o que o personagem faz com o produto no bloco 3 (uso/leitura/manuseio), frase curta sem
