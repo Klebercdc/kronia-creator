@@ -142,6 +142,31 @@ export function bodyPartsFor(entry: MovementEntry): BodyPart[] {
   return (Object.keys(BODY_PART_PATTERN) as BodyPart[]).filter((part) => BODY_PART_PATTERN[part].test(entry.body));
 }
 
+/** Tipo de transição entre os movimentos selecionados — mesmo vocabulário
+ * de corte já usado na regra de segurança do Cinematográfico (pulo/
+ * match-cut, giro, corte seco): a usuária escolhe COMO a cena corta de um
+ * movimento pro próximo, em vez de sempre usar o conector genérico "Em
+ * seguida,"/"Depois,". Opcional — "nenhuma" mantém o comportamento antigo. */
+export type TransitionType = "nenhuma" | "pulo" | "giro" | "corte_seco" | "zoom";
+
+export const TRANSITION_LABEL: Record<TransitionType, string> = {
+  nenhuma: "Sequência simples",
+  pulo: "Pulo (match-cut)",
+  giro: "Giro rápido",
+  corte_seco: "Corte seco",
+  zoom: "Zoom",
+};
+
+/** Frase que conecta um movimento ao próximo quando a transição é
+ * explícita — sempre no meio da ação, nunca substituindo o corpo do
+ * movimento em si (só como conector, igual aos genéricos de antes). */
+const TRANSITION_CONNECTOR: Record<Exclude<TransitionType, "nenhuma">, string> = {
+  pulo: "Ela dá um pequeno pulo e, no instante em que os pés saem do chão, um match-cut leva pra próxima cena:",
+  giro: "Ela gira rapidamente sobre o próprio eixo e, no meio do giro, corta direto pra próxima cena:",
+  corte_seco: "Corte seco, direto, sem transição suave, pra próxima cena:",
+  zoom: "Um zoom rápido pra dentro fecha a cena atual e abre a próxima:",
+};
+
 const SUBJECT_LINE: Record<SubjectType, string> = {
   person:
     "a mesma pessoa, rosto, roupa e ambiente da foto de referência enviada — manter tudo idêntico à referência do início ao fim, sem deformar mãos",
@@ -199,6 +224,7 @@ function buildTechnicalHeader(subjectTypes: Set<SubjectType>): string {
 export function composeMovementPrompt(
   ids: string[],
   subjectTypeOverride?: SubjectType,
+  transitionType?: TransitionType,
 ): { text: string; totalDurationSec: number } | null {
   const byId = new Map(getMovementsByIds(ids).map((e) => [e.id, e]));
   const ordered = ids.map((id) => byId.get(id)).filter((e): e is MovementEntry => Boolean(e));
@@ -225,11 +251,12 @@ export function composeMovementPrompt(
       .join(" ");
   }
 
+  const explicitTransition = transitionType && transitionType !== "nenhuma" ? TRANSITION_CONNECTOR[transitionType] : null;
   const connectors = ["Em seguida,", "Depois,", "Na sequência,", "Logo após,", "Para finalizar,"];
   const sentences = ordered.map((entry, idx) => {
     const cleaned = stripBoilerplate(entry.body);
     if (idx === 0) return cleaned;
-    const connector = connectors[Math.min(idx - 1, connectors.length - 1)];
+    const connector = explicitTransition ?? connectors[Math.min(idx - 1, connectors.length - 1)];
     return `${connector} ${cleaned.charAt(0).toLowerCase()}${cleaned.slice(1)}`;
   });
 
