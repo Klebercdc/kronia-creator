@@ -246,7 +246,7 @@ const OBJECAO_BLOCK: BlockDef = {
   camera: () => `Close-up estável, sem movimento brusco. ${VIDEO_SPEC}`,
   acao: (v) => `${cap(nomeDe(v))} balança a cabeça suavemente em sinal de segurança, mantendo tom calmo e confiante.`,
 };
-const CTA_BLOCK: BlockDef = {
+const FINAL_BLOCK: BlockDef = {
   titulo: "CTA e conversão",
   tempo: "",
   tempoScript: "",
@@ -275,7 +275,7 @@ const REVELACAO_DOR_CURTO_BLOCK: BlockDef = {
  * mesmos blocos-base (mesma "espinha" gancho → desenvolvimento → CTA) —
  * "padrao" é EXATAMENTE a sequência que já existia antes das variantes. */
 const BLOCKS_BY_VARIANT: Record<BlocosVendaVariant, BlockDef[]> = {
-  curto: [GANCHO_BLOCK, REVELACAO_DOR_CURTO_BLOCK, CTA_BLOCK],
+  curto: [GANCHO_BLOCK, REVELACAO_DOR_CURTO_BLOCK, FINAL_BLOCK],
   padrao: [GANCHO_BLOCK, REVELACAO_BLOCK, DOR_BLOCK, ALIVIO_BLOCK, CTA_BLOCK],
   longo: [GANCHO_BLOCK, REVELACAO_BLOCK, DOR_BLOCK, PROVA_BLOCK, ALIVIO_BLOCK, BENEFICIO_EXTRA_BLOCK, OBJECAO_BLOCK, CTA_BLOCK],
 };
@@ -310,7 +310,7 @@ function buildPrompt(b: BlockDef, v: FieldValues, index: number, falaOverride?: 
   const commercial = isCommercial(v);
   const guard = commercial
     ? ""
-    : "DIRETRIZ DE INTENÇÃO: este roteiro não é comercial. Não mencionar compra, carrinho, link, preço, promoção ou aquisição. Não apontar para baixo como gesto de compra.";
+    : "DIRETRIZ DE INTENÇÃO: este roteiro não é comercial. Não mencionar compra, carrinho, link, preço, promoção ou aquisição. O fechamento deve concluir a mensagem ou convidar a uma ação não comercial coerente.";
   const acao = !commercial && b === CTA_BLOCK
     ? `${cap(nomeDe(v))} mantém ${clean(v.produto)} visível e faz apenas um gesto natural de acolhimento com a mão, sem apontar para baixo, sem indicar link e sem gesto de compra.`
     : b.acao(v);
