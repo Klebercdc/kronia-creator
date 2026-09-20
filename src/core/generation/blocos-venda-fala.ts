@@ -187,7 +187,24 @@ const NOMINAL_VERB_START =
  * batia de verdade; aqui a frase inteira ("às vezes"/"as vezes") já é
  * específica o bastante pra dispensar o \b. */
 const DOR_ECHO_RE = /(na correria|no dia a dia|no corre\b|às vezes|as vezes)/i;
+/** "dor" entra como CONTINUAÇÃO de "…às vezes {dor}.", nunca como frase
+ * independente com sujeito próprio — visto na prática: "às vezes Muitas
+ * pessoas se sentem desorientadas..." (maiúscula no meio da frase,
+ * porque o campo foi escrito como sentença solta, não como continuação).
+ * Checagem simples e eficaz: se "dor" começa com maiúscula, não é
+ * continuação de minúscula nenhuma. */
+function startsWithCapital(s: string): boolean {
+  const c = s.charAt(0);
+  return c !== "" && c === c.toUpperCase() && c !== c.toLowerCase();
+}
 const FATO_TESTIMONIAL = /(leitores?|clientes?|usu[áa]rios?|consumidores?|pessoas?) (relatam|dizem|afirmam|contam|garantem)/i;
+/** "fato" + "proposito" viram "{fato} para {proposito}." — se "proposito"
+ * também começar com "para", a frase final duplica ("...para para...").
+ * Já estava documentado como regra no prompt de geração
+ * (blocos-venda-vision.ts), mas nunca tinha virado checagem em código —
+ * por isso a LLM ignorou na prática (visto: "sempre há uma luz para
+ * para ajudar..."). */
+const PROPOSITO_PARA_START = /^(para|pra)\s/i;
 /** "local" entra em "o link está no {local}, aqui embaixo." — "no" já é a
  * contração de "em o", então um artigo solto no começo do campo ("um
  * carrinho...") vira "no um carrinho..." (errado). Visto na prática. */
@@ -222,6 +239,18 @@ export function checkStructuralIssues(fields: BlocosVendaFieldsLike, variant: Bl
     );
   }
 
+  if (used.has("dor") && startsWithCapital(clean(fields.dor))) {
+    issues.push(
+      `Campo "dor" ("${fields.dor}") começa com maiúscula — ele entra como CONTINUAÇÃO de "Na correria da vida… às vezes {dor}.", nunca como frase independente com sujeito próprio (ex.: "às vezes Muitas pessoas se sentem..." está errado — maiúscula no meio da frase). Reescreva "dor" em minúscula, como continuação direta de "às vezes" (ex.: "às vezes perdemos o rumo", não "às vezes Muitas pessoas perdem o rumo").`,
+    );
+  }
+
+  if (used.has("proposito") && PROPOSITO_PARA_START.test(clean(fields.proposito))) {
+    issues.push(
+      `Campo "proposito" ("${fields.proposito}") começa com "para"/"pra" — ele entra em "{fato} para {proposito}.", e "para" já vem antes dele, então "para para..." fica duplicado. Reescreva "proposito" sem o "para"/"pra" inicial (ex.: "viver com mais propósito", não "para viver com mais propósito").`,
+    );
+  }
+
   if (used.has("fato") && FATO_TESTIMONIAL.test(fields.fato)) {
     issues.push(
       `Campo "fato" ("${fields.fato}") é um depoimento/prova social inventada ("leitores relatam" etc.), não um fato verificável — proibido (mesma regra do resto do KRONIA: nunca prova social sem evidência real). Reescreva "fato" como uma característica objetiva e verificável do produto (visível na foto/embalagem), nunca uma citação de terceiros.`,
@@ -242,6 +271,16 @@ export function checkStructuralIssues(fields: BlocosVendaFieldsLike, variant: Bl
  * mínimo aceitável: cortar até aqui ainda aproveita quase todo o slot de
  * 10s, em vez de deixar o bloco curto demais depois do corte. */
 const TARGET_CHARS_PER_BLOCK = 114;
+
+/** Palavras que nunca podem sobrar como ÚLTIMA palavra de um campo depois
+ * do corte — preposição/artigo/conjunção solta no fim vira frase
+ * quebrada (visto na prática: cortar "outros" de "conexão com os
+ * outros" deixa "...conexão com os." pendurado). */
+const DANGLING_END_WORDS = new Set([
+  "de", "com", "para", "pra", "em", "a", "o", "os", "as", "um", "uma", "uns", "umas",
+  "que", "e", "ou", "mas", "no", "na", "nos", "nas", "do", "da", "dos", "das",
+  "ao", "aos", "à", "às", "pelo", "pela", "pelos", "pelas", "sem", "sob", "sobre", "até",
+]);
 
 /** Último recurso, determinístico — corta palavra por palavra (a unidade
  * que se corta continua sendo a palavra inteira, pra não quebrar no meio
@@ -274,6 +313,9 @@ export function enforceFalaBudgets<T extends BlocosVendaFieldsLike>(fields: T, v
       const words = campoWords[longest];
       if (!words || words.length <= 1) break;
       words.pop();
+      while (words.length > 1 && DANGLING_END_WORDS.has(clean(words[words.length - 1]).toLowerCase())) {
+        words.pop();
+      }
     }
 
     t.campo.forEach((c) => {
