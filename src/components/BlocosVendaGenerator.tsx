@@ -4,7 +4,17 @@ import logoIcon from "../assets/logo-icon.png";
 import { generateBlocosVendaFieldsFn } from "../server/blocos-venda.functions";
 import { BANNED_PHRASES, normalize as normalizeForClaimsCheck } from "../core/compliance/absolute-claims-guard";
 import { errorMessageOf } from "../lib/errors";
-import { clean, wordCount, charCount, estimateSecs, FALA_TEMPLATES } from "../core/generation/blocos-venda-fala";
+import {
+  clean,
+  wordCount,
+  charCount,
+  estimateSecs,
+  fieldsUsedBy,
+  FALA_TEMPLATES_BY_VARIANT,
+  VARIANT_LABEL,
+  VARIANT_ORDER,
+  type BlocosVendaVariant,
+} from "../core/generation/blocos-venda-fala";
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -65,6 +75,10 @@ interface FieldValues {
   idv: string;
   voz: string;
   cen: string;
+  /** Só usados na variante "longo". */
+  prova: string;
+  beneficioExtra: string;
+  objecao: string;
 }
 
 const STORAGE_KEY = "jf-blocos-v2";
@@ -85,6 +99,9 @@ const DEFAULTS: FieldValues = {
   idv: "Homem de cerca de 35 anos, aparência semítica/mediterrânea, pele morena-oliva, cabelo castanho-escuro longo, ondulado, repartido ao centro, barba cheia castanho-escura bem aparada, olhos castanho-claros, sobrancelhas grossas, nariz reto, rosto oval-alongado. Veste túnica bege/creme de linho rústico com lenço branco no pescoço. Mesmo rosto, mesma túnica e mesmo cabelo em todos os blocos.",
   voz: "Voz masculina jovem, serena e próxima; tom íntimo e emocional, natural e humano; compaixão e segurança; fala calma, sem pressa, com pausas naturais; como uma conversa particular, não uma pregação. Timbre masculino jovem, quente, suave e claro; interpretação com curiosidade, proximidade e preocupação genuína; sem voz grave artificial e sem teatralidade.",
   cen: "um ambiente acolhedor, no final da tarde, com luz dourada suave atravessando o local",
+  prova: "milhares de mulheres já usam esse devocional na rotina de oração",
+  beneficioExtra: "cabe na bolsa e vem com fita marcadora, pra levar pra qualquer lugar",
+  objecao: "não precisa saber de teologia pra entender — a linguagem é simples, dia a dia",
 };
 
 const PRODUCT_KEYS: (keyof FieldValues)[] = [
@@ -98,6 +115,9 @@ const PRODUCT_KEYS: (keyof FieldValues)[] = [
   "local",
   "visual",
   "demo",
+  "prova",
+  "beneficioExtra",
+  "objecao",
 ];
 
 const VIDEO_SPEC =
@@ -131,64 +151,127 @@ interface BlockDef {
   acao: (v: FieldValues) => string;
 }
 
-const BLOCKS: BlockDef[] = [
-  {
-    titulo: "Bloco 1 · Gancho + interrupção",
-    tempo: "0–10s",
-    tempoScript: "00:00–00:10",
-    fala: FALA_TEMPLATES[0].fala,
-    cena: (v) =>
-      `${cap(nomeDe(v))} está sentado em ${clean(v.cen)}. ${cap(nomeDe(v))} está com ${clean(v.produto)} fechado nas mãos.\n\nNos primeiros segundos, ${nomeDe(v)} levanta lentamente os olhos do produto e encara diretamente a câmera. Sua expressão é serena, acolhedora e profundamente humana.`,
-    camera: () => `Close-up no rosto, movimento lento de aproximação. Fundo desfocado, luz dourada contornando os cabelos. ${VIDEO_SPEC}`,
-    acao: (v) =>
-      `Ao iniciar a fala, ${nomeDe(v)} segura ${clean(v.produto)} junto ao peito. No final, estende levemente uma das mãos em direção à câmera.`,
-  },
-  {
-    titulo: "Bloco 2 · Revelação do produto",
-    tempo: "10–20s",
-    tempoScript: "00:10–00:20",
-    fala: FALA_TEMPLATES[1].fala,
-    cena: (v) =>
-      `Continuação visual do mesmo ambiente. ${cap(nomeDe(v))} pega ${clean(v.produto)} e o posiciona cuidadosamente diante da câmera. A aparência do produto deve permanecer idêntica à referência.`,
-    camera: () => `Começa no rosto e faz um movimento descendente suave até o produto. Depois realiza um pequeno avanço cinematográfico no produto. ${VIDEO_SPEC}`,
-    acao: (v) =>
-      `${cap(nomeDe(v))} olha para o produto por um instante, passa suavemente a mão pela frente dele e então olha novamente para a câmera. Sorriso muito discreto, olhar acolhedor.`,
-  },
-  {
-    titulo: "Bloco 3 · Uso e identificação da dor",
-    tempo: "20–30s",
-    tempoScript: "00:20–00:30",
-    fala: FALA_TEMPLATES[2].fala,
-    cena: (v) =>
-      `${cap(nomeDe(v))} está sentado tranquilamente em ${clean(v.cen)}, com ${clean(v.produto)}: ${clean(v.demo)}. Depois, levanta lentamente os olhos e olha diretamente para a câmera.`,
-    camera: () => `Plano médio fechado e estável, com uma aproximação muito suave durante a fala. ${VIDEO_SPEC}`,
-    acao: (v) =>
-      `Movimento natural dos cabelos e das roupas causado por uma leve brisa. Interpretação íntima, calma e emocional; finaliza mantendo o olhar de ${nomeDe(v)} na câmera.`,
-  },
-  {
-    titulo: "Bloco 4 · Experiência e propósito",
-    tempo: "30–40s",
-    tempoScript: "00:30–00:40",
-    fala: FALA_TEMPLATES[3].fala,
-    cena: (v) =>
-      `Close no produto (${clean(v.produto)}) nas mãos de ${nomeDe(v)}. Ele interage com o produto por alguns segundos, depois o guarda cuidadosamente e o segura junto ao peito.`,
-    camera: (v) =>
-      `Começa fechada (macro do detalhe) → foco nas mãos → plano médio. Quando ${nomeDe(v)} guarda o produto, a câmera começa a se afastar lentamente, revelando o cenário dourado ao redor. ${VIDEO_SPEC}`,
-    acao: (v) =>
-      `Ao dizer a última parte da fala, ${nomeDe(v)} olha diretamente para a câmera. Expressão de serenidade, segurança e acolhimento.`,
-  },
-  {
-    titulo: "Bloco 5 · CTA e conversão",
-    tempo: "40–50s",
-    tempoScript: "00:40–00:50",
-    fala: FALA_TEMPLATES[4].fala,
-    cena: (v) =>
-      `${cap(nomeDe(v))} está de frente para a câmera, segurando ${clean(v.produto)} com a mão esquerda, mantendo-o totalmente visível. Olha diretamente para o espectador, com expressão serena e acolhedora.`,
-    camera: () => `Plano médio estável, com aproximação muito suave. Sem mudança de cenário nem cortes complexos. ${VIDEO_SPEC}`,
-    acao: (v) =>
-      `Ao mencionar "${clean(v.local)}", ${nomeDe(v)} levanta a mão direita e aponta claramente para baixo, indicando que o link está abaixo do vídeo — gesto natural e fácil de entender. Depois, mantém o produto visível, volta a mão para uma posição natural e olha para a câmera com um pequeno sorriso sereno.`,
-  },
-];
+const GANCHO_BLOCK: BlockDef = {
+  titulo: "Gancho + interrupção",
+  tempo: "",
+  tempoScript: "",
+  fala: FALA_TEMPLATES_BY_VARIANT.padrao[0].fala,
+  cena: (v) =>
+    `${cap(nomeDe(v))} está sentado em ${clean(v.cen)}. ${cap(nomeDe(v))} está com ${clean(v.produto)} fechado nas mãos.\n\nNos primeiros segundos, ${nomeDe(v)} levanta lentamente os olhos do produto e encara diretamente a câmera. Sua expressão é serena, acolhedora e profundamente humana.`,
+  camera: () => `Close-up no rosto, movimento lento de aproximação. Fundo desfocado, luz dourada contornando os cabelos. ${VIDEO_SPEC}`,
+  acao: (v) =>
+    `Ao iniciar a fala, ${nomeDe(v)} segura ${clean(v.produto)} junto ao peito. No final, estende levemente uma das mãos em direção à câmera.`,
+};
+const REVELACAO_BLOCK: BlockDef = {
+  titulo: "Revelação do produto",
+  tempo: "",
+  tempoScript: "",
+  fala: FALA_TEMPLATES_BY_VARIANT.padrao[1].fala,
+  cena: (v) =>
+    `Continuação visual do mesmo ambiente. ${cap(nomeDe(v))} pega ${clean(v.produto)} e o posiciona cuidadosamente diante da câmera. A aparência do produto deve permanecer idêntica à referência.`,
+  camera: () => `Começa no rosto e faz um movimento descendente suave até o produto. Depois realiza um pequeno avanço cinematográfico no produto. ${VIDEO_SPEC}`,
+  acao: (v) =>
+    `${cap(nomeDe(v))} olha para o produto por um instante, passa suavemente a mão pela frente dele e então olha novamente para a câmera. Sorriso muito discreto, olhar acolhedor.`,
+};
+const DOR_BLOCK: BlockDef = {
+  titulo: "Uso e identificação da dor",
+  tempo: "",
+  tempoScript: "",
+  fala: FALA_TEMPLATES_BY_VARIANT.padrao[2].fala,
+  cena: (v) =>
+    `${cap(nomeDe(v))} está sentado tranquilamente em ${clean(v.cen)}, com ${clean(v.produto)}: ${clean(v.demo)}. Depois, levanta lentamente os olhos e olha diretamente para a câmera.`,
+  camera: () => `Plano médio fechado e estável, com uma aproximação muito suave durante a fala. ${VIDEO_SPEC}`,
+  acao: (v) =>
+    `Movimento natural dos cabelos e das roupas causado por uma leve brisa. Interpretação íntima, calma e emocional; finaliza mantendo o olhar de ${nomeDe(v)} na câmera.`,
+};
+const PROVA_BLOCK: BlockDef = {
+  titulo: "Prova / demonstração extra",
+  tempo: "",
+  tempoScript: "",
+  fala: FALA_TEMPLATES_BY_VARIANT.longo[3].fala,
+  cena: (v) =>
+    `${cap(nomeDe(v))} demonstra ${clean(v.produto)} em uso, de forma mais detalhada, mostrando um segundo ângulo ou detalhe do produto.`,
+  camera: () => `Plano médio com leve aproximação, focando no detalhe do produto em uso. ${VIDEO_SPEC}`,
+  acao: (v) =>
+    `${cap(nomeDe(v))} manuseia ${clean(v.produto)} com cuidado, destacando um detalhe específico antes de olhar novamente para a câmera.`,
+};
+const ALIVIO_BLOCK: BlockDef = {
+  titulo: "Experiência e propósito",
+  tempo: "",
+  tempoScript: "",
+  fala: FALA_TEMPLATES_BY_VARIANT.padrao[3].fala,
+  cena: (v) =>
+    `Close no produto (${clean(v.produto)}) nas mãos de ${nomeDe(v)}. Ele interage com o produto por alguns segundos, depois o guarda cuidadosamente e o segura junto ao peito.`,
+  camera: (v) =>
+    `Começa fechada (macro do detalhe) → foco nas mãos → plano médio. Quando ${nomeDe(v)} guarda o produto, a câmera começa a se afastar lentamente, revelando o cenário dourado ao redor. ${VIDEO_SPEC}`,
+  acao: (v) =>
+    `Ao dizer a última parte da fala, ${nomeDe(v)} olha diretamente para a câmera. Expressão de serenidade, segurança e acolhimento.`,
+};
+const BENEFICIO_EXTRA_BLOCK: BlockDef = {
+  titulo: "Benefício extra",
+  tempo: "",
+  tempoScript: "",
+  fala: FALA_TEMPLATES_BY_VARIANT.longo[5].fala,
+  cena: (v) => `${cap(nomeDe(v))} está em ${clean(v.cen)}, com expressão tranquila, reforçando um segundo benefício do produto.`,
+  camera: () => `Plano médio estável, aproximação sutil. ${VIDEO_SPEC}`,
+  acao: (v) => `${cap(nomeDe(v))} gesticula suavemente ao falar, mantendo o olhar na câmera.`,
+};
+const OBJECAO_BLOCK: BlockDef = {
+  titulo: "Quebra de objeção",
+  tempo: "",
+  tempoScript: "",
+  fala: FALA_TEMPLATES_BY_VARIANT.longo[6].fala,
+  cena: (v) => `${cap(nomeDe(v))} encara a câmera diretamente, respondendo a uma dúvida comum sobre ${clean(v.produto)}.`,
+  camera: () => `Close-up estável, sem movimento brusco. ${VIDEO_SPEC}`,
+  acao: (v) => `${cap(nomeDe(v))} balança a cabeça suavemente em sinal de segurança, mantendo tom calmo e confiante.`,
+};
+const CTA_BLOCK: BlockDef = {
+  titulo: "CTA e conversão",
+  tempo: "",
+  tempoScript: "",
+  fala: FALA_TEMPLATES_BY_VARIANT.padrao[4].fala,
+  cena: (v) =>
+    `${cap(nomeDe(v))} está de frente para a câmera, segurando ${clean(v.produto)} com a mão esquerda, mantendo-o totalmente visível. Olha diretamente para o espectador, com expressão serena e acolhedora.`,
+  camera: () => `Plano médio estável, com aproximação muito suave. Sem mudança de cenário nem cortes complexos. ${VIDEO_SPEC}`,
+  acao: (v) =>
+    `Ao mencionar "${clean(v.local)}", ${nomeDe(v)} levanta a mão direita e aponta claramente para baixo, indicando que o link está abaixo do vídeo — gesto natural e fácil de entender. Depois, mantém o produto visível, volta a mão para uma posição natural e olha para a câmera com um pequeno sorriso sereno.`,
+};
+/** Só pra "curto" — revelação e dor combinadas numa frase só (a fala vem
+ * de FALA_TEMPLATES_BY_VARIANT.curto[1], que já é a versão combinada). */
+const REVELACAO_DOR_CURTO_BLOCK: BlockDef = {
+  titulo: "Revelação + dor",
+  tempo: "",
+  tempoScript: "",
+  fala: FALA_TEMPLATES_BY_VARIANT.curto[1].fala,
+  cena: (v) =>
+    `Continuação visual do mesmo ambiente. ${cap(nomeDe(v))} pega ${clean(v.produto)} e mostra brevemente, depois volta o olhar pra câmera com expressão mais séria, reconhecendo uma dificuldade real do dia a dia.`,
+  camera: () => `Pequeno movimento até o produto e retorno ao rosto, plano médio fechado. ${VIDEO_SPEC}`,
+  acao: (v) =>
+    `${cap(nomeDe(v))} segura ${clean(v.produto)} por um instante, depois baixa levemente o olhar antes de voltar a encarar a câmera com empatia.`,
+};
+
+/** Cada variante monta sua sequência de blocos de 10s reaproveitando os
+ * mesmos blocos-base (mesma "espinha" gancho → desenvolvimento → CTA) —
+ * "padrao" é EXATAMENTE a sequência que já existia antes das variantes. */
+const BLOCKS_BY_VARIANT: Record<BlocosVendaVariant, BlockDef[]> = {
+  curto: [GANCHO_BLOCK, REVELACAO_DOR_CURTO_BLOCK, CTA_BLOCK],
+  padrao: [GANCHO_BLOCK, REVELACAO_BLOCK, DOR_BLOCK, ALIVIO_BLOCK, CTA_BLOCK],
+  longo: [GANCHO_BLOCK, REVELACAO_BLOCK, DOR_BLOCK, PROVA_BLOCK, ALIVIO_BLOCK, BENEFICIO_EXTRA_BLOCK, OBJECAO_BLOCK, CTA_BLOCK],
+};
+
+function blocksFor(variant: BlocosVendaVariant): BlockDef[] {
+  return BLOCKS_BY_VARIANT[variant].map((b, i) => {
+    const start = i * 10;
+    const end = start + 10;
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return {
+      ...b,
+      titulo: `Bloco ${i + 1} · ${b.titulo}`,
+      tempo: `${start}–${end}s`,
+      tempoScript: `00:${pad(start)}–00:${pad(end)}`,
+    };
+  });
+}
 
 function buildPrompt(b: BlockDef, v: FieldValues, index: number): string {
   const nomeCaixaAlta = nomeDe(v).toUpperCase();
@@ -235,6 +318,9 @@ const FIELD_LABELS: { key: keyof FieldValues; label: string; hint: string; texta
   { key: "fato", label: "Fato verificável do produto", hint: "Só o que está na página do produto. Ex.: São 365 dias" },
   { key: "proposito", label: "Propósito / benefício de longo prazo", hint: 'Entra em "[fato] para ___." Ex.: alimentar sua fé… encontrar força…' },
   { key: "local", label: "Onde está o link", hint: "Ex.: carrinho laranja" },
+  { key: "prova", label: "Prova / demonstração extra (variante Longo)", hint: "Um detalhe concreto que reforça credibilidade" },
+  { key: "beneficioExtra", label: "Benefício extra (variante Longo)", hint: "Um segundo benefício, diferente da função emocional" },
+  { key: "objecao", label: "Resposta a uma dúvida comum (variante Longo)", hint: "Ex.: preço, dificuldade de uso, se funciona mesmo" },
   { key: "visual", label: "Como o produto aparece na imagem de referência", hint: "Opcional — só se você NÃO for anexar a foto do produto no Flow", textarea: true, group: "produto" },
   { key: "demo", label: "O que ele faz com o produto no bloco 3", hint: 'Ex.: "lê algumas linhas do livro com expressão serena"', textarea: true, group: "produto" },
   { key: "idv", label: "Identidade visual", hint: "Opcional — só se você NÃO for anexar a foto do avatar no Flow", textarea: true, rows: 5, group: "personagem" },
@@ -245,6 +331,7 @@ const FIELD_LABELS: { key: keyof FieldValues; label: string; hint: string; texta
 export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void }) {
   const generateFieldsRpc = useServerFn(generateBlocosVendaFieldsFn);
   const [values, setValues] = useState<FieldValues>(DEFAULTS);
+  const [variant, setVariant] = useState<BlocosVendaVariant>("padrao");
   const [copiedBlock, setCopiedBlock] = useState<number | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
@@ -295,7 +382,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
     setAiLoading(true);
     setAiError(null);
     try {
-      const fields = await generateFieldsRpc({ data: { imageDataUrls: photos, contexto: contexto.trim() || undefined } });
+      const fields = await generateFieldsRpc({ data: { imageDataUrls: photos, contexto: contexto.trim() || undefined, variant } });
       setValues((prev) => ({ ...prev, ...fields }));
     } catch (err) {
       setAiError(errorMessageOf(err, "Erro ao gerar os campos com IA"));
@@ -304,18 +391,18 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
     }
   }
 
-  const blocks = useMemo(
-    () =>
-      BLOCKS.map((b, i) => {
-        const fala = b.fala(values);
-        const s = estimateSecs(fala);
-        return { def: b, fala, words: wordCount(fala), chars: charCount(fala), secs: s, over: s > 11, prompt: buildPrompt(b, values, i) };
-      }),
-    [values],
-  );
+  const blocks = useMemo(() => {
+    const defs = blocksFor(variant);
+    return defs.map((b, i) => {
+      const fala = b.fala(values);
+      const s = estimateSecs(fala);
+      return { def: b, fala, words: wordCount(fala), chars: charCount(fala), secs: s, over: s > 11, prompt: buildPrompt(b, values, i) };
+    });
+  }, [values, variant]);
 
   const alerts = useMemo(() => {
     const msgs: string[] = [];
+    const used = fieldsUsedBy(variant);
     blocks.forEach((blk, i) => {
       if (blk.over) msgs.push(`Bloco ${i + 1}: cerca de ${blk.secs.toFixed(0)}s, passa de 10s. Encurte a fala.`);
     });
@@ -323,11 +410,14 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
     const bannedPhrase = findBannedPhrase(texto);
     if (bannedPhrase) msgs.push(`Frase de promessa absoluta: "${bannedPhrase}". Só use se estiver na página do produto.`);
     if (DIVINE_RE.test(texto)) msgs.push("O personagem não fala como Deus em 1ª pessoa. Reescreva como mensageiro.");
-    if (!values.fato.trim()) msgs.push("Sem fato verificável. O bloco 4 fica incompleto.");
-    if (!values.proposito.trim()) msgs.push("Sem propósito/benefício de longo prazo. O bloco 4 fica incompleto.");
+    if (used.has("fato") && !values.fato.trim()) msgs.push("Sem fato verificável. O bloco de alívio fica incompleto.");
+    if (used.has("proposito") && !values.proposito.trim()) msgs.push("Sem propósito/benefício de longo prazo. O bloco de alívio fica incompleto.");
+    if (used.has("prova") && !values.prova.trim()) msgs.push("Sem prova/demonstração extra. O bloco de prova fica incompleto.");
+    if (used.has("beneficioExtra") && !values.beneficioExtra.trim()) msgs.push("Sem benefício extra. O bloco de benefício extra fica incompleto.");
+    if (used.has("objecao") && !values.objecao.trim()) msgs.push("Sem resposta a dúvida comum. O bloco de quebra de objeção fica incompleto.");
     if (!values.nome.trim()) msgs.push('Sem nome de personagem — a fala vai sair como "VOZ OFICIAL DE AVATAR".');
     return msgs;
-  }, [blocks, values]);
+  }, [blocks, values, variant]);
 
   async function copyText(text: string, onDone: () => void) {
     try {
@@ -381,8 +471,25 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
       <h1 className="h1" style={{ fontSize: 20, marginBottom: 4 }}>
         Blocos de venda
       </h1>
-      <div className="hint" style={{ marginBottom: 16 }}>
-        Anexe a foto do avatar com o produto e deixe a IA gerar os 5 blocos.
+      <div className="hint" style={{ marginBottom: 12 }}>
+        Anexe a foto do avatar com o produto e deixe a IA gerar os blocos.
+      </div>
+
+      <div className="section-label" style={{ marginBottom: 6 }}>
+        Duração
+      </div>
+      <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
+        {VARIANT_ORDER.map((v) => (
+          <button
+            key={v}
+            type="button"
+            className={`pill ${variant === v ? "active" : ""}`}
+            style={{ flex: 1, padding: "10px 0", fontSize: 12.5 }}
+            onClick={() => setVariant(v)}
+          >
+            {VARIANT_LABEL[v]}
+          </button>
+        ))}
       </div>
 
       <div className="card" style={{ marginBottom: 20 }}>
@@ -540,7 +647,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
           className="btn-primary"
           onClick={() => copyText(blocks.map((b) => b.prompt).join("\n\n————————\n\n"), () => setCopiedAll(true))}
         >
-          {copiedAll ? "Copiado ✓" : "Copiar os 5 blocos"}
+          {copiedAll ? "Copiado ✓" : `Copiar os ${blocks.length} blocos`}
         </button>
       </div>
     </div>
