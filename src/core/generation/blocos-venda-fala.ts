@@ -86,26 +86,58 @@ function stableIndex(s: string, count: number): number {
 
 /** Lógica geral (não casos fixos): o molde padrão empilha DUAS cláusulas —
  * "Se você é {publico} QUE valoriza {valores}…". Isso só funciona quando
- * "publico" é frase NOMINAL pura ("uma mulher"). Se "publico" já carrega
- * cláusula própria (começa com "quem", ou tem "que"/"quem" em qualquer
- * parte — ex.: "mulheres que buscam paz", "quem já perdeu alguém"),
- * empilhar mais um "que valoriza" cria uma cadeia "quem...que..."/
- * "que...que..." ambígua (fica sem clareza quem valoriza o quê). A regra é
- * sempre a mesma: detectar se "publico" já tem cláusula e, se tiver, trocar
- * o conector de "que" pra "e" (nunca empilhar 2 cláusulas relativas) — e
- * quando "publico" começa com "quem", ainda tira esse "quem" e alterna
- * entre 2 aberturas, pra não sempre soar igual. */
-const CLAUSULA_RE = /\b(que|quem)\b/i;
+ * "publico" é frase NOMINAL pura ("uma mulher"), no SINGULAR, pra combinar
+ * com "você é". Duas famílias de problema, mesma raiz (publico não é uma
+ * frase nominal singular simples):
+ * 1) "publico" já é uma cláusula própria ("quem busca X", "mulheres que
+ *    buscam X") — empilhar "que valoriza" cria cadeia "quem...que..."
+ *    ambígua.
+ * 2) "publico" é um SUBSTANTIVO COLETIVO PLURAL ("pessoas em busca de X",
+ *    "mulheres à procura de X") — "você é pessoas" quebra a concordância
+ *    de número (singular "você" + plural "pessoas"), problema diferente
+ *    do 1, mas mesma causa raiz: "publico" não serve puro depois de "é".
+ * Pra qualquer uma das duas famílias, extrai a AÇÃO real (o que a pessoa
+ * busca/quer/precisa) e reconstrói com "Se você busca..." — sempre
+ * singular, sempre concordando com "você", nunca empilhando cláusula. */
+function extractSeekingClause(publico: string): string | null {
+  const semQuem = publico.match(/^quem\s+(.+)/i);
+  if (semQuem) return semQuem[1];
+
+  const VERBO_PLURAL_PARA_SINGULAR: Record<string, string> = {
+    buscam: "busca",
+    querem: "quer",
+    precisam: "precisa",
+    valorizam: "valoriza",
+    sentem: "sente",
+    vivem: "vive",
+    enfrentam: "enfrenta",
+  };
+  const coletivo = "(?:pessoas?|mulheres|homens|m[aã]es|pais|gente)";
+
+  // "<coletivo> em busca de/à procura de X" — não tem verbo próprio, o
+  // conector já indica "busca".
+  let m = publico.match(new RegExp(`^${coletivo}\\s+(?:em busca de|à procura de|a procura de)\\s+(.+)`, "i"));
+  if (m) return `busca ${m[1]}`;
+
+  // "<coletivo> que <verbo no plural> X" — conjuga o verbo pro singular
+  // (concordando com "você"), reaproveitando o resto da frase como está.
+  m = publico.match(new RegExp(`^${coletivo}\\s+que\\s+(\\w+)\\s+(.+)`, "i"));
+  if (m) {
+    const verboSingular = VERBO_PLURAL_PARA_SINGULAR[m[1].toLowerCase()];
+    if (verboSingular) return `${verboSingular} ${m[2]}`;
+  }
+
+  return null;
+}
 
 const GANCHO: TemplateEntry = {
   campo: ["publico", "valores"],
   fala: (v) => {
     const publico = clean(v.publico);
     const valores = clean(v.valores);
-    const semQuem = publico.match(/^quem\s+(.+)/i);
+    const acao = extractSeekingClause(publico);
 
-    if (semQuem) {
-      const acao = semQuem[1];
+    if (acao) {
       const variantes = [
         `Se você ${acao} e valoriza ${valores}… não passe esse vídeo sem ver isso.`,
         `${cap(acao)}? Se também valoriza ${valores}… não passe esse vídeo sem ver isso.`,
@@ -113,9 +145,11 @@ const GANCHO: TemplateEntry = {
       return variantes[stableIndex(publico + valores, variantes.length)];
     }
 
-    // "publico" não começa com "quem", mas já tem cláusula própria em
-    // outra posição (ex.: "mulheres que buscam paz") — troca "que" por
-    // "e" pra não empilhar 2 cláusulas relativas na mesma frase.
+    // "publico" é frase nominal (não bateu nenhum padrão de cláusula
+    // acima), mas ainda pode ter "que"/"quem" solto em outra posição
+    // (ex.: "uma mulher que já perdeu alguém") — troca "que" por "e" pra
+    // não empilhar 2 cláusulas relativas na mesma frase.
+    const CLAUSULA_RE = /\b(que|quem)\b/i;
     const conector = CLAUSULA_RE.test(publico) ? "e" : "que";
     return `Se você é ${publico} ${conector} valoriza ${valores}… não passe esse vídeo sem ver isso.`;
   },
