@@ -81,8 +81,8 @@ export const CreativeContextSchema = z.object({
 export type CreativeContext = z.infer<typeof CreativeContextSchema>;
 
 export const DEFAULT_CREATIVE_CONTEXT: CreativeContext = {
-  intent: "sales",
-  objective: "conversion",
+  intent: "custom",
+  objective: "custom",
   niche: null,
   theme: null,
   audience: null,
