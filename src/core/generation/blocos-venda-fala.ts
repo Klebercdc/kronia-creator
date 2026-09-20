@@ -6,6 +6,8 @@
  * Os moldes abaixo continuam apenas como compatibilidade/fallback.
  */
 
+import type { CreativeStrategy, CreativeBlock } from "./creative-context";
+
 export type CreativeIntent = "message" | "engagement" | "sales" | "script" | "custom";
 
 export interface BlocosVendaFieldsLike {
