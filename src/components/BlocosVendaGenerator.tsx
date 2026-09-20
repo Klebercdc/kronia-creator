@@ -354,7 +354,7 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
   }, [values]);
 
   function setField(key: keyof FieldValues, val: string) {
-    setValues((prev) => ({ ...prev, [key]: val }));
+    setValues((prev) => ({ ...prev, [key]: val, roteiro: undefined, strategy: undefined }));
   }
 
   function voltarAoExemplo() {
@@ -364,6 +364,8 @@ export function BlocosVendaGenerator({ onOpenMenu }: { onOpenMenu: () => void })
     setValues((prev) => {
       const next = { ...prev };
       PRODUCT_KEYS.forEach((k) => (next[k] = ""));
+      next.roteiro = undefined;
+      next.strategy = undefined;
       return next;
     });
   }
