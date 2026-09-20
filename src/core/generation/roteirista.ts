@@ -8,7 +8,7 @@ import {
   type GenerationResult,
 } from "../../types/pipeline";
 import { CREATIVE_QUALITY_BAR } from "./quality-bar";
-import { buildHookLibraryPromptBlock } from "./hook-library";
+import { buildHookIntelligenceBrief } from "./hook-engine";
 
 /** decisionLog não vem da LLM como array pronto — cada agente só devolve
  * SUA PRÓPRIA entrada (decisaoResumo/motivoDecisao/alternativasDescartadas),
@@ -41,10 +41,6 @@ Combine DUAS técnicas de gancho na mesma ideia (ex: "curiosity_gap" + "before_a
 "pattern_interrupt" + "number_stat") — hooks que combinam duas técnicas performam melhor que um
 único ganho isolado. As 5 opções de hook devem ser de famílias diferentes entre si, não variações
 da mesma ideia.
-
-REPERTÓRIO DE MECÂNICAS POR CATEGORIA — use como referência de PADRÃO, nunca copie o texto do
-exemplo; o conteúdo real vem sempre do produto/tema atual:
-${buildHookLibraryPromptBlock()}
 
 Pattern interrupt de verdade é uma quebra de expectativa deliberada — um corte de câmera brusco,
 um enquadramento estranho, uma frase que contradiz o que o espectador esperava ouvir. Hook
@@ -153,12 +149,17 @@ Mecanismos de persuasão já identificados: ${classification.persuasionMechanism
     ? `\nDuração total desejada: ${request.targetDurationSeconds}s (${request.targetDurationSeconds / 10} blocos de 10s no Flow) — use exatamente essa duração.`
     : "\nDuração total: escolha um múltiplo de 10s sensato pro formato/objetivo.";
 
-  const prompt = `Formato recomendado: ${recommendation.format} (${recommendation.reasoning}).
+  const hookBrief = buildHookIntelligenceBrief(request, classification);
+
+  const prompt = `${hookBrief}
+
+Formato recomendado: ${recommendation.format} (${recommendation.reasoning}).
 Objetivo: ${request.objective}. Modo: ${request.mode}. Projeto: ${request.project}.
 Informações do produto (única fonte de verdade): ${JSON.stringify(request.productInfo)}.
 ${referenceBlock}${durationBlock}
 
-Gere 5 hooks, escolha o melhor como selectedHook, e o roteiro completo em cenas timestampadas.`;
+Gere 5 hooks, escolha o melhor como selectedHook, e o roteiro completo em cenas timestampadas.
+Os hooks devem seguir, na mesma ordem, as mecânicas pré-selecionadas pelo KRONIA HOOK INTELLIGENCE; não produza cinco variações genéricas do mesmo gancho.`;
 
   const { decisaoResumo, motivoDecisao, alternativasDescartadas, ...draft } = await callStructuredText({
     schema: InferredSchema,
