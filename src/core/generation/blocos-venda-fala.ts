@@ -235,7 +235,7 @@ export interface FalaCheck {
 
 export function checkFalaLengths(fields: BlocosVendaFieldsLike, variant: BlocosVendaVariant): FalaCheck[] {
   const roteiro = fields.roteiro;
-  const intent = fields.strategy?.intent ?? fields.intent ?? "sales";
+  const intent = fields.strategy?.intent ?? fields.intent ?? "custom";
   const expected = creativeRolesForVariant(variant, intent).length;
   if (Array.isArray(roteiro) && roteiro.length === expected && roteiro.every((b) => Boolean(b?.fala?.trim()))) {
     return roteiro.map((b, i) => {
