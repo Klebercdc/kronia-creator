@@ -41,7 +41,7 @@ export const VARIANT_LABEL: Record<BlocosVendaVariant, string> = {
 export const VARIANT_ORDER: BlocosVendaVariant[] = ["curto", "padrao", "longo"];
 
 export function clean(s: string): string {
-  return String(s || "").trim().replace(/[.…\s]+$/, "");
+  return String(s || "").trim().replace(/[.,;…\s]+$/, "");
 }
 
 function cap(s: string): string {
@@ -242,9 +242,24 @@ export function checkFalaLengths(fields: BlocosVendaFieldsLike, variant: BlocosV
  * em julgamento de IA — mesmo princípio da checagem de duração acima. */
 const NOMINAL_VERB_START =
   /^(é|são|traz|oferece|ajuda|cont[ée]m|proporciona|apresenta|fornece|d[áa]|gera|promove|cria|inclui|fortalece|eleva|melhora|aumenta|reduz|alivia|cura|resolve|transforma|inspira|guia|ilumina|conecta|desperta|renova)\b/i;
-const DOR_ECHO_START = /^(na correria|no dia a dia|no corre|às vezes|as vezes)\b/i;
+/** Não ancorado no início — o problema é o campo "dor" duplicar o "às
+ * vezes" que o TEMPLATE já injeta antes dele (ex.: "Na correria da
+ * vida… às vezes {dor}."), não importa em que ponto da frase isso
+ * aconteça. Visto na prática: a LLM inventa uma abertura DIFERENTE da
+ * lista fixa ("Na dor da vida, às vezes perdemos a fé" — não bate
+ * "na correria" nem começa a frase com "às vezes") mas ainda embute
+ * "às vezes" no meio, duplicando o conector do template.
+ * Sem \b ao redor de "às"/"as" — o \b do JS não reconhece fronteira antes
+ * de vogal acentuada (não é \w por padrão), então "\bàs vezes\b" nunca
+ * batia de verdade; aqui a frase inteira ("às vezes"/"as vezes") já é
+ * específica o bastante pra dispensar o \b. */
+const DOR_ECHO_RE = /(na correria|no dia a dia|no corre\b|às vezes|as vezes)/i;
 const FATO_TESTIMONIAL = /(leitores?|clientes?|usu[áa]rios?|consumidores?|pessoas?) (relatam|dizem|afirmam|contam|garantem)/i;
 const PUBLICO_PREPOSITION_START = /^(para|pra)\s/i;
+/** "local" entra em "o link está no {local}, aqui embaixo." — "no" já é a
+ * contração de "em o", então um artigo solto no começo do campo ("um
+ * carrinho...") vira "no um carrinho..." (errado). Visto na prática. */
+const LOCAL_ARTICLE_START = /^(um|uma|o|a)\s/i;
 
 export function checkStructuralIssues(fields: BlocosVendaFieldsLike, variant: BlocosVendaVariant): string[] {
   const used = fieldsUsedBy(variant);
@@ -268,15 +283,21 @@ export function checkStructuralIssues(fields: BlocosVendaFieldsLike, variant: Bl
     );
   }
 
-  if (used.has("dor") && DOR_ECHO_START.test(clean(fields.dor))) {
+  if (used.has("dor") && DOR_ECHO_RE.test(clean(fields.dor))) {
     issues.push(
-      `Campo "dor" ("${fields.dor}") repete a abertura fixa do bloco ("Na correria da vida… às vezes {dor}."). "dor" tem que ir direto pra dor específica, sem repetir "na correria"/"no dia a dia"/"às vezes" — isso já está no template, repetir vira frase duplicada tipo "às vezes... às vezes...".`,
+      `Campo "dor" ("${fields.dor}") repete, em qualquer ponto da frase, a abertura fixa do bloco ("Na correria da vida… às vezes {dor}.") — mesmo que não seja com essas palavras exatas (ex.: "Na dor da vida, às vezes perdemos a fé" também conta, porque ainda embute "às vezes"). "dor" tem que ir direto pra dor específica, sem "na correria"/"no dia a dia"/"às vezes" em NENHUMA posição do campo — isso já está no template, repetir vira frase duplicada tipo "às vezes... às vezes...".`,
     );
   }
 
   if (used.has("fato") && FATO_TESTIMONIAL.test(fields.fato)) {
     issues.push(
       `Campo "fato" ("${fields.fato}") é um depoimento/prova social inventada ("leitores relatam" etc.), não um fato verificável — proibido (mesma regra do resto do KRONIA: nunca prova social sem evidência real). Reescreva "fato" como uma característica objetiva e verificável do produto (visível na foto/embalagem), nunca uma citação de terceiros.`,
+    );
+  }
+
+  if (used.has("local") && LOCAL_ARTICLE_START.test(clean(fields.local))) {
+    issues.push(
+      `Campo "local" ("${fields.local}") começa com artigo ("um"/"uma"/"o"/"a") — ele entra em "o link está no {local}, aqui embaixo.", e "no" já é a contração de "em o", então "no um carrinho..." fica gramaticalmente errado. Reescreva "local" sem o artigo inicial (ex.: "carrinho laranja", não "um carrinho laranja").`,
     );
   }
 
