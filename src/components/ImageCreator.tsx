@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Download, Image as ImageIcon, LoaderCircle, Sparkles } from "lucide-react";
+import { Download, Image as ImageIcon, LoaderCircle, Plus, Sparkles, X } from "lucide-react";
 import { generateImagesFn } from "../server/image-generation.functions";
 import { errorMessageOf } from "../lib/errors";
 
@@ -18,6 +18,7 @@ export function ImageCreator() {
   const [format, setFormat] = useState<Format>("portrait");
   const [quantity, setQuantity] = useState(1);
   const [images, setImages] = useState<string[]>([]);
+  const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,13 +27,26 @@ export function ImageCreator() {
     setLoading(true);
     setError(null);
     try {
-      const result = await generateImages({ data: { prompt, format, quantity } });
+      const result = await generateImages({ data: { prompt, format, quantity, referenceImages } });
       setImages(result.images);
     } catch (cause) {
       setError(errorMessageOf(cause, "Não foi possível gerar as imagens."));
     } finally {
       setLoading(false);
     }
+  }
+
+  async function addReferences(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []).slice(0, 4 - referenceImages.length);
+    event.target.value = "";
+    if (!files.length) return;
+    const urls = await Promise.all(files.map((file) => new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    })));
+    setReferenceImages((current) => [...current, ...urls]);
   }
 
   function download(image: string, index: number) {
@@ -51,6 +65,13 @@ export function ImageCreator() {
       </header>
 
       <form className="image-creator-form" onSubmit={submit}>
+        <fieldset className="image-creator-references">
+          <legend>Referências visuais <small>Opcional · produto, avatar, roupa ou cenário</small></legend>
+          <div className="image-creator-reference-grid">
+            {referenceImages.map((image, index) => <div key={image} className="image-creator-reference"><img src={image} alt={`Referência ${index + 1}`} /><button type="button" onClick={() => setReferenceImages((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label="Remover referência"><X size={14} /></button></div>)}
+            {referenceImages.length < 4 && <label className="image-creator-reference-add"><Plus size={20} /><span>Adicionar</span><input type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={addReferences} /></label>}
+          </div>
+        </fieldset>
         <label>
           O que você quer criar?
           <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="Ex.: foto vertical de um produto de skincare em um banheiro claro, luz natural, estilo editorial" minLength={8} maxLength={3000} required />
