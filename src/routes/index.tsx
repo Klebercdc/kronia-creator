@@ -1002,12 +1002,12 @@ function ConversationScreen({ onNavigate }: { onNavigate: (tab: AppTab, source?:
       <main className="kronia-command">
         <header className="kronia-command-header">
           <span>Pronto para criar? ✨</span>
-          <h1>Você pensa. O KRONIA cria.</h1>
-          <p>Transforme uma referência, produto ou ideia em direção criativa, roteiro, storyboard e prompts para sua produção.</p>
+          <h1>Sua próxima ideia começa aqui.</h1>
+          <p>Transforme suas ideias em conteúdos incríveis com o poder da IA.</p>
         </header>
 
         <section className="kronia-source-list" aria-label="Iniciar uma criação">
-          <div className="kronia-source-list-heading"><h2>Começar criação</h2><p>Escolha a origem e deixe o KRONIA organizar a produção.</p></div>
+          <div className="kronia-source-list-heading"><h2>Criar conteúdo</h2><p>Escolha a origem e deixe a IA fazer o resto.</p></div>
           <div className="kronia-source-grid">
           {HOME_SOURCES.map((source) => {
             return (
@@ -1027,6 +1027,32 @@ function ConversationScreen({ onNavigate }: { onNavigate: (tab: AppTab, source?:
           </div>
         </section>
 
+        <section className="kronia-recent-production">
+          <div className="kronia-section-heading inline">
+            <h2>Acompanhe sua criação</h2>
+            <button type="button" onClick={() => onNavigate("historico")}>Ver histórico <LucideChevronRight size={16} /></button>
+          </div>
+          {recent ? (
+            <button type="button" className="kronia-recent-production-row" onClick={() => onNavigate("historico")}>
+              <span className="kronia-recent-production-icon"><LucideFolderClock size={22} /></span>
+              <span className="kronia-recent-production-copy">
+                <strong>{recent.theme || formatLabel(recent.format)}</strong>
+                <span>Em criação · Atualizado {new Date(recent.createdAt).toLocaleDateString("pt-BR")}</span>
+              </span>
+              <LucideChevronRight size={20} />
+            </button>
+          ) : (
+            <button type="button" className="kronia-recent-production-row" onClick={() => onNavigate("criar")}>
+              <span className="kronia-recent-production-icon"><LucideFolderClock size={22} /></span>
+              <span className="kronia-recent-production-copy">
+                <strong>Comece sua primeira criação</strong>
+                <span>Seu progresso aparecerá aqui.</span>
+              </span>
+              <LucideChevronRight size={20} />
+            </button>
+          )}
+        </section>
+
         <section className="kronia-home-tools" aria-labelledby="home-tools-title">
           <div className="kronia-section-heading inline">
             <h2 id="home-tools-title">Ferramentas</h2>
@@ -1040,23 +1066,6 @@ function ConversationScreen({ onNavigate }: { onNavigate: (tab: AppTab, source?:
             <LucideChevronRight size={20} />
           </button>
         </section>
-
-        {recent && (
-          <section className="kronia-recent-production">
-            <div className="kronia-section-heading inline">
-              <h2>Acompanhe sua criação</h2>
-              <button type="button" onClick={() => onNavigate("historico")}>Ver histórico <LucideChevronRight size={16} /></button>
-            </div>
-            <button type="button" className="kronia-recent-production-row" onClick={() => onNavigate("historico")}>
-              <span className="kronia-recent-production-icon"><LucideFolderClock size={22} /></span>
-              <span className="kronia-recent-production-copy">
-                <strong>{recent.theme || formatLabel(recent.format)}</strong>
-                <span>Em criação · Atualizado {new Date(recent.createdAt).toLocaleDateString("pt-BR")}</span>
-              </span>
-              <LucideChevronRight size={20} />
-            </button>
-          </section>
-        )}
       </main>
 
     </div>
