@@ -1412,8 +1412,9 @@ a {
 }
 
 .kronia-command-header {
-  margin: 15px 0 24px;
+  margin: 15px 0 28px;
 }
+.kronia-command-header > span { color: var(--kr-muted); font-size: 15px; font-weight: 650; }
 
 .kronia-command-header h1 {
   max-width: 360px;
@@ -1435,37 +1436,26 @@ a {
 
 .kronia-source-list {
   overflow: hidden;
-  border: 1px solid var(--kr-line);
-  border-radius: 18px;
-  background: var(--kr-card);
+  border: 0;
+  border-radius: 22px;
+  padding: 28px 20px 20px;
+  background: linear-gradient(135deg, #ff6517, #ff8b20);
+  color: #fff;
 }
+.kronia-source-list-heading h2 { margin: 0; font-size: 28px; letter-spacing: -0.03em; }
+.kronia-source-list-heading p { margin: 7px 0 20px; max-width: 255px; font-size: 14px; line-height: 1.4; }
+.kronia-source-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 
 .kronia-source-row {
-  position: relative;
-  width: 100%;
-  min-height: 86px;
-  padding: 16px 15px 16px 18px;
-  border: 0;
-  border-bottom: 1px solid var(--kr-line);
-  background: transparent;
+  width: 100%; min-height: 135px; padding: 15px 8px;
+  border: 0; border-radius: 17px; background: var(--kr-card);
   color: var(--kr-ink);
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) 22px;
-  align-items: center;
-  gap: 13px;
-  text-align: left;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; text-align: center;
   font-family: inherit;
   cursor: pointer;
 }
 
-.kronia-source-row:last-child {
-  border-bottom: 0;
-}
-
-.kronia-source-row.selected {
-  background: color-mix(in srgb, var(--kr-accent) 5%, var(--kr-card));
-  box-shadow: inset 4px 0 0 var(--kr-accent);
-}
 
 .kronia-source-row:focus-visible,
 .kronia-command-primary:focus-visible,
@@ -1493,7 +1483,7 @@ a {
 }
 
 .kronia-source-copy strong {
-  font-size: 15.5px;
+  font-size: 13px;
   line-height: 1.2;
 }
 
