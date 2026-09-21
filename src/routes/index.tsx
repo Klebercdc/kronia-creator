@@ -989,7 +989,6 @@ const HOME_SOURCES: {
  * funcionalidade nova é simulada aqui. */
 function ConversationScreen({ onNavigate }: { onNavigate: (tab: AppTab, source?: CreateSource) => void }) {
   const listHistoryRpc = useServerFn(listHistoryFn);
-  const [selectedSource, setSelectedSource] = useState<CreateSource>("video");
   const [recent, setRecent] = useState<HistoryEntry | null | undefined>(undefined);
 
   useEffect(() => {
@@ -1001,50 +1000,30 @@ function ConversationScreen({ onNavigate }: { onNavigate: (tab: AppTab, source?:
   return (
     <div className="kronia-home">
       <main className="kronia-command">
-        <div className="kronia-command-eyebrow">KRONIA Creator</div>
         <header className="kronia-command-header">
+          <span>Pronto para criar? ✨</span>
           <h1>Você pensa. O KRONIA cria.</h1>
           <p>Transforme uma referência, produto ou ideia em direção criativa, roteiro, storyboard e prompts para sua produção.</p>
         </header>
 
-        <section className="kronia-source-list" aria-label="Origem do conteúdo">
+        <section className="kronia-source-list" aria-label="Iniciar uma criação">
+          <div className="kronia-source-list-heading"><h2>Começar criação</h2><p>Escolha a origem e deixe o KRONIA organizar a produção.</p></div>
+          <div className="kronia-source-grid">
           {HOME_SOURCES.map((source) => {
-            const selected = source.id === selectedSource;
             return (
             <button
               key={source.id}
               type="button"
-              className={`kronia-source-row ${selected ? "selected" : ""}`}
-              onClick={() => setSelectedSource(source.id)}
-              aria-pressed={selected}
+              className="kronia-source-row"
+              onClick={() => onNavigate("criar", source.id)}
             >
               <span className="kronia-source-icon"><source.Icon size={24} strokeWidth={1.8} /></span>
               <span className="kronia-source-copy">
                 <strong>{source.label}</strong>
-                <span>{source.description}</span>
               </span>
-              <LucideChevronRight className="kronia-source-chevron" size={22} strokeWidth={1.8} />
             </button>
             );
           })}
-        </section>
-
-        <button className="kronia-command-primary" type="button" onClick={() => onNavigate("criar", selectedSource)}>
-          Começar criação <LucideChevronRight size={20} strokeWidth={2} />
-        </button>
-
-        <section className="kronia-production-flow" aria-labelledby="production-flow-title">
-          <div className="kronia-section-heading">
-            <div>
-              <h2 id="production-flow-title">Fluxo de produção</h2>
-              <p>Um único processo, da análise à validação final.</p>
-            </div>
-          </div>
-          <div className="kronia-flow-steps">
-            <span><i><LucideSearch size={18} /></i>Análise</span>
-            <span><i><LucidePenLine size={18} /></i>Roteiro</span>
-            <span><i><LucideClapperboard size={18} /></i>Cenas</span>
-            <span><i><LucideShieldCheck size={18} /></i>Validação</span>
           </div>
         </section>
 
@@ -1065,14 +1044,14 @@ function ConversationScreen({ onNavigate }: { onNavigate: (tab: AppTab, source?:
         {recent && (
           <section className="kronia-recent-production">
             <div className="kronia-section-heading inline">
-              <h2>Criação recente</h2>
+              <h2>Acompanhe sua criação</h2>
               <button type="button" onClick={() => onNavigate("historico")}>Ver histórico <LucideChevronRight size={16} /></button>
             </div>
             <button type="button" className="kronia-recent-production-row" onClick={() => onNavigate("historico")}>
               <span className="kronia-recent-production-icon"><LucideFolderClock size={22} /></span>
               <span className="kronia-recent-production-copy">
                 <strong>{recent.theme || formatLabel(recent.format)}</strong>
-                <span>{formatLabel(recent.format)} · {new Date(recent.createdAt).toLocaleDateString("pt-BR")}</span>
+                <span>Em criação · Atualizado {new Date(recent.createdAt).toLocaleDateString("pt-BR")}</span>
               </span>
               <LucideChevronRight size={20} />
             </button>
