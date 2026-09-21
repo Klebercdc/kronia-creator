@@ -6,7 +6,7 @@ import { recordUsage } from "./cost-tracker";
 
 let client: OpenAI | null = null;
 
-function getClient(): OpenAI {
+export function getOpenAIClient(): OpenAI {
   if (!client) {
     client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, baseURL: process.env.OPENAI_BASE_URL });
   }
@@ -90,7 +90,7 @@ async function runStructuredChat<T>(params: {
 
   let lastRaw: unknown = null;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const response = await getClient().chat.completions.create({
+    const response = await getOpenAIClient().chat.completions.create({
       model,
       messages,
       response_format: {
