@@ -1664,7 +1664,9 @@ a {
 }
 
 .kronia-global-nav {
-  position: fixed;
+  /* A camada de conteúdo é a única que rola. Ancorar no palco (que ocupa a
+     viewport inteira) evita a variação de position:fixed do iOS/PWA. */
+  position: absolute;
   right: 0;
   bottom: 0;
   left: 0;
