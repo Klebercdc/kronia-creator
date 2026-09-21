@@ -26,10 +26,13 @@ Blocked for the same reason. Source-code inspection confirms the intended region
 
 ## Automated checks
 
-- Direct Vite production build: passed.
+- Full `npm run build`: passed.
 - `git diff --check`: passed.
-- Repository `npm run typecheck`: blocked by pre-existing errors in `hook-library`, `creative/grammar.ts`, and `creative/repair.ts`; no error remains in either file changed by this redesign.
-- Repository `npm run build`: its prebuild hook is blocked in this runtime by `tsx` failing to open `/tmp/tsx-0/30.pipe` with `EPERM`. Running the underlying Vite build directly passed.
+- Repository `npm run typecheck`: passed after repairing the broken creative-grammar integration.
+- Hook Intelligence smoke test: passed.
+- Creative Grammar smoke test: passed.
+- Creative Engine smoke test: passed.
+- Offline pipeline smoke test: passed with the expected deterministic rejection of incoherent mock timing.
 - Primary interactions tested in browser: blocked.
 - Console errors checked in browser: blocked.
 
@@ -45,6 +48,7 @@ Blocked for the same reason. Source-code inspection confirms the intended region
 - [x] Preserve history, opportunities, sales blocks, profile, and creation pipeline.
 - [x] Use the existing KRONIA logo and existing icon library.
 - [x] Pass direct production bundling.
+- [x] Pass TypeScript and the relevant smoke-test suite.
 - [ ] Capture and visually compare the rendered Home when browser access is restored.
 
 final result: blocked
