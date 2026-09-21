@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState, useEffect, useRef, type FormEvent } from "react";
-import { useMenuSpring } from "../hooks/useMenuSpring";
+import { useState, useEffect, type FormEvent } from "react";
 import { getStoredTema, setStoredTema, type Tema } from "../lib/theme";
 import { errorMessageOf } from "../lib/errors";
 import { MINISTRY_THEMES } from "../core/generation/ministry-themes";
@@ -17,7 +16,6 @@ import {
   ShoppingBag as LucideShoppingBag,
   Target as LucideTarget,
   LayoutGrid as LucideLayoutGrid,
-  Menu as LucideMenu,
   Video as LucideVideo,
   Camera as LucideCamera,
   PenLine as LucidePenLine,
@@ -90,15 +88,10 @@ const CONFIDENCE_LABEL: Record<string, string> = { alta: "Alta", media: "Média"
 function BrandRow({
   onBack,
   onProfile,
-  onOpenMenu,
+  onOpenMenu: _onOpenMenu,
 }: { onBack?: () => void; onProfile?: () => void; onOpenMenu?: () => void } = {}) {
   return (
     <div className="brand-row">
-      {onOpenMenu && (
-        <button type="button" onClick={onOpenMenu} className="brand-back" aria-label="Abrir menu">
-          <NavIconMenu />
-        </button>
-      )}
       {onBack && (
         <button type="button" onClick={onBack} className="brand-back" aria-label="Voltar">
           <IconChevronLeft />
@@ -388,10 +381,6 @@ function NavIconEstrategia() {
 function NavIconMaisOpcoes() {
   return <LucideLayoutGrid size={20} strokeWidth={1.8} />;
 }
-function NavIconMenu() {
-  return <LucideMenu size={20} strokeWidth={1.8} />;
-}
-
 /** Perfil — hoje só o toggle de tema é funcionalidade real, o resto ainda é
  * placeholder. Mesmo desenho de agenda-/mobile-perfil.js: pílula sol/lua,
  * persistida em localStorage. */
@@ -935,72 +924,6 @@ type PendingOpportunitySeed =
   | { kind: "opportunity"; productInfoText: string; precomputedAnalysis: ReferenceAnalysis }
   | { kind: "reference"; productInfoText: string; referenceVideoUrl: string };
 
-/** Item de navegação da sidebar (drawer) — distinto de TAB_ITEMS/BottomNav,
- * que continua servindo as telas internas (Criar/Histórico/Explorar/Prompt/
- * Perfil) enquanto a Home não tiver equivalente pra todas elas. */
-const SIDEBAR_ITEMS: { id: AppTab; label: string; Icon: React.ComponentType<{ size?: number; strokeWidth?: number }> }[] = [
-  { id: "home", label: "Início", Icon: LucideHome },
-  { id: "criar", label: "Criar conteúdo", Icon: NavIconCriar },
-  { id: "historico", label: "Histórico", Icon: NavIconHistorico },
-  { id: "explorar", label: "Oportunidades", Icon: NavIconExplorar },
-  { id: "prompt", label: "Blocos de venda", Icon: NavIconBlocosVenda },
-  { id: "perfil", label: "Perfil", Icon: NavIconPerfil },
-];
-
-/**
- * Só o CONTEÚDO do menu — quem é a camada (posição, tamanho, o que anda
- * durante a abertura) é `.kronia-menu-camada` em CriadorApp, pintada pelo
- * motor de mola (useMenuSpring). Nenhum overlay/transform próprio aqui.
- */
-function AppSidebar({
-  active,
-  onNavigate,
-}: {
-  active: AppTab;
-  onNavigate: (tab: AppTab, source?: CreateSource) => void;
-}) {
-  return (
-    <>
-      <aside className="kronia-sidebar">
-        <div className="kronia-sidebar-brand">
-          <img src={logoIcon} alt="Kronia" style={{ width: 24, height: 24, objectFit: "contain" }} />
-          <div>
-            <div className="kronia-sidebar-brand-word">KRONIA</div>
-            <div className="kronia-sidebar-brand-sub">CREATOR</div>
-          </div>
-        </div>
-        <div className="kronia-pro-badge">
-          <IconCrown /> PRO
-        </div>
-
-        <nav className="kronia-sidebar-nav">
-          {SIDEBAR_ITEMS.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              className={`kronia-sidebar-item ${active === item.id ? "active" : ""}`}
-              onClick={() => onNavigate(item.id)}
-            >
-              <item.Icon />
-              <span>{item.label}</span>
-              <IconChevronRight />
-            </button>
-          ))}
-        </nav>
-
-        <button type="button" className="kronia-sidebar-footer" onClick={() => onNavigate("perfil")}>
-          <span className="kronia-sidebar-avatar">K</span>
-          <span className="kronia-sidebar-footer-text">
-            <span className="kronia-sidebar-footer-name">Kleber</span>
-            <span className="kronia-sidebar-footer-plan">Conta PRO</span>
-          </span>
-          <IconGear />
-        </button>
-      </aside>
-    </>
-  );
-}
-
 interface PendingAttachment {
   file: File;
   type: "image" | "video";
@@ -1157,73 +1080,27 @@ function ConversationScreen({ onNavigate }: { onNavigate: (tab: AppTab, source?:
         )}
       </main>
 
-      <nav className="kronia-home-nav" aria-label="Navegação principal">
-        <button className="active" type="button" onClick={() => onNavigate("home")}><LucideHome size={21} /><span>Início</span></button>
-        <button type="button" onClick={() => onNavigate("historico")}><LucideHistory size={21} /><span>Histórico</span></button>
-        <button type="button" onClick={() => onNavigate("explorar")}><LucideCompass size={21} /><span>Oportunidades</span></button>
-      </nav>
     </div>
   );
 }
 
 /**
- * Menu lateral como 3 camadas empilhadas (porte do menu que existiu em
- * agenda-/js/mobile-core.js, removido de lá em 07f879a): o menu fica
- * SEMPRE atrás, e quem se move é o app inteiro, que sai da frente e
- * revela o que já estava atrás — não um painel entrando por cima. A mola
- * (useMenuSpring) é quem pinta o caminho entre os dois estados; este
- * arquivo só descreve os dois estados parados (ver .kronia-palco em
- * styles.css) e troca uma classe quando `open` muda.
+ * A navegação principal é única e permanece fixa no rodapé. O menu lateral
+ * foi removido para não duplicar caminhos nem esconder funcionalidades.
  */
 function CriadorApp() {
   const [tab, setTab] = useState<AppTab>("home");
   const [pendingOpportunity, setPendingOpportunity] = useState<PendingOpportunitySeed | null>(null);
   const [initialSource, setInitialSource] = useState<CreateSource | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const appRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const sombraRef = useRef<HTMLDivElement>(null);
-  const veuRef = useRef<HTMLDivElement>(null);
-  const topbarRef = useRef<HTMLDivElement>(null);
-  useMenuSpring(sidebarOpen, {
-    app: appRef,
-    menu: menuRef,
-    sombra: sombraRef,
-    veu: veuRef,
-    topbar: topbarRef,
-  });
-
   function navigate(nextTab: AppTab, source?: CreateSource) {
     if (nextTab === "criar") setInitialSource(source ?? null);
     setTab(nextTab);
-    setSidebarOpen(false);
   }
 
   return (
-    <div className={`kronia-palco ${sidebarOpen ? "kronia-menu-aberto" : ""}`}>
-      <div className="kronia-menu-camada" ref={menuRef} aria-hidden={!sidebarOpen} inert={!sidebarOpen}>
-        <AppSidebar
-          active={tab}
-          onNavigate={navigate}
-        />
-      </div>
-      {/* Só visual (pointer-events:none sempre, ver styles.css) — fechar
-          tocando de lado é .kronia-app-back, dentro da camada do app. */}
-      <div className="kronia-menu-veu" ref={veuRef} aria-hidden="true" />
-      {/* FORA de .kronia-app-camada de propósito: aquela camada tem
-          transform:translate3d permanente (truque de GPU pro deslize do
-          menu), e um transform no ancestral quebra position:fixed dos
-          filhos — vira fixo relativo à CAMADA, não ao viewport, e some ao
-          rolar o conteúdo por baixo (bug real, visto no device: o
-          cabeçalho sumia com o teclado aberto). Aqui, direto sob
-          .kronia-palco (sem transform), position:fixed funciona de
-          verdade. */}
+    <div className="kronia-palco">
       {tab === "home" && (
-        <div className="kronia-home-topbar" ref={topbarRef}>
-          <button type="button" className="kronia-icon-btn" onClick={() => setSidebarOpen(true)} aria-label="Abrir menu">
-            <NavIconMenu />
-          </button>
+        <div className="kronia-home-topbar">
           <div className="kronia-topbar-brand" aria-label="Kronia Creator">
             <img src={logoIcon} alt="" />
             <span><strong>KRONIA</strong><small>CREATOR</small></span>
@@ -1231,40 +1108,38 @@ function CriadorApp() {
           <button type="button" className="kronia-topbar-profile" onClick={() => navigate("perfil")} aria-label="Abrir perfil">K</button>
         </div>
       )}
-      <div className="kronia-app-camada" ref={appRef}>
+      <div className="kronia-app-camada">
         {tab === "home" && (
           <ConversationScreen onNavigate={navigate} />
         )}
         {tab === "criar" && (
           <CriarFlow
             onOpenProfile={() => setTab("perfil")}
-            onOpenMenu={() => setSidebarOpen(true)}
+            onOpenMenu={() => undefined}
             pendingOpportunity={pendingOpportunity}
             onConsumePendingOpportunity={() => setPendingOpportunity(null)}
             initialSource={initialSource}
           />
         )}
-        {tab === "historico" && <HistoricoTab onOpenMenu={() => setSidebarOpen(true)} />}
+        {tab === "historico" && <HistoricoTab onOpenMenu={() => undefined} />}
         {tab === "explorar" && (
           <OportunidadesTab
             onCreateContent={(seed) => {
               setPendingOpportunity(seed);
               navigate("criar");
             }}
-            onOpenMenu={() => setSidebarOpen(true)}
+            onOpenMenu={() => undefined}
           />
         )}
-        {tab === "prompt" && <BlocosVendaGenerator onOpenMenu={() => setSidebarOpen(true)} />}
-        {tab === "perfil" && <PerfilTab onOpenMenu={() => setSidebarOpen(true)} />}
-        <button
-          type="button"
-          className="kronia-app-back"
-          aria-label="Fechar menu"
-          onClick={() => setSidebarOpen(false)}
-          tabIndex={sidebarOpen ? 0 : -1}
-        />
+        {tab === "prompt" && <BlocosVendaGenerator onOpenMenu={() => undefined} />}
+        {tab === "perfil" && <PerfilTab onOpenMenu={() => undefined} />}
       </div>
-      <div className="kronia-app-sombra" ref={sombraRef} />
+      <nav className="kronia-global-nav" aria-label="Navegação principal">
+        <button className={tab === "home" ? "active" : ""} type="button" onClick={() => navigate("home")}><LucideHome size={21} /><span>Início</span></button>
+        <button className={tab === "criar" ? "active" : ""} type="button" onClick={() => navigate("criar")}><LucidePenLine size={21} /><span>Criar</span></button>
+        <button className={tab === "historico" ? "active" : ""} type="button" onClick={() => navigate("historico")}><LucideHistory size={21} /><span>Histórico</span></button>
+        <button className={tab === "explorar" ? "active" : ""} type="button" onClick={() => navigate("explorar")}><LucideCompass size={21} /><span>Oportunidades</span></button>
+      </nav>
     </div>
   );
 }
