@@ -529,6 +529,49 @@ a {
    parte, e a Home não precisa mais de nenhuma cor própria).
    ========================================================================== */
 
+.kronia-home {
+  min-height: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--kr-bg);
+  color: var(--kr-ink);
+  display: flex;
+  flex-direction: column;
+  /* padding-top reserva o espaço do cabeçalho FIXO (ver .kronia-home-topbar
+     abaixo) — ele saiu do fluxo normal, então o conteúdo embaixo precisa
+     dessa folga pra não nascer por baixo dele. 62px = 42px do botão
+     redondo + 20px de padding-bottom do cabeçalho.
+     Padding-bottom ZERO, sem env() nenhum: pedido explícito do usuário —
+     a barra de input encosta na base de verdade, sem nenhum respiro. */
+  padding: 62px 20px 0;
+}
+
+/* position:FIXED, não mais sticky. Duas tentativas com sticky falharam de
+   um jeito sutil (sobrepunha a barra de status, ou sumia de vez) quando o
+   teclado abria com o campo ainda vazio — sticky depende de como
+   .kronia-app-camada (o container que rola de verdade) se comporta por
+   baixo, e isso mostrou ser frágil nesse app. Fixed prende ao viewport de
+   verdade, sem depender de scroll container nenhum — mesmo comportamento
+   que o usuário confirmou existir no cabeçalho do app do Claude ("é fixo,
+   não sobe").
+   left/right+max-width+margin:auto repetem a centralização de .kronia-home
+   porque, sendo fixed, ele sai do contexto de .kronia-home e precisa se
+   alinhar sozinho com a mesma coluna de 480px. */
+.kronia-home-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: fixed;
+  top: max(52px, calc(env(safe-area-inset-top, 0px) * 0.75) + 10px);
+  left: 0;
+  right: 0;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 20px 20px;
+  z-index: 20;
+  background: var(--kr-bg);
+}
+
 .kronia-icon-btn {
   width: 42px;
   height: 42px;
@@ -813,9 +856,7 @@ a {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   transform: translate3d(0, 0, 0);
-  /* Reserva apenas a altura real da navegação fixa. A medida anterior
-     deixava uma faixa branca sobrando abaixo dos itens no iPhone. */
-  padding-bottom: 56px;
+  padding-bottom: calc(76px + env(safe-area-inset-bottom));
 }
 
 .kronia-menu-aberto .kronia-app-camada {
@@ -1301,8 +1342,7 @@ a {
   min-height: 100%;
   max-width: 480px;
   margin: 0 auto;
-  /* Espaço do cabeçalho fixo, sem deixar o conteúdo nascer sob ele. */
-  padding: 88px 20px 72px;
+  padding: 74px 0 0;
   background: var(--kr-bg);
   color: var(--kr-ink);
   display: flex;
@@ -1310,24 +1350,12 @@ a {
 }
 
 .kronia-home-topbar {
-  position: fixed;
-  top: 0;
-  right: 0;
-  left: 0;
-  z-index: 20;
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 480px;
-  height: 72px;
-  min-height: 72px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 32px;
-  /* Opaco: durante a rolagem, o título não pode aparecer sob a barra. */
-  background: var(--kr-bg);
-  border-bottom: 1px solid var(--kr-line);
+  min-height: 56px;
+  top: 12px;
+  padding: 0 20px 12px;
+  background: var(--kr-header-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .kronia-topbar-brand {
@@ -1341,8 +1369,8 @@ a {
 }
 
 .kronia-topbar-brand img {
-  width: 38px;
-  height: 38px;
+  width: 29px;
+  height: 29px;
   object-fit: contain;
 }
 
@@ -1366,8 +1394,8 @@ a {
 }
 
 .kronia-topbar-profile {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   margin-left: auto;
   border: 1px solid var(--kr-line);
   border-radius: 50%;
@@ -1382,7 +1410,7 @@ a {
 
 .kronia-command {
   flex: 1;
-  padding: 22px 32px 0;
+  padding: 12px 20px 30px;
 }
 
 .kronia-command-eyebrow {
@@ -1393,60 +1421,46 @@ a {
 }
 
 .kronia-command-header {
-  margin: 0 0 34px;
+  margin: 10px 0 22px;
 }
-.kronia-command-header > span { color: var(--kr-muted); font-size: 14px; font-weight: 650; }
+.kronia-command-header > span { color: var(--kr-muted); font-size: 15px; font-weight: 650; }
 
 .kronia-command-header h1 {
-  max-width: 390px;
-  margin: 12px 0 0;
+  max-width: 360px;
+  margin: 0;
   color: var(--kr-ink);
-  font-size: clamp(38px, 10vw, 46px);
-  font-weight: 800;
-  line-height: .98;
-  letter-spacing: -0.055em;
+  font-size: clamp(27px, 7.4vw, 32px);
+  font-weight: 780;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
 }
 
 .kronia-command-header p {
-  max-width: 360px;
-  margin: 18px 0 0;
+  max-width: 390px;
+  margin: 10px 0 0;
   color: var(--kr-muted);
-  font-size: 17px;
-  line-height: 1.35;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .kronia-source-list {
-  position: relative;
-  isolation: isolate;
   overflow: hidden;
   border: 0;
-  border-radius: 24px;
-  padding: 28px 20px 20px;
-  background: linear-gradient(135deg, #ff6418 0%, #ff8d20 58%, #ff7418 100%);
+  border-radius: 22px;
+  padding: 22px 16px 16px;
+  background: linear-gradient(135deg, #ff6517, #ff8b20);
   color: #fff;
 }
-.kronia-source-list::after {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  width: 260px;
-  height: 260px;
-  right: -90px;
-  top: -66px;
-  border: 30px solid rgba(255, 197, 75, .24);
-  border-radius: 50%;
-  box-shadow: 0 0 0 30px rgba(255, 203, 88, .14), 0 0 0 60px rgba(255, 214, 115, .09);
-}
-.kronia-source-list-heading h2 { margin: 0; font-size: 31px; letter-spacing: -0.045em; line-height: 1; }
-.kronia-source-list-heading p { margin: 10px 0 22px; max-width: 230px; font-size: 16px; line-height: 1.32; }
-.kronia-source-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.kronia-source-list-heading h2 { margin: 0; font-size: 25px; letter-spacing: -0.03em; }
+.kronia-source-list-heading p { margin: 5px 0 15px; max-width: 255px; font-size: 13px; line-height: 1.4; }
+.kronia-source-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 
 .kronia-source-row {
-  width: 100%; min-height: 154px; padding: 14px 8px;
-  border: 0; border-radius: 18px; background: rgba(255,255,255,.96);
+  width: 100%; min-height: 92px; padding: 10px 6px;
+  border: 0; border-radius: 17px; background: var(--kr-card);
   color: var(--kr-ink);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 14px; text-align: center;
+  gap: 8px; text-align: center;
   font-family: inherit;
   cursor: pointer;
 }
@@ -1460,14 +1474,14 @@ a {
 }
 
 .kronia-source-icon {
-  width: 42px;
-  height: 42px;
-  border: 0;
-  border-radius: 0;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--kr-line);
+  border-radius: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--kr-accent);
+  color: var(--kr-ink);
 }
 
 .kronia-source-copy {
@@ -1478,9 +1492,8 @@ a {
 }
 
 .kronia-source-copy strong {
-  font-size: 15px;
-  line-height: 1.12;
-  font-weight: 750;
+  font-size: 12px;
+  line-height: 1.2;
 }
 
 .kronia-source-copy span {
@@ -1520,22 +1533,21 @@ a {
 .kronia-production-flow,
 .kronia-recent-production,
 .kronia-home-tools {
-  margin-top: 42px;
+  margin-top: 30px;
 }
 
 .kronia-section-heading h2 {
   margin: 0;
   color: var(--kr-ink);
-  font-size: 25px;
-  line-height: 1.1;
-  letter-spacing: -0.04em;
+  font-size: 19px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .kronia-section-heading p {
-  margin: 7px 0 0;
+  margin: 5px 0 0;
   color: var(--kr-muted);
-  font-size: 15px;
-  line-height: 1.35;
+  font-size: 13px;
 }
 
 .kronia-section-heading.inline {
@@ -1602,27 +1614,27 @@ a {
 
 .kronia-recent-production-row {
   width: 100%;
-  margin-top: 20px;
-  padding: 14px;
+  margin-top: 12px;
+  padding: 12px;
   border: 1px solid var(--kr-line);
-  border-radius: 18px;
+  border-radius: 14px;
   background: var(--kr-card);
   color: var(--kr-ink);
   display: grid;
-  grid-template-columns: 70px minmax(0, 1fr) auto;
+  grid-template-columns: 42px minmax(0, 1fr) 20px;
   align-items: center;
-  gap: 13px;
+  gap: 11px;
   text-align: left;
   font-family: inherit;
   cursor: pointer;
 }
 
 .kronia-recent-production-icon {
-  width: 70px;
-  height: 70px;
-  border-radius: 13px;
-  background: linear-gradient(135deg, #e8dfd0, #c4ac8e);
-  color: #fff;
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  background: var(--kr-card-2);
+  color: var(--kr-muted);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1632,7 +1644,7 @@ a {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
 }
 
 .kronia-recent-production-copy strong,
@@ -1643,8 +1655,7 @@ a {
 }
 
 .kronia-recent-production-copy strong {
-  font-size: 16px;
-  line-height: 1.2;
+  font-size: 14px;
 }
 
 .kronia-recent-production-copy span {
@@ -1655,16 +1666,16 @@ a {
 .kronia-global-nav {
   position: fixed;
   right: 0;
-  bottom: 10px;
+  bottom: 0;
   left: 0;
   max-width: 480px;
   margin: 0 auto;
   z-index: 12;
   box-sizing: border-box;
-  height: 60px;
-  min-height: 60px;
-  max-height: 60px;
-  padding: 4px 20px;
+  height: 82px;
+  min-height: 82px;
+  max-height: 82px;
+  padding: 8px 20px;
   border-top: 1px solid var(--kr-line);
   background: var(--kr-header-bg);
   backdrop-filter: blur(14px);
@@ -1685,15 +1696,49 @@ a {
   font-family: inherit;
   font-size: 10.5px;
   font-weight: 650;
-  height: 51px;
-  min-height: 51px;
-  line-height: 1.1;
   cursor: pointer;
 }
 
 .kronia-global-nav button.active {
   color: var(--kr-accent);
 }
+
+.image-creator {
+  width: min(100%, 480px);
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 94px 20px 112px;
+  background: var(--kr-bg);
+  color: var(--kr-ink);
+}
+
+.image-creator-header { margin-bottom: 26px; }
+.image-creator-kicker { display: inline-flex; align-items: center; gap: 6px; color: var(--kr-accent); font-size: 13px; font-weight: 750; }
+.image-creator h1 { max-width: 330px; margin: 10px 0 0; font-size: 32px; line-height: 1.06; letter-spacing: -0.045em; }
+.image-creator-header p { margin: 12px 0 0; color: var(--kr-muted); font-size: 15px; line-height: 1.45; }
+.image-creator-form { display: grid; gap: 20px; }
+.image-creator-form label, .image-creator-form fieldset { margin: 0; padding: 0; border: 0; display: grid; gap: 9px; color: var(--kr-ink); font-size: 14px; font-weight: 700; }
+.image-creator-form textarea { min-height: 130px; resize: vertical; padding: 14px; border: 1px solid var(--kr-line); border-radius: 16px; background: var(--kr-card); color: var(--kr-ink); font: inherit; font-size: 14px; font-weight: 400; line-height: 1.45; }
+.image-creator-form textarea::placeholder { color: var(--kr-muted-2); }
+.image-creator-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.image-creator-options button, .image-creator-quantity button { min-height: 54px; border: 1px solid var(--kr-line); border-radius: 13px; background: var(--kr-card); color: var(--kr-muted); font: inherit; cursor: pointer; }
+.image-creator-options button { display: grid; gap: 2px; place-content: center; }
+.image-creator-options strong { color: inherit; font-size: 12px; }
+.image-creator-options span { font-size: 11px; }
+.image-creator-options button.active, .image-creator-quantity button.active { border-color: var(--kr-accent); background: color-mix(in srgb, var(--kr-accent) 12%, var(--kr-card)); color: var(--kr-accent); }
+.image-creator-quantity { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.image-creator-quantity button { min-height: 42px; font-weight: 750; }
+.image-creator-submit { min-height: 54px; border: 0; border-radius: 15px; background: var(--kr-accent); color: #fff; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: inherit; font-weight: 800; cursor: pointer; }
+.image-creator-submit:disabled { opacity: .65; cursor: wait; }
+.image-creator-error { margin: -7px 0 0; color: #e3573d; font-size: 13px; line-height: 1.35; }
+.image-creator-results { margin-top: 34px; }
+.image-creator-results h2 { margin: 0 0 14px; font-size: 20px; letter-spacing: -0.025em; }
+.image-creator-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.image-creator-grid article { overflow: hidden; border: 1px solid var(--kr-line); border-radius: 16px; background: var(--kr-card); }
+.image-creator-grid img { display: block; width: 100%; aspect-ratio: 1 / 1.25; object-fit: cover; }
+.image-creator-grid button { width: 100%; min-height: 40px; border: 0; border-top: 1px solid var(--kr-line); background: transparent; color: var(--kr-ink); display: inline-flex; align-items: center; justify-content: center; gap: 6px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.spin { animation: kronia-spin .8s linear infinite; }
+@keyframes kronia-spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 360px) {
   .kronia-command {
@@ -1714,30 +1759,4 @@ a {
     width: 38px;
     height: 38px;
   }
-}
-
-
-.kronia-recent-progress {
-  display: block;
-  width: 100%;
-  height: 7px;
-  margin-top: 4px;
-  border-radius: 999px;
-  overflow: hidden;
-  background: var(--kr-card-2);
-}
-.kronia-recent-progress i {
-  display: block;
-  width: 60%;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--kr-accent);
-}
-.kronia-recent-action {
-  color: var(--kr-accent);
-  display: inline-flex;
-  align-items: center;
-  gap: 1px;
-  font-size: 13px;
-  font-weight: 750;
 }
