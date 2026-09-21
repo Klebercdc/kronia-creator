@@ -847,6 +847,7 @@ a {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   transform: translate3d(0, 0, 0);
+  padding-bottom: calc(76px + env(safe-area-inset-bottom));
 }
 
 .kronia-menu-aberto .kronia-app-camada {
@@ -1663,9 +1664,11 @@ a {
   font-size: 12px;
 }
 
-.kronia-home-nav {
-  position: sticky;
+.kronia-global-nav {
+  position: absolute;
+  right: 0;
   bottom: 0;
+  left: 0;
   z-index: 12;
   min-height: calc(68px + env(safe-area-inset-bottom));
   padding: 8px 20px calc(8px + env(safe-area-inset-bottom));
@@ -1674,10 +1677,10 @@ a {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
 }
 
-.kronia-home-nav button {
+.kronia-global-nav button {
   border: 0;
   background: transparent;
   color: var(--kr-muted);
@@ -1692,7 +1695,7 @@ a {
   cursor: pointer;
 }
 
-.kronia-home-nav button.active {
+.kronia-global-nav button.active {
   color: var(--kr-accent);
 }
 
