@@ -78,23 +78,32 @@ html {
 html,
 body,
 #root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+html {
+  height: -webkit-fill-available;
+}
+
+body,
+#root {
   height: 100%;
   height: 100dvh;
-  margin: 0;
+  min-height: -webkit-fill-available;
   overflow: hidden;
-  position: fixed;
-  inset: 0;
-  width: 100%;
+}
+
+#root {
+  position: relative;
+  inset: auto;
 }
 
 /* O iOS pode reportar 100dvh/100lvh menor que a área física de um PWA.
    Para o shell, top+bottom são a única âncora confiável: assim a navegação
    fixa usa o fim real da tela, inclusive abaixo do indicador de início. */
-#root {
-  height: auto;
-  min-height: 0;
-  bottom: 0;
-}
+
 
 /* O translateY(var(--vv-top)) que existia aqui foi REMOVIDO. Reportado com
    print real: ao abrir o teclado, o cabeçalho ficava sobreposto à barra de
@@ -115,9 +124,10 @@ body,
    e elimina a faixa inferior sem criar um tamanho fixo dependente do device.
    A regra [data-teclado] abaixo continua tendo prioridade com o teclado. */
 @media (display-mode: standalone) {
-  #root {
-    height: auto;
-    bottom: 0;
+  #root,
+  .kronia-palco {
+    height: 100dvh;
+    min-height: -webkit-fill-available;
   }
 }
 
@@ -778,6 +788,7 @@ a {
   max-width: 480px;
   margin: 0 auto;
   height: 100%;
+  min-height: -webkit-fill-available;
   overflow: hidden;
   background: var(--kr-bg);
   touch-action: pan-y pinch-zoom;
@@ -786,9 +797,7 @@ a {
 .kronia-menu-camada {
   position: absolute;
   top: 0;
-  /* O layout viewport do PWA termina antes da área do indicador no iPhone.
-     A barra avança somente por essa área segura, sem deslocar os ícones para cima. */
-  bottom: calc(env(safe-area-inset-bottom) * -1);
+  bottom: 0;
   left: 0;
   /* min(300px, 82vw) — mesmo valor de agenda-, nunca deixa o app sem
      nenhuma fatia de tela pra tocar de volta. */
