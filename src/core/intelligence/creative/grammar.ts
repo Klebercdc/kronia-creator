@@ -1,27 +1,3 @@
-i
-
-export const CreativeBeatSchema = z.object({
-  id: z.string(),
-  action: z.string(),
-  purpose: z.string(),
-  interaction: z.enum(PRODUCT_INTERACTION_GRAMMAR).optional(),
-  durationWeight: z.number().positive(),
-});
-
-export const CreativeGrammarSchema = z.object({
-  version: z.literal(CREATIVE_GRAMMAR_VERSION),
-  variationSeed: z.string().min(1),
-  format: z.string(),
-  pattern: z.string(),
-  mechanic: z.string(),
-  beats: z.array(CreativeBeatSchema).min(1),
-  camera: z.array(z.enum(CAMERA_GRAMMAR)).min(1),
-  performance: z.enum(PERFORMANCE_GRAMMAR),
-  environment: z.enum(ENVIRONMENT_GRAMMAR),
-  productInteraction: z.array(z.enum(PRODUCT_INTERACTION_GRAMMAR)),
-  audio: z.array(z.enum(AUDIO_GRAMMAR)).min(1),
-  realism: z.array(z.enum(VISUAL_REALISM_GRAMMAR)).min(1),
-});
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { ContentFormat } from "../../../types/taxonomy";
@@ -121,6 +97,29 @@ export const VISUAL_REALISM_GRAMMAR = [
   "MICRO_CAMERA_JITTER",
 ] as const;
 export type VisualRealismGrammar = (typeof VISUAL_REALISM_GRAMMAR)[number];
+
+export const CreativeBeatSchema = z.object({
+  id: z.string(),
+  action: z.string(),
+  purpose: z.string(),
+  interaction: z.enum(PRODUCT_INTERACTION_GRAMMAR).optional(),
+  durationWeight: z.number().positive(),
+});
+
+export const CreativeGrammarSchema = z.object({
+  version: z.literal(CREATIVE_GRAMMAR_VERSION),
+  variationSeed: z.string().min(1),
+  format: z.string(),
+  pattern: z.string(),
+  mechanic: z.string(),
+  beats: z.array(CreativeBeatSchema).min(1),
+  camera: z.array(z.enum(CAMERA_GRAMMAR)).min(1),
+  performance: z.enum(PERFORMANCE_GRAMMAR),
+  environment: z.enum(ENVIRONMENT_GRAMMAR),
+  productInteraction: z.array(z.enum(PRODUCT_INTERACTION_GRAMMAR)),
+  audio: z.array(z.enum(AUDIO_GRAMMAR)).min(1),
+  realism: z.array(z.enum(VISUAL_REALISM_GRAMMAR)).min(1),
+});
 
 export interface CreativeBeat {
   id: string;
@@ -249,11 +248,6 @@ export const MECHANIC_BEATS: Record<string, CreativeBeat[]> = {
     { id: "BASE", action: "establish the person before the change", purpose: "context", durationWeight: 0.8 },
     { id: "PUT_ON", action: "put on the garment naturally", purpose: "interaction", interaction: "PUT_ON", durationWeight: 1 },
     { id: "SHOW_LOOK", action: "show the final look through natural movement", purpose: "payoff", interaction: "SHOW_DETAIL", durationWeight: 1 },
-  ],
-  comparison: [
-    { id: "OPTION_A", action: "show the first option clearly", purpose: "baseline", durationWeight: 0.8 },
-    { id: "OPTION_B", action: "show the second option clearly", purpose: "contrast", durationWeight: 0.8 },
-    { id: "DIFFERENCE", action: "focus on the visible difference", purpose: "decision support", interaction: "COMPARE", durationWeight: 1 },
   ],
   reaction: [
     { id: "REACTION_START", action: "capture the first natural reaction", purpose: "human hook", durationWeight: 0.8 },
@@ -484,7 +478,7 @@ export function resolveCreativeGrammar(args: {
     ].filter((v, i, a) => a.indexOf(v) === i),
     performance: pick(performances, numericSeed + 2),
     environment: pick(environments, numericSeed + 3),
-    productInteraction: productPresent ? interactions : [],
+    productInteraction: args.productPresent === false ? [] : interactions,
     audio,
     realism: ["HANDHELD", "REALISTIC_MOTION", "SMARTPHONE_LOOK", "SUBTLE_AUTOFOCUS"],
   };

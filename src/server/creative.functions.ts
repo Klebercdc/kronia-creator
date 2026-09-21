@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { EvidencedClaimSchema } from "../types/evidence";
 import { VideoAnalysisSchema } from "../types/video-analysis";
+import { ReferenceContextSchema } from "../types/reference-studio";
 import { buildCreativePrompt, type BuildCreativePromptResult } from "../core/intelligence/creative/orchestrator";
 
 const BuildCreativePromptInputSchema = z.object({
@@ -15,6 +16,7 @@ const BuildCreativePromptInputSchema = z.object({
   /** Fase 2B — Reference Intelligence: análise de um vídeo de referência já
    * ingerido pelo Job Engine (ver reference-ingestion.ts), opcional. */
   referenceAnalysis: VideoAnalysisSchema.nullable(),
+  referenceContext: ReferenceContextSchema.optional(),
 });
 
 /**

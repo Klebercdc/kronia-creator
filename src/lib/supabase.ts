@@ -1,5 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 import type { PipelineOutput } from "../types/pipeline";
+import {
+  ReferenceAssetSchema,
+  type ReferenceAsset,
+  type ReferenceEvidence,
+  type ReferenceLock,
+  type ReferenceProfile,
+} from "../types/reference-studio";
 
 export type JobStatus = "pending" | "running" | "succeeded" | "failed";
 
@@ -61,6 +68,37 @@ interface Database {
         Update: never;
         Relationships: [];
       };
+      creator_reference_assets: {
+        Row: {
+          id: string; type: ReferenceAsset["type"]; name: string; source_assets: string[];
+          profile: ReferenceProfile; evidence: ReferenceEvidence[]; locks: ReferenceLock[];
+          negative_constraints: string[]; version: number; status: ReferenceAsset["status"];
+          created_at: string; updated_at: string;
+        };
+        Insert: {
+          id?: string; type: ReferenceAsset["type"]; name: string; source_assets: string[];
+          profile: ReferenceProfile; evidence: ReferenceEvidence[]; locks: ReferenceLock[];
+          negative_constraints?: string[]; version?: number; status?: ReferenceAsset["status"];
+          created_at?: string; updated_at?: string;
+        };
+        Update: {
+          name?: string; profile?: ReferenceProfile; evidence?: ReferenceEvidence[]; locks?: ReferenceLock[];
+          negative_constraints?: string[]; version?: number; status?: ReferenceAsset["status"]; updated_at?: string;
+        };
+        Relationships: [];
+      };
+      creator_reference_versions: {
+        Row: {
+          id: string; asset_id: string; version: number; profile: ReferenceProfile;
+          locks: ReferenceLock[]; negative_constraints: string[]; created_at: string;
+        };
+        Insert: {
+          asset_id: string; version: number; profile: ReferenceProfile;
+          locks: ReferenceLock[]; negative_constraints?: string[];
+        };
+        Update: never;
+        Relationships: [];
+      };
       creator_jobs: {
         Row: {
           id: string;
@@ -97,6 +135,10 @@ interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      lock_creator_reference_asset: {
+        Args: { p_asset_id: string; p_lock_ids: string[] };
+        Returns: Database["public"]["Tables"]["creator_reference_assets"]["Row"][];
+      };
       claim_next_job: {
         Args: { job_kind: string; lease_seconds?: number };
         Returns: {
@@ -327,6 +369,50 @@ export async function listHistory(): Promise<HistoryEntry[]> {
 
 export async function removeHistoryEntry(id: string): Promise<void> {
   const { error } = await getSupabase().from("creator_history").delete().eq("id", id);
+  if (error) throw error;
+}
+
+
+function mapReferenceAsset(row: Database["public"]["Tables"]["creator_reference_assets"]["Row"]): ReferenceAsset {
+  return ReferenceAssetSchema.parse({
+    id: row.id, type: row.type, name: row.name, sourceAssets: row.source_assets,
+    profile: row.profile, evidence: row.evidence, locks: row.locks,
+    negativeConstraints: row.negative_constraints, version: row.version, status: row.status,
+    createdAt: row.created_at, updatedAt: row.updated_at,
+  });
+}
+
+export async function saveReferenceAsset(asset: ReferenceAsset): Promise<ReferenceAsset> {
+  const { data, error } = await getSupabase().from("creator_reference_assets").insert([{
+    id: asset.id, type: asset.type, name: asset.name, source_assets: asset.sourceAssets,
+    profile: asset.profile, evidence: asset.evidence, locks: asset.locks,
+    negative_constraints: asset.negativeConstraints, version: asset.version, status: asset.status,
+    created_at: asset.createdAt, updated_at: asset.updatedAt,
+  }]).select("*").single();
+  if (error) throw error;
+  return mapReferenceAsset(data);
+}
+
+export async function listReferenceAssets(): Promise<ReferenceAsset[]> {
+  const { data, error } = await getSupabase().from("creator_reference_assets").select("*")
+    .neq("status", "archived").order("updated_at", { ascending: false }).limit(100);
+  if (error) throw error;
+  return (data ?? []).map(mapReferenceAsset);
+}
+
+export async function lockReferenceAsset(id: string, enabledLockIds: string[]): Promise<ReferenceAsset> {
+  const { data, error } = await getSupabase().rpc("lock_creator_reference_asset", {
+    p_asset_id: id, p_lock_ids: enabledLockIds,
+  });
+  if (error) throw error;
+  const row = data?.[0];
+  if (!row) throw new Error("Referência não encontrada ou não pôde ser travada.");
+  return mapReferenceAsset(row);
+}
+
+export async function archiveReferenceAsset(id: string): Promise<void> {
+  const { error } = await getSupabase().from("creator_reference_assets")
+    .update({ status: "archived", updated_at: new Date().toISOString() }).eq("id", id);
   if (error) throw error;
 }
 

@@ -7,16 +7,20 @@ import { compilePrompt } from "./compiler";
 import { runFullQc } from "./semantic-qc";
 import { repairCreativeSpec } from "./repair";
 import { buildReferenceGrammar } from "./reference-grammar";
+import { applyReferenceLocks } from "../../reference-studio/apply-locks";
 import { CREATIVE_QC_MAX_ATTEMPTS, type CreativeEvaluation, type CreativeSpec, type PromptArtifact } from "./schemas";
+import type { ReferenceContext, ReferenceLock } from "../../../types/reference-studio";
 import type { VideoAnalysis } from "../../../types/video-analysis";
 
 export interface BuildCreativePromptInput extends Omit<CreativeReasoningInput, "referenceGrammar"> {
   targetId: string | null;
   /** Fase 2B — análise (já pronta, vinda do Job Engine) de um vídeo de
    * referência opcional. A conversão pra gramática criativa (texto,
-   * nunca fala/identidade literal) acontece aqui, em código — ver
-   * reference-grammar.ts. */
+   * nunca fala/identidade literal) acontece aqui — ver reference-grammar.ts. */
   referenceAnalysis: VideoAnalysis | null;
+  /** Invariantes visuais vindos do Reference Studio. São aplicados em código
+   * antes da compilação, portanto o LLM não é a fonte de verdade dos locks. */
+  referenceContext?: ReferenceContext;
 }
 
 export interface BuildCreativePromptResult {
@@ -27,36 +31,32 @@ export interface BuildCreativePromptResult {
 
 /**
  * Orquestra o fluxo completo:
- *   Creative Reasoning -> Creative Evaluation -> Target Resolver ->
- *   Target Specialist -> Prompt Compiler -> QC (determinístico +
- *   semântico, ver semantic-qc.ts) -> Repair (até CREATIVE_QC_MAX_ATTEMPTS)
- *   -> Creative Evaluation de novo -> ... -> resultado final.
+ * Creative Reasoning -> Creative Evaluation -> Target Resolver ->
+ * Target Specialist -> Prompt Compiler -> QC -> Repair -> QC.
  *
- * Fase 2: `runFullQc` (semantic-qc.ts) compõe o QC determinístico
- * existente (qc.ts, inalterado, continua zero-LLM) com uma segunda
- * passada semântica (semantic-truth.ts, 1 chamada LLM) que só roda quando
- * o determinístico não rejeitou de cara E existe característica
- * `unknown` — controle de custo: não gasta a chamada semântica quando o
- * determinístico já é suficiente pra decidir.
- *
- * Se a Creative Evaluation reprovar (verdict "fail" — product truth
- * violado), o fluxo PARA antes de compilar: `artifact` vem null e a
- * evaluation carrega o motivo. Nunca gera um prompt em cima de uma
- * intenção que já falhou na avaliação. Isso vale tanto pra spec original
- * quanto pra spec que saiu de um repair (correção de auditoria: repair é
- * uma chamada LLM livre pra reescrever format/pattern/mechanic/shots/
- * directorSpec — sem reavaliar depois, uma correção podia sair coerente
- * o suficiente pro Prompt QC (que olha duração/overload/claims, não
- * coerência formato↔padrão↔mecânica) mas incoerente pra Creative
- * Evaluation, e isso nunca era pego).
- *
- * Se o Prompt QC não passar depois do teto de repair, `artifact.status`
- * vem "manual_review_required" — nunca "ready" mascarado (mesmo princípio
- * do Compliance existente).
+ * Reference Studio entra como camada transversal: locks são aplicados
+ * deterministicamente após o raciocínio inicial e novamente após cada repair,
+ * impedindo que uma correção LLM remova invariantes de identidade/produto.
  */
+function resolveReferenceLocks(context?: ReferenceContext): ReferenceLock[] {
+  if (!context) return [];
+  const negativeLocks: ReferenceLock[] = context.negativeConstraints.map((value, index) => ({
+    id: `context-negative-${index}`,
+    type: "negative_visual",
+    attribute: "negative_visual",
+    value,
+    priority: "critical",
+    sourceEvidenceIds: [],
+    variable: false,
+  }));
+  return [...context.locks, ...negativeLocks];
+}
+
 export async function buildCreativePrompt(input: BuildCreativePromptInput): Promise<BuildCreativePromptResult> {
   const referenceGrammar = input.referenceAnalysis ? buildReferenceGrammar(input.referenceAnalysis) : null;
-  const spec = await generateCreativeSpec({ ...input, referenceGrammar });
+  const referenceLocks = resolveReferenceLocks(input.referenceContext);
+  let spec = await generateCreativeSpec({ ...input, referenceGrammar });
+  spec = applyReferenceLocks(spec, referenceLocks);
   let evaluation = evaluateCreativeSpec(spec);
 
   if (evaluation.verdict === "fail") {
@@ -113,17 +113,8 @@ export async function buildCreativePrompt(input: BuildCreativePromptInput): Prom
 
     attempt += 1;
     currentSpec = await repairCreativeSpec(currentSpec, qc.issues);
+    currentSpec = applyReferenceLocks(currentSpec, referenceLocks);
 
-    // Revalidação determinística (evaluateCreativeSpec continua sem LLM —
-    // nenhuma chamada nova aqui) da spec que voltou do repair. O repair tem
-    // liberdade pra reescrever format/pattern/mechanic/shotPattern/
-    // directorSpec pra resolver o problema do QC; sem essa revalidação, uma
-    // correção podia introduzir uma incoerência que só a Creative
-    // Evaluation original checava (formato↔padrão↔mecânica, shot sequence,
-    // product truth) e nunca seria pega, já que o Prompt QC verifica outra
-    // coisa. Se falhar, é falha de integridade: nunca compila, nunca
-    // retorna ready — mesmo "comportamento seguro" do caminho de avaliação
-    // inicial.
     evaluation = evaluateCreativeSpec(currentSpec);
     if (evaluation.verdict === "fail") {
       return { spec: currentSpec, evaluation, artifact: null };
