@@ -1028,43 +1028,30 @@ function ConversationScreen({ onNavigate }: { onNavigate: (tab: AppTab, source?:
         </section>
 
         <section className="kronia-recent-production">
-          <div className="kronia-section-heading inline">
+          <div className="kronia-section-heading">
             <h2>Acompanhe sua criação</h2>
-            <button type="button" onClick={() => onNavigate("historico")}>Ver histórico <LucideChevronRight size={16} /></button>
+            <p>Continue de onde parou e finalize seu conteúdo.</p>
           </div>
           {recent ? (
             <button type="button" className="kronia-recent-production-row" onClick={() => onNavigate("historico")}>
-              <span className="kronia-recent-production-icon"><LucideFolderClock size={22} /></span>
+              <span className="kronia-recent-production-icon"><LucideVideo size={24} /></span>
               <span className="kronia-recent-production-copy">
                 <strong>{recent.theme || formatLabel(recent.format)}</strong>
-                <span>Em criação · Atualizado {new Date(recent.createdAt).toLocaleDateString("pt-BR")}</span>
+                <span>Última criação · Atualizado {new Date(recent.createdAt).toLocaleDateString("pt-BR")}</span>
+                <span className="kronia-recent-progress" aria-hidden="true"><i /></span>
               </span>
-              <LucideChevronRight size={20} />
+              <span className="kronia-recent-action">Retomar <LucideChevronRight size={17} /></span>
             </button>
           ) : (
             <button type="button" className="kronia-recent-production-row" onClick={() => onNavigate("criar")}>
-              <span className="kronia-recent-production-icon"><LucideFolderClock size={22} /></span>
+              <span className="kronia-recent-production-icon"><LucideFolderClock size={24} /></span>
               <span className="kronia-recent-production-copy">
                 <strong>Comece sua primeira criação</strong>
                 <span>Seu progresso aparecerá aqui.</span>
               </span>
-              <LucideChevronRight size={20} />
+              <span className="kronia-recent-action">Criar <LucideChevronRight size={17} /></span>
             </button>
           )}
-        </section>
-
-        <section className="kronia-home-tools" aria-labelledby="home-tools-title">
-          <div className="kronia-section-heading inline">
-            <h2 id="home-tools-title">Ferramentas</h2>
-          </div>
-          <button type="button" className="kronia-recent-production-row" onClick={() => onNavigate("prompt")}>
-            <span className="kronia-recent-production-icon"><LucideFileText size={22} /></span>
-            <span className="kronia-recent-production-copy">
-              <strong>Blocos de venda</strong>
-              <span>Estruture argumentos para a sua criação.</span>
-            </span>
-            <LucideChevronRight size={20} />
-          </button>
         </section>
       </main>
 
