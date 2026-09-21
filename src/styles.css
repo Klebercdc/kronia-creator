@@ -529,47 +529,6 @@ a {
    parte, e a Home não precisa mais de nenhuma cor própria).
    ========================================================================== */
 
-.kronia-home {
-  min-height: 100%;
-  max-width: 480px;
-  margin: 0 auto;
-  background: var(--kr-bg);
-  color: var(--kr-ink);
-  display: flex;
-  flex-direction: column;
-  /* O cabeçalho fixo começa a 52px do topo e ocupa 62px. A reserva precisa
-     cobrir os 114px completos para o conteúdo nunca passar por trás dele.
-     Padding-bottom ZERO, sem env() nenhum: pedido explícito do usuário —
-     a barra de input encosta na base de verdade, sem nenhum respiro. */
-  padding: 114px 20px 0;
-}
-
-/* position:FIXED, não mais sticky. Duas tentativas com sticky falharam de
-   um jeito sutil (sobrepunha a barra de status, ou sumia de vez) quando o
-   teclado abria com o campo ainda vazio — sticky depende de como
-   .kronia-app-camada (o container que rola de verdade) se comporta por
-   baixo, e isso mostrou ser frágil nesse app. Fixed prende ao viewport de
-   verdade, sem depender de scroll container nenhum — mesmo comportamento
-   que o usuário confirmou existir no cabeçalho do app do Claude ("é fixo,
-   não sobe").
-   left/right+max-width+margin:auto repetem a centralização de .kronia-home
-   porque, sendo fixed, ele sai do contexto de .kronia-home e precisa se
-   alinhar sozinho com a mesma coluna de 480px. */
-.kronia-home-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: fixed;
-  top: max(52px, calc(env(safe-area-inset-top, 0px) * 0.75) + 10px);
-  left: 0;
-  right: 0;
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 0 20px 20px;
-  z-index: 20;
-  background: var(--kr-bg);
-}
-
 .kronia-icon-btn {
   width: 42px;
   height: 42px;
@@ -1342,7 +1301,8 @@ a {
   min-height: 100%;
   max-width: 480px;
   margin: 0 auto;
-  padding: 94px 0 112px;
+  /* 16px de topo + 72px do cabeçalho fixo + 16px de respiro. */
+  padding: 104px 20px 60px;
   background: var(--kr-bg);
   color: var(--kr-ink);
   display: flex;
@@ -1350,8 +1310,20 @@ a {
 }
 
 .kronia-home-topbar {
-  min-height: 62px;
+  position: fixed;
   top: 16px;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 480px;
+  height: 72px;
+  min-height: 72px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 0 32px 10px;
   background: var(--kr-header-bg);
   backdrop-filter: blur(14px);
@@ -1689,11 +1661,9 @@ a {
   margin: 0 auto;
   z-index: 12;
   box-sizing: border-box;
-  /* Sem altura fixa: o rodapé acompanha exatamente os itens da navegação,
-     evitando área vazia tanto acima quanto abaixo deles no iOS. */
-  height: auto;
-  min-height: 0;
-  max-height: none;
+  height: 60px;
+  min-height: 60px;
+  max-height: 60px;
   padding: 4px 20px;
   border-top: 1px solid var(--kr-line);
   background: var(--kr-header-bg);
@@ -1715,8 +1685,8 @@ a {
   font-family: inherit;
   font-size: 10.5px;
   font-weight: 650;
-  height: 48px;
-  min-height: 48px;
+  height: 51px;
+  min-height: 51px;
   line-height: 1.1;
   cursor: pointer;
 }
