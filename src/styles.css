@@ -87,6 +87,15 @@ body,
   width: 100%;
 }
 
+/* O iOS pode reportar 100dvh/100lvh menor que a área física de um PWA.
+   Para o shell, top+bottom são a única âncora confiável: assim a navegação
+   fixa usa o fim real da tela, inclusive abaixo do indicador de início. */
+#root {
+  height: auto;
+  min-height: 0;
+  bottom: 0;
+}
+
 /* O translateY(var(--vv-top)) que existia aqui foi REMOVIDO. Reportado com
    print real: ao abrir o teclado, o cabeçalho ficava sobreposto à barra de
    status ("desfigurado") — a compensação, calibrada pro comportamento do
@@ -107,8 +116,8 @@ body,
    A regra [data-teclado] abaixo continua tendo prioridade com o teclado. */
 @media (display-mode: standalone) {
   #root {
-    height: 100lvh;
-    bottom: auto;
+    height: auto;
+    bottom: 0;
   }
 }
 
