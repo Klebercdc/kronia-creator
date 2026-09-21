@@ -48,6 +48,7 @@ import { TikTokPreview } from "../components/TikTokPreview";
 import { MovementLibraryCatalog } from "../components/MovementLibraryCatalog";
 import { ReferencePromptsCatalog } from "../components/ReferencePromptsCatalog";
 import { BlocosVendaGenerator } from "../components/BlocosVendaGenerator";
+import { ImageCreator } from "../components/ImageCreator";
 import { uploadReferenceVideo } from "../lib/supabase-client";
 import type { SavedTheme, HistoryEntry } from "../lib/supabase";
 import type { ContentRequest, GenerationResult, PipelineOutput, ReferenceAnalysis } from "../types/pipeline";
@@ -144,7 +145,7 @@ function StageIndicator({ current }: { current: 0 | 1 | 2 }) {
   );
 }
 
-type AppTab = "home" | "criar" | "historico" | "explorar" | "prompt" | "perfil";
+type AppTab = "home" | "criar" | "historico" | "explorar" | "prompt" | "imagens" | "perfil";
 type CreateSource = "video" | "image" | "idea";
 
 /** Ícones — traçados copiados 1:1 do handoff de design (KroniaMockup.dc.html),
@@ -1028,30 +1029,51 @@ function ConversationScreen({ onNavigate }: { onNavigate: (tab: AppTab, source?:
         </section>
 
         <section className="kronia-recent-production">
-          <div className="kronia-section-heading">
+          <div className="kronia-section-heading inline">
             <h2>Acompanhe sua criação</h2>
-            <p>Continue de onde parou e finalize seu conteúdo.</p>
+            <button type="button" onClick={() => onNavigate("historico")}>Ver histórico <LucideChevronRight size={16} /></button>
           </div>
           {recent ? (
             <button type="button" className="kronia-recent-production-row" onClick={() => onNavigate("historico")}>
-              <span className="kronia-recent-production-icon"><LucideVideo size={24} /></span>
+              <span className="kronia-recent-production-icon"><LucideFolderClock size={22} /></span>
               <span className="kronia-recent-production-copy">
                 <strong>{recent.theme || formatLabel(recent.format)}</strong>
-                <span>Última criação · Atualizado {new Date(recent.createdAt).toLocaleDateString("pt-BR")}</span>
-                <span className="kronia-recent-progress" aria-hidden="true"><i /></span>
+                <span>Em criação · Atualizado {new Date(recent.createdAt).toLocaleDateString("pt-BR")}</span>
               </span>
-              <span className="kronia-recent-action">Retomar <LucideChevronRight size={17} /></span>
+              <LucideChevronRight size={20} />
             </button>
           ) : (
             <button type="button" className="kronia-recent-production-row" onClick={() => onNavigate("criar")}>
-              <span className="kronia-recent-production-icon"><LucideFolderClock size={24} /></span>
+              <span className="kronia-recent-production-icon"><LucideFolderClock size={22} /></span>
               <span className="kronia-recent-production-copy">
                 <strong>Comece sua primeira criação</strong>
                 <span>Seu progresso aparecerá aqui.</span>
               </span>
-              <span className="kronia-recent-action">Criar <LucideChevronRight size={17} /></span>
+              <LucideChevronRight size={20} />
             </button>
           )}
+        </section>
+
+        <section className="kronia-home-tools" aria-labelledby="home-tools-title">
+          <div className="kronia-section-heading inline">
+            <h2 id="home-tools-title">Ferramentas</h2>
+          </div>
+          <button type="button" className="kronia-recent-production-row" onClick={() => onNavigate("imagens")}>
+            <span className="kronia-recent-production-icon"><LucideImage size={22} /></span>
+            <span className="kronia-recent-production-copy">
+              <strong>Criar imagens</strong>
+              <span>Gere de uma a quatro variações para sua produção.</span>
+            </span>
+            <LucideChevronRight size={20} />
+          </button>
+          <button type="button" className="kronia-recent-production-row" onClick={() => onNavigate("prompt")}>
+            <span className="kronia-recent-production-icon"><LucideFileText size={22} /></span>
+            <span className="kronia-recent-production-copy">
+              <strong>Blocos de venda</strong>
+              <span>Estruture argumentos para a sua criação.</span>
+            </span>
+            <LucideChevronRight size={20} />
+          </button>
         </section>
       </main>
 
@@ -1107,6 +1129,7 @@ function CriadorApp() {
           />
         )}
         {tab === "prompt" && <BlocosVendaGenerator onOpenMenu={() => undefined} />}
+        {tab === "imagens" && <ImageCreator />}
         {tab === "perfil" && <PerfilTab onOpenMenu={() => undefined} />}
       </div>
       <nav className="kronia-global-nav" aria-label="Navegação principal">
