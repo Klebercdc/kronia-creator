@@ -18,6 +18,15 @@ import {
   Target as LucideTarget,
   LayoutGrid as LucideLayoutGrid,
   Menu as LucideMenu,
+  Video as LucideVideo,
+  Camera as LucideCamera,
+  PenLine as LucidePenLine,
+  ChevronRight as LucideChevronRight,
+  Search as LucideSearch,
+  Clapperboard as LucideClapperboard,
+  ShieldCheck as LucideShieldCheck,
+  Home as LucideHome,
+  FolderClock as LucideFolderClock,
 } from "lucide-react";
 import {
   enqueueReferenceIngestion,
@@ -42,12 +51,11 @@ import { MovementLibraryCatalog } from "../components/MovementLibraryCatalog";
 import { ReferencePromptsCatalog } from "../components/ReferencePromptsCatalog";
 import { BlocosVendaGenerator } from "../components/BlocosVendaGenerator";
 import { uploadReferenceVideo } from "../lib/supabase-client";
-import type { SavedTheme, HistoryEntry, ConversationRow } from "../lib/supabase";
+import type { SavedTheme, HistoryEntry } from "../lib/supabase";
 import type { ContentRequest, GenerationResult, PipelineOutput, ReferenceAnalysis } from "../types/pipeline";
 import type { Attachment, ConversationMessage } from "../types/conversation";
 import {
   createConversationFn,
-  listConversationsFn as listConversationsRpc,
   getConversationFn,
   sendMessageFn,
   appendConversationResultFn,
@@ -144,6 +152,7 @@ function StageIndicator({ current }: { current: 0 | 1 | 2 }) {
 }
 
 type AppTab = "home" | "criar" | "historico" | "explorar" | "prompt" | "perfil";
+type CreateSource = "video" | "image" | "idea";
 
 /** Ícones — traçados copiados 1:1 do handoff de design (KroniaMockup.dc.html),
  * não reinventados, pra bater pixel a pixel com o mockup aprovado. */
@@ -929,14 +938,13 @@ type PendingOpportunitySeed =
 /** Item de navegação da sidebar (drawer) — distinto de TAB_ITEMS/BottomNav,
  * que continua servindo as telas internas (Criar/Histórico/Explorar/Prompt/
  * Perfil) enquanto a Home não tiver equivalente pra todas elas. */
-const SIDEBAR_ITEMS: { id: AppTab; label: string; Icon: () => React.JSX.Element; mediaHint?: "image" }[] = [
+const SIDEBAR_ITEMS: { id: AppTab; label: string; Icon: React.ComponentType<{ size?: number; strokeWidth?: number }> }[] = [
+  { id: "home", label: "Início", Icon: LucideHome },
   { id: "criar", label: "Criar conteúdo", Icon: NavIconCriar },
-  { id: "criar", label: "Analisar referência", Icon: NavIconAnalisar },
-  { id: "criar", label: "Criar roteiro", Icon: NavIconRoteiro },
+  { id: "historico", label: "Histórico", Icon: NavIconHistorico },
+  { id: "explorar", label: "Oportunidades", Icon: NavIconExplorar },
   { id: "prompt", label: "Blocos de venda", Icon: NavIconBlocosVenda },
-  { id: "criar", label: "TikTok Shop", Icon: NavIconTikTokShop },
-  { id: "explorar", label: "Estratégia de crescimento", Icon: NavIconEstrategia },
-  { id: "historico", label: "Mais opções", Icon: NavIconMaisOpcoes },
+  { id: "perfil", label: "Perfil", Icon: NavIconPerfil },
 ];
 
 /**
@@ -946,18 +954,11 @@ const SIDEBAR_ITEMS: { id: AppTab; label: string; Icon: () => React.JSX.Element;
  */
 function AppSidebar({
   active,
-  recentConversations,
   onNavigate,
-  onNewConversation,
-  onOpenConversation,
 }: {
   active: AppTab;
-  recentConversations: ConversationRow[];
-  onNavigate: (tab: AppTab, mediaHint?: "image") => void;
-  onNewConversation: () => void;
-  onOpenConversation: (id: string) => void;
+  onNavigate: (tab: AppTab, source?: CreateSource) => void;
 }) {
-  const [showAllRecents, setShowAllRecents] = useState(false);
   return (
     <>
       <aside className="kronia-sidebar">
@@ -973,26 +974,12 @@ function AppSidebar({
         </div>
 
         <nav className="kronia-sidebar-nav">
-          <div className="kronia-sidebar-item-row">
-            <button
-              type="button"
-              className={`kronia-sidebar-item ${active === "home" ? "active" : ""}`}
-              onClick={() => onNavigate("home")}
-            >
-              <IconChatBubble />
-              <span>Conversas</span>
-              <IconChevronRight />
-            </button>
-            <button type="button" className="kronia-new-chat-btn" onClick={onNewConversation} aria-label="Novo bate-papo" title="Novo bate-papo">
-              <IconPlus />
-            </button>
-          </div>
           {SIDEBAR_ITEMS.map((item) => (
             <button
               key={item.label}
               type="button"
               className={`kronia-sidebar-item ${active === item.id ? "active" : ""}`}
-              onClick={() => onNavigate(item.id, item.mediaHint)}
+              onClick={() => onNavigate(item.id)}
             >
               <item.Icon />
               <span>{item.label}</span>
@@ -1000,35 +987,6 @@ function AppSidebar({
             </button>
           ))}
         </nav>
-
-        {recentConversations.length > 0 && (
-          <div className="kronia-sidebar-recents">
-            <div className="kronia-sidebar-recents-header">
-              <span>Recentes</span>
-              {recentConversations.length > 5 && (
-                <button type="button" onClick={() => setShowAllRecents((v) => !v)}>
-                  {showAllRecents ? "Ver menos" : "Ver todos"} <IconChevronRight />
-                </button>
-              )}
-            </div>
-            {recentConversations.slice(0, showAllRecents ? 20 : 5).map((conv) => (
-              <button
-                key={conv.id}
-                type="button"
-                className="kronia-recent-item"
-                onClick={() => onOpenConversation(conv.id)}
-              >
-                <span className="kronia-recent-thumb">{(conv.title || "Conversa").slice(0, 1).toUpperCase()}</span>
-                <span className="kronia-recent-text">
-                  <span className="kronia-recent-title">{conv.title || "Nova conversa"}</span>
-                  <span className="kronia-recent-time">
-                    {new Date(conv.updatedAt).toLocaleDateString("pt-BR")} · {new Date(conv.updatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                  </span>
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
 
         <button type="button" className="kronia-sidebar-footer" onClick={() => onNavigate("perfil")}>
           <span className="kronia-sidebar-avatar">K</span>
@@ -1092,58 +1050,104 @@ const CONTENT_GENERATION_STEP_LABELS_CONVERSATION: Record<string, string> = {
  * suficiente (`readyToCreate`), nunca pra qualquer texto digitado.
  */
 
-/** Saudações da Home vazia — uma sorteada por carregamento de tela, igual
- * o "Olá, coruja noturna" do app do Claude varia a cada abertura. */
-const SAUDACOES_HOME: [string, string][] = [
-  ["O que vamos", "criar hoje?"],
-  ["Qual ideia vamos", "lançar agora?"],
-  ["Pronto pra criar", "algo novo?"],
-  ["Bora criar seu", "próximo vídeo?"],
-  ["O que sua marca", "precisa hoje?"],
+const HOME_SOURCES: {
+  id: CreateSource;
+  label: string;
+  description: string;
+  Icon: typeof LucideVideo;
+}[] = [
+  { id: "video", label: "Referência em vídeo", description: "Envie um vídeo ou use um link como base.", Icon: LucideVideo },
+  { id: "image", label: "Foto do produto", description: "Use fotos reais para orientar a criação.", Icon: LucideCamera },
+  { id: "idea", label: "Ideia do zero", description: "Descreva o produto ou tema em poucas palavras.", Icon: LucidePenLine },
 ];
 
-const HOME_QUICK_ACTIONS: { label: string; tab: AppTab; mediaHint?: "image"; Icon: () => React.JSX.Element }[] = [
-  { label: "Criar conteúdo", tab: "criar", Icon: NavIconCriar },
-  { label: "Blocos de venda", tab: "prompt", Icon: NavIconBlocosVenda },
-  { label: "Roteiros prontos", tab: "explorar", Icon: NavIconRoteiro },
-  { label: "Estratégia de crescimento", tab: "explorar", Icon: NavIconEstrategia },
-];
+/** Home profissional: uma única entrada para o fluxo Criar. As três opções
+ * representam fontes que o formulário e o pipeline já aceitam; nenhuma
+ * funcionalidade nova é simulada aqui. */
+function ConversationScreen({ onNavigate }: { onNavigate: (tab: AppTab, source?: CreateSource) => void }) {
+  const listHistoryRpc = useServerFn(listHistoryFn);
+  const [selectedSource, setSelectedSource] = useState<CreateSource>("video");
+  const [recent, setRecent] = useState<HistoryEntry | null | undefined>(undefined);
 
-/** Home — dashboard de atalhos, sem chat. O chat livre com o KRONIA existiu
- * aqui antes (composer + thread de mensagens, molde parecido com o app do
- * Claude); o usuário pediu pra tirar de vez, então a Home agora é só
- * saudação + os atalhos pras funções reais do app. */
-function ConversationScreen({ onNavigate }: { onNavigate: (tab: AppTab, mediaHint?: "image") => void }) {
-  const [saudacao] = useState(() => SAUDACOES_HOME[Math.floor(Math.random() * SAUDACOES_HOME.length)]);
+  useEffect(() => {
+    listHistoryRpc()
+      .then((entries) => setRecent(entries[0] ?? null))
+      .catch(() => setRecent(null));
+  }, []);
 
   return (
     <div className="kronia-home">
-      {/* .kronia-home-topbar saiu daqui — agora é irmã de .kronia-app-camada
-         em CriadorApp, fora do container transformado (ver comentário lá
-         sobre por que position:fixed precisava disso). onOpenMenu não é
-         mais usado por este componente. */}
-      <div className="kronia-home-hero kronia-home-hero-dashboard">
-        <h1>
-          {saudacao[0]}
-          <br />
-          <span className="accent">{saudacao[1]}</span>
-        </h1>
-        <div className="kronia-quick-actions">
-          {HOME_QUICK_ACTIONS.map((action) => (
+      <main className="kronia-command">
+        <div className="kronia-command-eyebrow">Workspace / Conteúdo</div>
+        <header className="kronia-command-header">
+          <h1>Comece pela matéria-prima</h1>
+          <p>Transforme uma referência, produto ou ideia em conteúdo pronto para produzir.</p>
+        </header>
+
+        <section className="kronia-source-list" aria-label="Origem do conteúdo">
+          {HOME_SOURCES.map((source) => {
+            const selected = source.id === selectedSource;
+            return (
             <button
-              key={action.label}
+              key={source.id}
               type="button"
-              className="kronia-quick-action"
-              onClick={() => onNavigate(action.tab, action.mediaHint)}
+              className={`kronia-source-row ${selected ? "selected" : ""}`}
+              onClick={() => setSelectedSource(source.id)}
+              aria-pressed={selected}
             >
-              <span className="kronia-quick-action-icon">
-                <action.Icon />
+              <span className="kronia-source-icon"><source.Icon size={24} strokeWidth={1.8} /></span>
+              <span className="kronia-source-copy">
+                <strong>{source.label}</strong>
+                <span>{source.description}</span>
               </span>
-              <span className="kronia-quick-action-label">{action.label}</span>
+              <LucideChevronRight className="kronia-source-chevron" size={22} strokeWidth={1.8} />
             </button>
-          ))}
-        </div>
-      </div>
+            );
+          })}
+        </section>
+
+        <button className="kronia-command-primary" type="button" onClick={() => onNavigate("criar", selectedSource)}>
+          Iniciar criação <LucideChevronRight size={20} strokeWidth={2} />
+        </button>
+
+        <section className="kronia-production-flow" aria-labelledby="production-flow-title">
+          <div className="kronia-section-heading">
+            <div>
+              <h2 id="production-flow-title">Fluxo de produção</h2>
+              <p>Um único processo, da análise à validação final.</p>
+            </div>
+          </div>
+          <div className="kronia-flow-steps">
+            <span><i><LucideSearch size={18} /></i>Análise</span>
+            <span><i><LucidePenLine size={18} /></i>Roteiro</span>
+            <span><i><LucideClapperboard size={18} /></i>Cenas</span>
+            <span><i><LucideShieldCheck size={18} /></i>Validação</span>
+          </div>
+        </section>
+
+        {recent && (
+          <section className="kronia-recent-production">
+            <div className="kronia-section-heading inline">
+              <h2>Criação recente</h2>
+              <button type="button" onClick={() => onNavigate("historico")}>Ver histórico <LucideChevronRight size={16} /></button>
+            </div>
+            <button type="button" className="kronia-recent-production-row" onClick={() => onNavigate("historico")}>
+              <span className="kronia-recent-production-icon"><LucideFolderClock size={22} /></span>
+              <span className="kronia-recent-production-copy">
+                <strong>{recent.theme || formatLabel(recent.format)}</strong>
+                <span>{formatLabel(recent.format)} · {new Date(recent.createdAt).toLocaleDateString("pt-BR")}</span>
+              </span>
+              <LucideChevronRight size={20} />
+            </button>
+          </section>
+        )}
+      </main>
+
+      <nav className="kronia-home-nav" aria-label="Navegação principal">
+        <button className="active" type="button" onClick={() => onNavigate("home")}><LucideHome size={21} /><span>Início</span></button>
+        <button type="button" onClick={() => onNavigate("historico")}><LucideHistory size={21} /><span>Histórico</span></button>
+        <button type="button" onClick={() => onNavigate("explorar")}><LucideCompass size={21} /><span>Oportunidades</span></button>
+      </nav>
     </div>
   );
 }
@@ -1160,11 +1164,8 @@ function ConversationScreen({ onNavigate }: { onNavigate: (tab: AppTab, mediaHin
 function CriadorApp() {
   const [tab, setTab] = useState<AppTab>("home");
   const [pendingOpportunity, setPendingOpportunity] = useState<PendingOpportunitySeed | null>(null);
-  const [initialMedia, setInitialMedia] = useState<"image" | "video">("video");
+  const [initialSource, setInitialSource] = useState<CreateSource | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-  const [recentConversations, setRecentConversations] = useState<ConversationRow[]>([]);
-  const listConversationsRpcHook = useServerFn(listConversationsRpc);
 
   const appRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -1179,16 +1180,8 @@ function CriadorApp() {
     topbar: topbarRef,
   });
 
-  const refreshConversations = () => {
-    listConversationsRpcHook()
-      .then(setRecentConversations)
-      .catch(() => setRecentConversations([]));
-  };
-
-  useEffect(refreshConversations, []);
-
-  function navigate(nextTab: AppTab, mediaHint?: "image") {
-    if (mediaHint) setInitialMedia(mediaHint);
+  function navigate(nextTab: AppTab, source?: CreateSource) {
+    if (nextTab === "criar") setInitialSource(source ?? null);
     setTab(nextTab);
     setSidebarOpen(false);
   }
@@ -1198,16 +1191,7 @@ function CriadorApp() {
       <div className="kronia-menu-camada" ref={menuRef} aria-hidden={!sidebarOpen} inert={!sidebarOpen}>
         <AppSidebar
           active={tab}
-          recentConversations={recentConversations}
           onNavigate={navigate}
-          onNewConversation={() => {
-            setActiveConversationId(null);
-            navigate("home");
-          }}
-          onOpenConversation={(id) => {
-            setActiveConversationId(id);
-            navigate("home");
-          }}
         />
       </div>
       {/* Só visual (pointer-events:none sempre, ver styles.css) — fechar
@@ -1226,6 +1210,11 @@ function CriadorApp() {
           <button type="button" className="kronia-icon-btn" onClick={() => setSidebarOpen(true)} aria-label="Abrir menu">
             <NavIconMenu />
           </button>
+          <div className="kronia-topbar-brand" aria-label="Kronia Creator">
+            <img src={logoIcon} alt="" />
+            <span><strong>KRONIA</strong><small>CREATOR</small></span>
+          </div>
+          <button type="button" className="kronia-topbar-profile" onClick={() => navigate("perfil")} aria-label="Abrir perfil">K</button>
         </div>
       )}
       <div className="kronia-app-camada" ref={appRef}>
@@ -1238,6 +1227,7 @@ function CriadorApp() {
             onOpenMenu={() => setSidebarOpen(true)}
             pendingOpportunity={pendingOpportunity}
             onConsumePendingOpportunity={() => setPendingOpportunity(null)}
+            initialSource={initialSource}
           />
         )}
         {tab === "historico" && <HistoricoTab onOpenMenu={() => setSidebarOpen(true)} />}
@@ -1271,12 +1261,14 @@ function CriarFlow({
   pendingOpportunity,
   onConsumePendingOpportunity,
   initialIdea,
+  initialSource,
 }: {
   onOpenProfile: () => void;
   onOpenMenu: () => void;
   pendingOpportunity: PendingOpportunitySeed | null;
   onConsumePendingOpportunity: () => void;
   initialIdea?: string | null;
+  initialSource: CreateSource | null;
 }) {
   const enqueueReferenceIngestionFn = useServerFn(enqueueReferenceIngestion);
   const advanceIngestionJobFn = useServerFn(advanceIngestionJob);
@@ -1324,6 +1316,20 @@ function CriarFlow({
         // best-effort — sem tema salvo carregado não quebra o resto do app
       });
   }, []);
+
+  useEffect(() => {
+    if (step !== "form" || !initialSource) return;
+    const targetId = initialSource === "video"
+      ? "create-source-video"
+      : initialSource === "image"
+        ? "create-source-image"
+        : "create-source-idea";
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (initialSource === "idea") document.getElementById("create-idea-input")?.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [initialSource, step]);
 
   // Veio da aba Oportunidades — pré-preenche o tema e guarda a
   // classificação/recomendação sintetizadas (bridge, sem vídeo de
@@ -1723,7 +1729,7 @@ function CriarFlow({
           </button>
         </div>
 
-        <div>
+        <div id="create-source-image">
           <div className="section-label">Produto</div>
           <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
             <div
@@ -1821,9 +1827,10 @@ function CriarFlow({
             </div>
           )}
 
-          <div style={{ marginTop: 16 }}>
+          <div id="create-source-idea" style={{ marginTop: 16 }}>
             <div className="section-label">{project === "jeova_fala" ? "Tema" : "Informações do produto"}</div>
             <textarea
+              id="create-idea-input"
               className="field-textarea"
               placeholder={
                 project === "jeova_fala"
@@ -1910,7 +1917,7 @@ function CriarFlow({
           </div>
         </div>
 
-        <div>
+        <div id="create-source-video">
           <div className="section-label">Vídeo de referência (opcional)</div>
           <label
             style={{

@@ -50,5 +50,6 @@ export async function repairCreativeSpec(spec: CreativeSpec, issues: string[]): 
     ...inferred,
     version: "v1" as const,
     productTruth: spec.productTruth,
+    creativeGrammar: spec.creativeGrammar,
   };
 }
