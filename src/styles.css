@@ -1301,8 +1301,8 @@ a {
   min-height: 100%;
   max-width: 480px;
   margin: 0 auto;
-  /* 16px de topo + 72px do cabeçalho fixo + 16px de respiro. */
-  padding: 104px 20px 60px;
+  /* Espaço do cabeçalho fixo, sem deixar o conteúdo nascer sob ele. */
+  padding: 88px 20px 72px;
   background: var(--kr-bg);
   color: var(--kr-ink);
   display: flex;
@@ -1311,7 +1311,7 @@ a {
 
 .kronia-home-topbar {
   position: fixed;
-  top: 16px;
+  top: 0;
   right: 0;
   left: 0;
   z-index: 20;
@@ -1324,10 +1324,10 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 32px 10px;
-  background: var(--kr-header-bg);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  padding: 0 32px;
+  /* Opaco: durante a rolagem, o título não pode aparecer sob a barra. */
+  background: var(--kr-bg);
+  border-bottom: 1px solid var(--kr-line);
 }
 
 .kronia-topbar-brand {
@@ -1655,7 +1655,7 @@ a {
 .kronia-global-nav {
   position: fixed;
   right: 0;
-  bottom: 0;
+  bottom: 10px;
   left: 0;
   max-width: 480px;
   margin: 0 auto;
