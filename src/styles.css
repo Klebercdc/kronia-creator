@@ -533,816 +533,7 @@ a {
   min-height: 100%;
   max-width: 480px;
   margin: 0 auto;
-  background: var(--kr-bg);
-  color: var(--kr-ink);
-  display: flex;
-  flex-direction: column;
-  /* padding-top reserva o espaço do cabeçalho FIXO (ver .kronia-home-topbar
-     abaixo) — ele saiu do fluxo normal, então o conteúdo embaixo precisa
-     dessa folga pra não nascer por baixo dele. 62px = 42px do botão
-     redondo + 20px de padding-bottom do cabeçalho.
-     Padding-bottom ZERO, sem env() nenhum: pedido explícito do usuário —
-     a barra de input encosta na base de verdade, sem nenhum respiro. */
-  padding: 62px 20px 0;
-}
-
-/* position:FIXED, não mais sticky. Duas tentativas com sticky falharam de
-   um jeito sutil (sobrepunha a barra de status, ou sumia de vez) quando o
-   teclado abria com o campo ainda vazio — sticky depende de como
-   .kronia-app-camada (o container que rola de verdade) se comporta por
-   baixo, e isso mostrou ser frágil nesse app. Fixed prende ao viewport de
-   verdade, sem depender de scroll container nenhum — mesmo comportamento
-   que o usuário confirmou existir no cabeçalho do app do Claude ("é fixo,
-   não sobe").
-   left/right+max-width+margin:auto repetem a centralização de .kronia-home
-   porque, sendo fixed, ele sai do contexto de .kronia-home e precisa se
-   alinhar sozinho com a mesma coluna de 480px. */
-.kronia-home-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: fixed;
-  top: max(52px, calc(env(safe-area-inset-top, 0px) * 0.75) + 10px);
-  left: 0;
-  right: 0;
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 0 20px 20px;
-  z-index: 20;
-  background: var(--kr-bg);
-}
-
-.kronia-icon-btn {
-  width: 42px;
-  height: 42px;
-  border-radius: 999px;
-  border: none;
-  background: var(--kr-card);
-  color: var(--kr-ink);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 1px 3px var(--kr-shadow);
-  cursor: pointer;
-}
-
-.kronia-icon-btn.ghost {
-  background: transparent;
-  box-shadow: none;
-  color: var(--kr-muted-2);
-}
-
-.kronia-icon-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-/* Centralizado verticalmente no espaço livre entre cabeçalho e barra de
-   input — modelo é a Home do próprio app do Claude ("Olá, coruja
-   noturna"): o miolo fica no meio do vão, não colado embaixo dos ícones. */
-/* align-items+text-align:center — referência é o app do Claude, onde o
-   texto fica centralizado na tela toda, não só verticalmente. */
-.kronia-home-hero {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  justify-content: center;
-}
-
-/* 26px, não 40px — pedido explícito comparando com o tamanho da saudação
-   do app do Claude ("Vamos matutar"), bem mais discreta que o título
-   grande que tinha aqui antes. */
-.kronia-home-hero h1 {
-  font-size: 26px;
-  line-height: 1.2;
-  font-weight: 800;
-  margin: 0 0 14px;
-  color: var(--kr-ink);
-}
-
-.kronia-home-hero h1 .accent {
-  color: var(--kr-accent);
-}
-
-.kronia-home-hero p {
-  font-size: 15px;
-  color: var(--kr-muted);
-  margin: 0;
-  max-width: 320px;
-}
-
-/* Home vira dashboard de atalhos por padrão (em vez do hero centralizado
-   de chat vazio) — alinhado à esquerda, saudação no topo, grid ocupando o
-   resto do espaço em vez de ficar centralizada no meio da tela. */
-/* Sem chat/composer embaixo (removido a pedido do usuário), o dashboard é
- * o único conteúdo da Home — centralizado verticalmente em vez de
- * encostado no topo, senão sobra um vão vazio grande embaixo dos cartões
- * (a Home preenche a tela toda, ver min-height:100% em .kronia-home). */
-.kronia-home-hero-dashboard {
-  width: 100%;
-  align-items: center;
-  text-align: center;
-  justify-content: center;
-  transform: translateY(0);
-}
-
-.kronia-home-hero-dashboard .kronia-quick-actions {
-  width: 100%;
-  max-width: 440px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.kronia-home-hero-dashboard h1 {
-  margin-bottom: 20px;
-}
-
-.kronia-quick-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.kronia-quick-action {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 24px;
-  min-height: 100px;
-  padding: 16px;
-  border-radius: 16px;
-  background: var(--kr-card);
-  border: 1px solid var(--kr-line);
-  text-align: left;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.kronia-quick-action-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: var(--kr-tint);
-  color: var(--kr-accent-ink);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.kronia-quick-action-label {
-  font-size: 14.5px;
-  font-weight: 700;
-  line-height: 1.25;
-  color: var(--kr-ink);
-}
-
-.kronia-home-inputbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--kr-card);
-  border-radius: 999px;
-  padding: 6px 6px 6px 14px;
-  box-shadow: 0 2px 10px var(--kr-shadow);
-  border: 1px solid var(--kr-line);
-}
-
-/* font-size:16px, não 15px — ver .field-input acima pro porquê (zoom
-   automático do iOS abaixo de 16px). Este era o campo que o usuário
-   estava testando quando reportou o "zoom" ao abrir o teclado. */
-.kronia-home-inputbar input {
-  flex: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: 16px;
-  color: var(--kr-ink);
-  font-family: inherit;
-}
-
-.kronia-home-inputbar input::placeholder {
-  color: var(--kr-placeholder);
-}
-
-.kronia-send-btn {
-  width: 42px;
-  height: 42px;
-  border-radius: 999px;
-  border: none;
-  background: var(--kr-ink);
-  color: var(--kr-bg);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.kronia-send-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-/* ==========================================================================
-   Menu lateral — TRÊS CAMADAS + motor de mola
-   --------------------------------------------------------------------------
-   Porte do menu que existiu em agenda-/js/mobile-core.js (removido de lá em
-   07f879a) — ver src/hooks/useMenuSpring.ts pra física. O menu NÃO desliza
-   sobre o app: quem se move é o app inteiro, que sai da frente e revela o
-   que já estava atrás.
-
-   Camada 1  .kronia-palco        recorta e centraliza (como .app já fazia)
-   Camada 2  .kronia-menu-camada  o menu, SEMPRE atrás
-   Camada 3  .kronia-app-camada   o app inteiro (todas as abas vivem aqui)
-
-   SEM transition nenhuma aqui — as regras abaixo são só os dois estados
-   PARADOS (fechado é o estado natural do HTML; aberto é a classe
-   .kronia-menu-aberto). O caminho entre eles é a mola em JS, que escreve
-   inline por cima destas regras enquanto trabalha e limpa ao assentar, já
-   no mesmo lugar.
-   ========================================================================== */
-
-/* height:100% (do #root), NÃO uma unidade de viewport recalculada aqui de
-   novo. #root já é position:fixed com altura EXATA (100dvh normal,
-   calc(var(--vh)*100) com teclado — ver a regra dele acima) — duplicar o
-   cálculo aqui com uma unidade diferente (era 100svh) dava margem pra uma
-   sobrar maior que a outra, e a fresta ficava sem cobertura: mostrava o
-   fundo escuro do body por trás em vez do --kr-bg da tela. Herdando do pai
-   não existe fresta possível, e nem precisa mais de regra própria pro
-   teclado. */
-.kronia-palco {
-  position: relative;
-  width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
-  height: 100%;
-  overflow: hidden;
-  background: var(--kr-bg);
-  touch-action: pan-y pinch-zoom;
-}
-
-.kronia-menu-camada {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  /* min(300px, 82vw) — mesmo valor de agenda-, nunca deixa o app sem
-     nenhuma fatia de tela pra tocar de volta. */
-  width: calc(min(300px, 82vw) + 24px);
-  display: flex;
-  flex-direction: column;
-  /* Padding normal — mesmo raciocínio de .kronia-home: o piso fixo pra
-     standalone (abaixo) não entra aqui pra não forçar respiro extra
-     também dentro do Safari, onde a barra do navegador já cobre isso. */
-  padding: max(20px, env(safe-area-inset-top)) calc(14px + 24px) calc(16px + env(safe-area-inset-bottom)) 14px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  z-index: 0;
-  background: var(--kr-bg);
-  transform: translate3d(-24px, 0, 0);
-}
-
-.kronia-menu-aberto .kronia-menu-camada {
-  transform: translate3d(0, 0, 0);
-}
-
-@media (display-mode: standalone) {
-  .kronia-menu-camada {
-    padding-top: max(59px, env(safe-area-inset-top));
-    padding-bottom: max(34px, calc(16px + env(safe-area-inset-bottom)));
-  }
-}
-
-/* Véu que mantém o menu um passo abaixo da tela principal — cobre o palco
-   inteiro (não só a largura do menu) pra não precisar acompanhar o
-   parallax; o que sobra pra direita fica debaixo da camada do app, opaca.
-   SÓ VISUAL — pointer-events:none sempre, nos dois estados: se ficasse
-   clicável ele intercepta o toque nos próprios itens do menu (cobre o
-   palco inteiro, inclusive onde o menu está). Fechar tocando de lado é
-   .kronia-app-back, um elemento à parte DENTRO da camada do app — mesma
-   separação que agenda- já tinha (kr-drawer-back), ver logo abaixo. */
-.kronia-menu-veu {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border: none;
-  padding: 0;
-  background: var(--kr-overlay);
-  opacity: 0;
-  pointer-events: none;
-}
-
-.kronia-menu-aberto .kronia-menu-veu {
-  opacity: 0.18;
-}
-
-.kronia-app-camada {
-  position: relative;
-  z-index: 1;
-  height: 100%;
-  /* Fundo PRÓPRIO — as telas internas nunca tiveram background próprio,
-     sempre dependeram do body atrás. Agora que vivem dentro desta camada
-     (que fica sobre o palco, não mais direto sobre o body), sem isto o
-     fundo do palco vazava atrás delas. Mesmo token que .app usa: sempre a
-     cor de fundo do tema atual, então nunca há costura visível entre
-     app-camada e o conteúdo real de dentro. */
-  background: var(--kr-bg);
-  /* auto (não hidden) no eixo vertical: as telas internas não têm scroll
-     próprio, então é esta camada que precisa rolar. Horizontal continua
-     escondido pra recortar a quina arredondada durante o deslocamento. */
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  transform: translate3d(0, 0, 0);
-  padding-bottom: calc(76px + env(safe-area-inset-bottom));
-}
-
-.kronia-menu-aberto .kronia-app-camada {
-  transform: translate3d(min(300px, 82vw), 0, 0);
-  border-radius: 30px;
-}
-
-/* Tira a rolagem por completo enquanto o teclado tá aberto — sem
-   condição nenhuma, testado no device real e confirmado que precisa ser
-   assim: o WebKit rola este container pra tentar trazer o campo focado
-   pra cima do teclado mesmo sem precisar, e foi esse scroll (visível como
-   barra de scroll na lateral, e como um artefato visual de tela
-   duplicada) que causava tudo — cabeçalho saindo do lugar, tela
-   "desfigurando". overflow:hidden fecha a rota inteira, igual a mesma
-   ideia já aplicada em html/body (commit f4cf4ff, agenda-).
-
-   Uma versão anterior disto só entrava com :has(.kronia-home-vazia), pra
-   não travar a rolagem numa conversa longa com mensagens — mas isso não
-   resolveu no device real (:has() pode não estar sendo aplicado de forma
-   confiável nesse WebView). Voltou incondicional. */
-[data-teclado] .kronia-app-camada {
-  overflow-y: hidden;
-}
-
-/* .kronia-home-topbar é irmã de .kronia-app-camada agora (não filha — ver
-   comentário no JSX sobre position:fixed), então precisa do MESMO deslize
-   quando o menu abre, senão ficaria flutuando fixa por cima do menu em vez
-   de sair de cena junto com o resto do app. Esta regra é só o estado
-   PARADO aberto (mesmo padrão de .kronia-app-camada acima) — durante o
-   movimento quem escreve o transform é a mola em JS (useMenuSpring ganhou
-   uma 4ª camada, topbar, só pra isso), que limpa o inline ao assentar e
-   deixa esta regra assumir. */
-.kronia-menu-aberto .kronia-home-topbar {
-  transform: translate3d(min(300px, 82vw), 0, 0);
-}
-
-/* Área de "tocar de lado pra fechar" — vive DENTRO da camada do app (cobre
-   a tela ativa, que é o que fica visível/tocável quando o menu está
-   aberto), nunca o véu (que é só visual, ver acima). pointer-events só liga
-   com o menu aberto, senão bloquearia toque na tela normalmente. */
-.kronia-app-back {
-  position: absolute;
-  inset: 0;
-  /* Acima de qualquer coisa dentro da camada do app — com o menu aberto,
-     tocar em QUALQUER ponto da tela principal fecha, mesmo que ali embaixo
-     houvesse um botão normal. Cabeçalho e bottom-nav vivem FORA desta
-     camada agora (position:fixed real, ver comentário no JSX) — não
-     precisam desta área de toque, eles próprios deslizam junto com a mola
-     quando o menu abre. */
-  z-index: 20;
-  border: none;
-  padding: 0;
-  background: transparent;
-  pointer-events: none;
-}
-
-.kronia-menu-aberto .kronia-app-back {
-  pointer-events: auto;
-}
-
-/* A sombra da tela principal mora num elemento próprio — só o que ela
-   projeta pra fora importa, o interior fica coberto pela camada do app. */
-.kronia-app-sombra {
-  position: absolute;
-  inset: 1px;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0;
-  border-radius: 30px;
-  box-shadow:
-    0 30px 80px rgba(0, 0, 0, 0.18),
-    0 10px 30px rgba(0, 0, 0, 0.08);
-}
-
-.kronia-menu-aberto .kronia-app-sombra {
-  opacity: 1;
-  transform: translate3d(min(300px, 82vw), 0, 0);
-}
-
-/* Sem isto o <aside> era um bloco comum: sua altura vinha só do conteúdo,
-   bem menor que .kronia-menu-camada (que É flex column, mas não estica os
-   filhos no eixo principal por padrão). Sobrava um vão cinza vazio entre
-   "Kleber/Conta PRO" e o fim de verdade da tela — e o margin-top:auto do
-   footer (kronia-sidebar-footer) não tinha container flex nenhum pra valer,
-   então não empurrava nada. flex:1 aqui estica o <aside> até preencher
-   .kronia-menu-camada; display:flex column é o que faz o margin-top:auto
-   do footer funcionar. */
-.kronia-sidebar {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 100%;
-}
-
-.kronia-sidebar-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 8px 14px;
-}
-
-.kronia-sidebar-brand-word {
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  color: var(--kr-ink);
-}
-
-.kronia-sidebar-brand-sub {
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  color: var(--kr-muted-2);
-}
-
-.kronia-pro-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  align-self: flex-start;
-  margin: 0 8px 16px;
-  padding: 5px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--kr-tint);
-  color: var(--kr-accent);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.kronia-sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.kronia-sidebar-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 11px 10px;
-  border-radius: 12px;
-  border: none;
-  background: transparent;
-  color: var(--kr-ink);
-  font-size: 14.5px;
-  font-weight: 600;
-  text-align: left;
-  cursor: pointer;
-}
-
-.kronia-sidebar-item span:first-of-type {
-  flex: 1;
-}
-
-.kronia-sidebar-item svg:last-child {
-  color: var(--kr-muted-2);
-  flex-shrink: 0;
-}
-
-.kronia-sidebar-item.active {
-  background: var(--kr-tint);
-  color: var(--kr-accent-ink);
-}
-
-.kronia-sidebar-recents {
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--kr-line);
-}
-
-.kronia-sidebar-recents-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 10px 8px;
-  font-size: 12px;
-  color: var(--kr-muted-2);
-}
-
-.kronia-sidebar-recents-header button {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  border: none;
-  background: transparent;
-  color: var(--kr-muted-2);
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.kronia-recent-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border: none;
-  background: transparent;
-  border-radius: 12px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.kronia-recent-thumb {
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
-  background: var(--kr-card-2);
-  color: var(--kr-muted-2);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 13px;
-  flex-shrink: 0;
-}
-
-.kronia-recent-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-
-.kronia-recent-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--kr-ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.kronia-recent-time {
-  font-size: 11px;
-  color: var(--kr-muted-2);
-}
-
-.kronia-sidebar-footer {
-  margin-top: auto;
-  padding-top: 14px;
-  border-top: 1px solid var(--kr-line);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  text-align: left;
-}
-
-.kronia-sidebar-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  background: var(--kr-tint);
-  color: var(--kr-accent-ink);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 14px;
-  flex-shrink: 0;
-}
-
-.kronia-sidebar-footer-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  flex: 1;
-}
-
-.kronia-sidebar-footer-name {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--kr-ink);
-}
-
-.kronia-sidebar-footer-plan {
-  font-size: 11.5px;
-  color: var(--kr-accent);
-  font-weight: 600;
-}
-
-.kronia-sidebar-footer svg {
-  color: var(--kr-muted-2);
-}
-
-.kronia-sidebar-item-row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.kronia-sidebar-item-row .kronia-sidebar-item {
-  flex: 1;
-}
-
-.kronia-new-chat-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
-  border: none;
-  background: transparent;
-  color: var(--kr-muted-2);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.kronia-new-chat-btn:hover {
-  background: var(--kr-card-2);
-}
-
-.kronia-icon-btn.recording {
-  color: #E23B2E;
-  background: rgba(226, 59, 46, 0.12);
-}
-
-/* Toggle de tema (claro/escuro) — mesmo desenho de agenda-/mobile-perfil.js:
-   pílula com sol/lua, o ativo ganha fundo sólido. Vive na Perfil. */
-.kronia-tema-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--kr-card-2);
-  border-radius: 999px;
-  padding: 4px;
-}
-
-.kronia-tema-opt {
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  color: var(--kr-muted-2);
-}
-
-.kronia-tema-opt.active {
-  background: var(--kr-ink);
-  color: var(--kr-bg);
-}
-
-/* Thread de conversa */
-
-.kronia-conversation-thread {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 4px 0 12px;
-}
-
-.kronia-msg {
-  display: flex;
-  flex-direction: column;
-  max-width: 86%;
-}
-
-.kronia-msg-user {
-  align-self: flex-end;
-  align-items: flex-end;
-}
-
-.kronia-msg-assistant {
-  align-self: flex-start;
-  align-items: flex-start;
-}
-
-.kronia-msg-bubble {
-  padding: 11px 15px;
-  border-radius: 16px;
-  font-size: 14.5px;
-  line-height: 1.45;
-  white-space: pre-wrap;
-}
-
-.kronia-msg-user .kronia-msg-bubble {
-  background: var(--kr-ink);
-  color: var(--kr-bg);
-  border-bottom-right-radius: 4px;
-}
-
-.kronia-msg-assistant .kronia-msg-bubble {
-  background: var(--kr-card);
-  color: var(--kr-ink);
-  border: 1px solid var(--kr-line);
-  border-bottom-left-radius: 4px;
-}
-
-.kronia-msg-bubble-loading {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--kr-muted-2);
-}
-
-.spinner-inline {
-  width: 14px;
-  height: 14px;
-  border-radius: 999px;
-  border: 2px solid var(--kr-line);
-  border-top-color: var(--kr-accent);
-  animation: spin 0.8s linear infinite;
-  flex-shrink: 0;
-}
-
-.kronia-msg-attachments {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 4px;
-}
-
-.kronia-msg-attachment-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: var(--kr-card-2);
-  color: var(--kr-muted);
-  font-size: 12px;
-  max-width: 160px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.kronia-msg-attachment-chip svg {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-}
-
-.kronia-pending-attachments {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 0 4px 8px;
-}
-
-.kronia-pending-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: var(--kr-card);
-  border: 1px solid var(--kr-line);
-  color: var(--kr-muted);
-  font-size: 12px;
-  max-width: 160px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.kronia-pending-chip.uploading {
-  opacity: 0.55;
-}
-
-.kronia-pending-chip svg {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-}
-
-/* ==========================================================================
-   Home — Comando Criativo
-   Uma entrada única para o fluxo real de criação. Visual sóbrio, sem
-   atalhos repetidos nem decoração associada a geradores genéricos de IA.
-   ========================================================================== */
-.kronia-home {
-  min-height: 100%;
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 74px 0 0;
+  padding: 94px 0 112px;
   background: var(--kr-bg);
   color: var(--kr-ink);
   display: flex;
@@ -1350,9 +541,9 @@ a {
 }
 
 .kronia-home-topbar {
-  min-height: 56px;
-  top: 12px;
-  padding: 0 20px 12px;
+  min-height: 62px;
+  top: 16px;
+  padding: 0 32px 10px;
   background: var(--kr-header-bg);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -1369,8 +560,8 @@ a {
 }
 
 .kronia-topbar-brand img {
-  width: 29px;
-  height: 29px;
+  width: 38px;
+  height: 38px;
   object-fit: contain;
 }
 
@@ -1394,8 +585,8 @@ a {
 }
 
 .kronia-topbar-profile {
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   margin-left: auto;
   border: 1px solid var(--kr-line);
   border-radius: 50%;
@@ -1410,7 +601,7 @@ a {
 
 .kronia-command {
   flex: 1;
-  padding: 12px 20px 30px;
+  padding: 22px 32px 0;
 }
 
 .kronia-command-eyebrow {
@@ -1421,46 +612,60 @@ a {
 }
 
 .kronia-command-header {
-  margin: 10px 0 22px;
+  margin: 0 0 34px;
 }
-.kronia-command-header > span { color: var(--kr-muted); font-size: 15px; font-weight: 650; }
+.kronia-command-header > span { color: var(--kr-muted); font-size: 14px; font-weight: 650; }
 
 .kronia-command-header h1 {
-  max-width: 360px;
-  margin: 0;
+  max-width: 390px;
+  margin: 12px 0 0;
   color: var(--kr-ink);
-  font-size: clamp(27px, 7.4vw, 32px);
-  font-weight: 780;
-  line-height: 1.08;
-  letter-spacing: -0.035em;
+  font-size: clamp(38px, 10vw, 46px);
+  font-weight: 800;
+  line-height: .98;
+  letter-spacing: -0.055em;
 }
 
 .kronia-command-header p {
-  max-width: 390px;
-  margin: 10px 0 0;
+  max-width: 360px;
+  margin: 18px 0 0;
   color: var(--kr-muted);
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 17px;
+  line-height: 1.35;
 }
 
 .kronia-source-list {
+  position: relative;
+  isolation: isolate;
   overflow: hidden;
   border: 0;
-  border-radius: 22px;
-  padding: 22px 16px 16px;
-  background: linear-gradient(135deg, #ff6517, #ff8b20);
+  border-radius: 24px;
+  padding: 28px 20px 20px;
+  background: linear-gradient(135deg, #ff6418 0%, #ff8d20 58%, #ff7418 100%);
   color: #fff;
 }
-.kronia-source-list-heading h2 { margin: 0; font-size: 25px; letter-spacing: -0.03em; }
-.kronia-source-list-heading p { margin: 5px 0 15px; max-width: 255px; font-size: 13px; line-height: 1.4; }
-.kronia-source-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.kronia-source-list::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 260px;
+  height: 260px;
+  right: -90px;
+  top: -66px;
+  border: 30px solid rgba(255, 197, 75, .24);
+  border-radius: 50%;
+  box-shadow: 0 0 0 30px rgba(255, 203, 88, .14), 0 0 0 60px rgba(255, 214, 115, .09);
+}
+.kronia-source-list-heading h2 { margin: 0; font-size: 31px; letter-spacing: -0.045em; line-height: 1; }
+.kronia-source-list-heading p { margin: 10px 0 22px; max-width: 230px; font-size: 16px; line-height: 1.32; }
+.kronia-source-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 
 .kronia-source-row {
-  width: 100%; min-height: 92px; padding: 10px 6px;
-  border: 0; border-radius: 17px; background: var(--kr-card);
+  width: 100%; min-height: 154px; padding: 14px 8px;
+  border: 0; border-radius: 18px; background: rgba(255,255,255,.96);
   color: var(--kr-ink);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 8px; text-align: center;
+  gap: 14px; text-align: center;
   font-family: inherit;
   cursor: pointer;
 }
@@ -1474,14 +679,14 @@ a {
 }
 
 .kronia-source-icon {
-  width: 38px;
-  height: 38px;
-  border: 1px solid var(--kr-line);
-  border-radius: 12px;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--kr-ink);
+  color: var(--kr-accent);
 }
 
 .kronia-source-copy {
@@ -1492,8 +697,9 @@ a {
 }
 
 .kronia-source-copy strong {
-  font-size: 12px;
-  line-height: 1.2;
+  font-size: 15px;
+  line-height: 1.12;
+  font-weight: 750;
 }
 
 .kronia-source-copy span {
@@ -1533,21 +739,22 @@ a {
 .kronia-production-flow,
 .kronia-recent-production,
 .kronia-home-tools {
-  margin-top: 30px;
+  margin-top: 42px;
 }
 
 .kronia-section-heading h2 {
   margin: 0;
   color: var(--kr-ink);
-  font-size: 19px;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+  font-size: 25px;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
 }
 
 .kronia-section-heading p {
-  margin: 5px 0 0;
+  margin: 7px 0 0;
   color: var(--kr-muted);
-  font-size: 13px;
+  font-size: 15px;
+  line-height: 1.35;
 }
 
 .kronia-section-heading.inline {
@@ -1614,27 +821,27 @@ a {
 
 .kronia-recent-production-row {
   width: 100%;
-  margin-top: 12px;
-  padding: 12px;
+  margin-top: 20px;
+  padding: 14px;
   border: 1px solid var(--kr-line);
-  border-radius: 14px;
+  border-radius: 18px;
   background: var(--kr-card);
   color: var(--kr-ink);
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) 20px;
+  grid-template-columns: 70px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 11px;
+  gap: 13px;
   text-align: left;
   font-family: inherit;
   cursor: pointer;
 }
 
 .kronia-recent-production-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 11px;
-  background: var(--kr-card-2);
-  color: var(--kr-muted);
+  width: 70px;
+  height: 70px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #e8dfd0, #c4ac8e);
+  color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1644,7 +851,7 @@ a {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 
 .kronia-recent-production-copy strong,
@@ -1655,7 +862,8 @@ a {
 }
 
 .kronia-recent-production-copy strong {
-  font-size: 14px;
+  font-size: 16px;
+  line-height: 1.2;
 }
 
 .kronia-recent-production-copy span {
@@ -1722,4 +930,30 @@ a {
     width: 38px;
     height: 38px;
   }
+}
+
+
+.kronia-recent-progress {
+  display: block;
+  width: 100%;
+  height: 7px;
+  margin-top: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--kr-card-2);
+}
+.kronia-recent-progress i {
+  display: block;
+  width: 60%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--kr-accent);
+}
+.kronia-recent-action {
+  color: var(--kr-accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  font-size: 13px;
+  font-weight: 750;
 }
