@@ -786,7 +786,9 @@ a {
 .kronia-menu-camada {
   position: absolute;
   top: 0;
-  bottom: 0;
+  /* O layout viewport do PWA termina antes da área do indicador no iPhone.
+     A barra avança somente por essa área segura, sem deslocar os ícones para cima. */
+  bottom: calc(env(safe-area-inset-bottom) * -1);
   left: 0;
   /* min(300px, 82vw) — mesmo valor de agenda-, nunca deixa o app sem
      nenhuma fatia de tela pra tocar de volta. */
@@ -1672,10 +1674,10 @@ a {
   margin: 0 auto;
   z-index: 12;
   box-sizing: border-box;
-  height: calc(60px + env(safe-area-inset-bottom));
-  min-height: calc(60px + env(safe-area-inset-bottom));
-  max-height: calc(60px + env(safe-area-inset-bottom));
-  padding: 4px 20px calc(4px + env(safe-area-inset-bottom));
+  height: 60px;
+  min-height: 60px;
+  max-height: 60px;
+  padding: 4px 20px;
   border-top: 1px solid var(--kr-line);
   background: var(--kr-header-bg);
   backdrop-filter: blur(14px);
